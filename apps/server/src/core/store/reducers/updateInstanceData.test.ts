@@ -263,7 +263,7 @@ const refusedUpdateScenarios: Array<{
     expectedError: {
       code: 'INVALID_GRAPHIC_DATA',
       message:
-        'Dados inválidos para o gráfico "race-clock": o campo "state" tem um valor que o gráfico não aceita.',
+        'Dados inválidos para o gráfico "race-clock": o campo "Bandeira" tem um valor que o gráfico não aceita.',
     },
   },
   // A misspelt field name must not be stored silently next to the real fields.

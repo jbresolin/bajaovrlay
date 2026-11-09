@@ -27,11 +27,12 @@ export const logoBugStyles = css`
   .logo-image {
     display: block;
     width: auto;
-    /* Shown only once the file has arrived (logoBugView.ts). */
-    visibility: hidden;
   }
 
-  .logo-image[data-image-state='loaded'] {
-    visibility: visible;
+  /* A new file on its way (logoBugView.ts): hidden, and out of the layout, so the panel
+     keeps the size of the logo still on screen until the new one has arrived. */
+  .logo-image[data-image-state='waiting'] {
+    position: absolute;
+    visibility: hidden;
   }
 `;

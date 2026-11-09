@@ -38,11 +38,11 @@ function buildLogoBugGraphic(): Graphic {
   };
 }
 
-/** The "Logo do canal" item as the server seeds it, in "Atalhos", with no image. */
+/** The "Logo do canal" item as the server seeds it, alone in its "Logo" panel, with no image. */
 function buildSeededChannelLogoItem(): Item {
   return {
     id: 'logo-do-canal',
-    home: { kind: 'quickFire', panelId: 'atalhos' },
+    home: { kind: 'quickFire', panelId: 'logo' },
     order: 0,
     graphicId: 'logo-bug',
     layerId: 'channel-logo',
@@ -74,7 +74,10 @@ function renderEditorOnTheSeededChannelLogo() {
     layers: [...slices.layers, channelLogoLayer].sort(
       (lower, higher) => lower.zIndex - higher.zIndex,
     ),
-    quickFirePanels: [{ id: 'atalhos', name: 'Atalhos', order: 0 }],
+    quickFirePanels: [
+      { id: 'atalhos', name: 'Atalhos', order: 0 },
+      { id: 'logo', name: 'Logo', order: 2 },
+    ],
     items: [buildSeededChannelLogoItem()],
   });
 }

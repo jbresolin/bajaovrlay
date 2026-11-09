@@ -14,8 +14,10 @@
  *     (x 96..1824, y 54..1026), measured, and looks like its baseline.
  *   - The smallest (32 px) and largest (200 px) heights draw the logo that tall, and 50%
  *     opacity draws it see-through, each like its baseline.
- *   - A logo on air whose image is swapped for a missing file answers 422 and leaves its
- *     corner empty: the baseline has no broken-image icon in it.
+ *   - A logo whose image is missing at load, played anyway, leaves its corner empty: the
+ *     baseline has no broken-image icon in it.
+ *   - A logo on air whose image is swapped for a missing file answers 422 and keeps the
+ *     old logo in its corner: a failure never blanks what is on air.
  *
  * What these tests deliberately do not cover:
  *   - Motion; the shots show the end of the fade in (logoBugLifecycle.e2e.ts covers it).
@@ -138,7 +140,42 @@ for (const stage of ['grey', 'black'] as const) {
       });
     }
 
-    test('leaves its corner empty, with no broken-image icon, when the image goes missing on air', async ({
+    test('leaves its corner empty, with no broken-image icon, when the image is missing at load', async ({
+      page,
+    }) => {
+      // Arrange: the preview loading an address with no file behind it; its load answers
+      // 422, so the preview does not play it.
+      await page.goto(`preview.html?stage=${stage}&image=missing`);
+      await expect(page.locator('body'), 'the 422 must end the preview in error').toHaveAttribute(
+        'data-preview-state',
+        'error',
+      );
+      await page.locator('#preview-controls').evaluate((controls) => {
+        controls.style.visibility = 'hidden';
+      });
+
+      // Act: play it anyway, as a renderer could, so the shot shows the corner on air.
+      const answer = await page.evaluate(async () => {
+        type LogoBugElement = HTMLElement & {
+          playAction: (params: object) => Promise<{ statusCode: number }>;
+        };
+        const logoBug = document.querySelector('baja-logo-bug') as LogoBugElement;
+        return logoBug.playAction({ skipAnimation: true });
+      });
+
+      // Assert: on air, no image element in the panel, and the stage alone in the shot.
+      expect(answer.statusCode, 'the empty logo must still play').toBe(200);
+      await expect(
+        page.getByTestId('logo-bug-image'),
+        'a missing image must leave no image element',
+      ).toHaveCount(0);
+      await expect(page, 'a missing image must leave the corner empty').toHaveScreenshot(
+        `logo-bug-imagem-ausente-${stage}.png`,
+        { maxDiffPixelRatio: 0.01 },
+      );
+    });
+
+    test('keeps the old logo in its corner when the image goes missing on air', async ({
       page,
     }) => {
       // Arrange: the mark on air in the default corner.
@@ -153,14 +190,14 @@ for (const stage of ['grey', 'black'] as const) {
         return logoBug.updateAction({ data: { logoUrl: '/media/logo-que-nao-existe' } });
       });
 
-      // Assert: a 422, no image left in the panel, and the stage alone in the shot.
+      // Assert: a 422, one image left (the old one), and the mark still in the shot.
       expect(answer.statusCode, 'a missing image must answer 422').toBe(422);
       await expect(
         page.getByTestId('logo-bug-image'),
-        'a missing image must leave no image element',
-      ).toHaveCount(0);
-      await expect(page, 'a missing image must leave the corner empty').toHaveScreenshot(
-        `logo-bug-imagem-ausente-${stage}.png`,
+        'only the old logo must be left',
+      ).toHaveCount(1);
+      await expect(page, 'the old logo must still be on air').toHaveScreenshot(
+        `logo-bug-imagem-ausente-mantem-anterior-${stage}.png`,
         { maxDiffPixelRatio: 0.01 },
       );
     });

@@ -196,7 +196,7 @@ const refusedUpdateScenarios: Array<{
     name: 'refuses taking a required field off, naming it as missing',
     command: buildUpdateOfTheRaceClock({ sessionName: null }, []),
     expectedMessage:
-      'Dados inválidos para o gráfico "race-clock": o campo "sessionName" é obrigatório e não foi enviado.',
+      'Dados inválidos para o gráfico "race-clock": o campo "Título" é obrigatório e não foi enviado.',
   },
   // From here on: the server stamps only a field the graphic's schema declares as a
   // whole number marked `v_baja.role: "wallClock"`. The flag is one of six texts.

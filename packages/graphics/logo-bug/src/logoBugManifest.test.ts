@@ -16,8 +16,10 @@
  *     from the text of packages/theme/ardosia/tokens.css.
  *   - The image is required, so the item form refuses a take with no image, in pt-BR; it
  *     is the one image field (`v_baja.role: "imageUrl"`, the media picker).
- *   - The corner is a select of the kit's four corners with pt-BR names; the corner, the
- *     height and the opacity start at the model's defaults, within the model's limits.
+ *   - The corner is a select of the kit's four corners; the corner, the height and the
+ *     opacity start at the model's defaults, within the model's limits. The corners'
+ *     pt-BR names are checked once for every graphic, in the kit's
+ *     screenCornerNamesInEveryManifest.test.ts.
  *
  * What these tests deliberately do not cover:
  *   - That the data schema and the Zod validation accept and refuse the same payloads;
@@ -131,22 +133,17 @@ describe('logo-bug.ograf.json', () => {
     expect(allowsUnknownFields, 'a field the graphic does not know must be refused').toBe(false);
   });
 
-  it('offers the kit’s four corners with pt-BR names, starting at the model’s default', () => {
+  it('offers the kit’s four corners as a select, starting at the model’s default', () => {
     // Arrange: the corner field as the manifest describes it.
     const cornerField = logoBugManifest.schema.properties.corner;
 
-    // Act: read its options, their names and its default.
-    const cornerOptions = { values: cornerField.enum, names: cornerField.gddOptions.labels };
+    // Act: read its options and how the form draws them.
+    const cornerOptions = { values: cornerField.enum, formControl: cornerField.gddType };
 
-    // Assert: the same four corners as the kit, in the same order, each named in pt-BR.
-    expect(cornerOptions, 'the form must offer the four corners by name').toEqual({
+    // Assert: the same four corners as the kit, in the same order, in a select.
+    expect(cornerOptions, 'the form must offer the four corners in a select').toEqual({
       values: [...screenCorners],
-      names: {
-        'top-left': 'Superior esquerdo',
-        'top-right': 'Superior direito',
-        'bottom-left': 'Inferior esquerdo',
-        'bottom-right': 'Inferior direito',
-      },
+      formControl: 'select',
     });
     expect(cornerField.default, 'a new item starts in the model’s default corner').toBe(
       logoBugDefaults.corner,

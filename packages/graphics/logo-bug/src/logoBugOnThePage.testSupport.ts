@@ -17,6 +17,9 @@ export function createChannelLogoData(): LogoBugData {
   return { logoUrl: '/media/3b8f0c2e-logo-baja-sae-brasil' };
 }
 
+/** An address whose file was deleted from the media store: the browser reports it broken. */
+export const deletedLogoAddress = '/media/9c4d2a10-logo-apagado';
+
 /**
  * Puts a fresh logo bug element on the page, as a renderer does before calling load.
  * When the test ends it is disposed and removed, so nothing leaks into the next test.
@@ -53,14 +56,37 @@ export function findPartOfLogoBug(
   return logoBug.shadowRoot?.querySelector<HTMLElement>(`[data-testid="${testId}"]`) ?? undefined;
 }
 
-/** Fires the logo's load event, as a browser does once the file has arrived. */
-export function letTheLogoLoad(logoBug: LogoBugGraphic): void {
-  findPartOfLogoBug(logoBug, 'logo-bug-image')?.dispatchEvent(new Event('load'));
+/** The logo on screen (its file arrived); undefined when the corner is empty. */
+export function findTheShownLogo(logoBug: LogoBugGraphic): HTMLImageElement | undefined {
+  return (
+    logoBug.shadowRoot?.querySelector<HTMLImageElement>(
+      '[data-testid="logo-bug-image"][data-image-state="loaded"]',
+    ) ?? undefined
+  );
 }
 
-/** Fires the logo's error event, as a browser does for a missing or broken file. */
+/** The logo whose file is on its way, hidden until it arrives; undefined when none is. */
+export function findTheLogoOnItsWay(logoBug: LogoBugGraphic): HTMLImageElement | undefined {
+  return (
+    logoBug.shadowRoot?.querySelector<HTMLImageElement>(
+      '[data-testid="logo-bug-image"][data-image-state="waiting"]',
+    ) ?? undefined
+  );
+}
+
+/** How many image elements the graphic holds: the shown logo and the one on its way. */
+export function countLogoImages(logoBug: LogoBugGraphic): number {
+  return logoBug.shadowRoot?.querySelectorAll('[data-testid="logo-bug-image"]').length ?? 0;
+}
+
+/** Fires the load event of the logo on its way, as a browser does once the file has arrived. */
+export function letTheLogoLoad(logoBug: LogoBugGraphic): void {
+  findTheLogoOnItsWay(logoBug)?.dispatchEvent(new Event('load'));
+}
+
+/** Fires the error event of the logo on its way, as a browser does for a missing or broken file. */
 export function letTheLogoFail(logoBug: LogoBugGraphic): void {
-  findPartOfLogoBug(logoBug, 'logo-bug-image')?.dispatchEvent(new Event('error'));
+  findTheLogoOnItsWay(logoBug)?.dispatchEvent(new Event('error'));
 }
 
 /** Loads a logo bug and lets its logo load, so the test can go on to play it. */
@@ -68,6 +94,14 @@ export async function loadLogoBugAndItsLogo(logoBug: LogoBugGraphic, data: unkno
   const pendingLoad = loadLogoBugWithData(logoBug, data);
   await letThePageCatchUp();
   letTheLogoLoad(logoBug);
+  return pendingLoad;
+}
+
+/** Loads a logo bug whose image fails, so the test starts from a logo with nothing to show. */
+export async function loadLogoBugWithAFailedLogo(logoBug: LogoBugGraphic) {
+  const pendingLoad = loadLogoBugWithData(logoBug, { logoUrl: deletedLogoAddress });
+  await letThePageCatchUp();
+  letTheLogoFail(logoBug);
   return pendingLoad;
 }
 

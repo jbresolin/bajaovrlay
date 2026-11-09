@@ -108,7 +108,7 @@ export function putGraphicOnOutput(
   // refused as a missing field.
   const problemInData = findProblemInGraphicData(graphic, dataForTheGraphic);
   if (problemInData !== undefined) {
-    return { status: 'refused', error: refuseInvalidGraphicData(graphic.id, problemInData) };
+    return { status: 'refused', error: refuseInvalidGraphicData(graphic, problemInData) };
   }
 
   // A new instance is `loading` until a renderer reports what happened to it on

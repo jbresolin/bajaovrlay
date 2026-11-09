@@ -3,14 +3,20 @@
  * picks, the smallest graphic in the catalogue (BAJAOVRLAY-63). This file owns the OGraf
  * lifecycle (load, play, update, stop, dispose) in the team card's shape and only wires
  * the pieces together: logoBugModel (data, defaults, limits), logoBugView (the DOM, drawn
- * by Lit), playSteps (the OGraf step rule), logoBugAnimations (the fade) and the kit's
- * waitForImagesToSettle.
+ * by Lit), logoImageFetches (the logo on screen and the file on its way), playSteps (the
+ * OGraf step rule) and logoBugAnimations (the fade).
  *
  * The image: load waits for it (loaded or failed, at most 2 s), and so does an update that
- * changes it, so play fades in a logo already drawn. A file that fails leaves the graphic
- * empty and the call answers 422 with a pt-BR message, which the renderer passes on to the
- * server, so the operator learns why the corner is empty. A file still on its way after
- * 2 s is not a failure: the call answers 200 and the image appears when it arrives.
+ * changes it, so play fades in a logo already drawn. A new file is fetched hidden while the
+ * logo already on screen stays (a failure never blanks what is on air); it replaces that
+ * logo once it has arrived. A file that fails answers 422 with a pt-BR message, which the
+ * renderer passes on to the server, so the operator learns why: at load the corner is
+ * empty, at an update the old logo is still up. A failed file is fetched again on the next
+ * update, even at the same address (it may have finished uploading), and an update that
+ * does not change the address answers 200 whatever that second try gives: it moved or
+ * resized the logo as asked, and the operator was told about the file the first time. A
+ * file still on its way after 2 s is not a failure: the call answers 200 and the image
+ * appears when it arrives.
  *
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
@@ -30,7 +36,6 @@ import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
 } from '@bajaovrlay/graphics-kit/timelinePlayback';
-import { waitForImagesToSettle } from '@bajaovrlay/graphics-kit/waitForImagesToSettle';
 import { LitElement } from 'lit';
 
 import {
@@ -46,12 +51,8 @@ import {
   readLogoBugLook,
 } from './logoBugModel.js';
 import { logoBugStyles } from './logoBugStyles.js';
-import {
-  findLogoBugPanel,
-  type LogoImageEvents,
-  type LogoImageState,
-  renderLogoBugTemplate,
-} from './logoBugView.js';
+import { findLogoBugPanel, type LogoImageEvents, renderLogoBugTemplate } from './logoBugView.js';
+import { LogoImageFetches } from './logoImageFetches.js';
 import { ptBR } from './ptBR.js';
 
 /** Must match "stepCount" in logo-bug.ograf.json: play shows the logo, stop hides it. */
@@ -75,25 +76,29 @@ export default class LogoBugGraphic extends LitElement implements OGrafGraphic {
   // Read by render(); not Lit reactive properties, so the logo is redrawn only when this
   // file asks (redrawWithData or the image's own events), never by surprise.
   private data: LogoBugData | undefined = undefined;
-  private imageState: LogoImageState = 'waiting';
   private panel: HTMLElement | undefined = undefined;
+  private readonly images = new LogoImageFetches();
   // One motion at a time (in or out), so one timeline is all there is to end.
   private runningPanelTimeline: LogoBugTimeline | undefined = undefined;
 
+  // An event from an image that is no longer the one on its way (a newer fetch replaced
+  // it) changes nothing and draws nothing; logoImageFetches.ts tells.
   private readonly imageEvents: LogoImageEvents = {
-    onImageLoaded: () => {
-      this.imageState = 'loaded';
-      this.requestUpdate();
+    onImageLoaded: (fetchKey) => {
+      if (this.images.markArrived(fetchKey)) {
+        this.requestUpdate();
+      }
     },
-    onImageFailed: () => {
-      this.imageState = 'failed';
-      this.requestUpdate();
+    onImageFailed: (fetchKey) => {
+      if (this.images.markFailed(fetchKey)) {
+        this.requestUpdate();
+      }
     },
   };
 
   override render() {
     const look = this.data === undefined ? undefined : readLogoBugLook(this.data);
-    return renderLogoBugTemplate(look, this.imageState, this.imageEvents);
+    return renderLogoBugTemplate(look, this.images.listImagesToDraw(), this.imageEvents);
   }
 
   /**
@@ -117,11 +122,12 @@ export default class LogoBugGraphic extends LitElement implements OGrafGraphic {
 
     // What could go wrong: a renderer calling load on an element not yet in the page
     // waits here until it is added, because Lit renders only connected elements.
+    const imageSettles = this.images.startFetching(dataCheck.data.logoUrl);
     await this.redrawWithData(dataCheck.data);
     const panel = findLogoBugPanel(this.renderRoot);
     this.panel = panel;
     placePanelOffAir(panel);
-    await waitForImagesToSettle(this.renderRoot);
+    await this.images.waitForTheImageOnItsWay(imageSettles);
 
     // A dispose that came while load was waiting must win; going on would bring a
     // disposed graphic back to life.
@@ -191,9 +197,10 @@ export default class LogoBugGraphic extends LitElement implements OGrafGraphic {
 
   /**
    * OGraf updateAction: merges partial data in at any time after load, on air or off, and
-   * redraws in place with no animation. A new image is waited for like load's, and a
-   * failed one answers 422 with the graphic left empty; a new corner, height or opacity
-   * alone is drawn at once.
+   * redraws in place with no animation. A new image is waited for like load's, with the
+   * old logo up meanwhile, and a failed one answers 422 with the old logo kept; a failed
+   * image is tried again even at the same address. A new corner, height or opacity is
+   * drawn at once.
    */
   async updateAction(params: OGrafUpdateActionParams): Promise<OGrafReturnPayload> {
     const refusal = this.refuseUnlessLoaded();
@@ -206,12 +213,21 @@ export default class LogoBugGraphic extends LitElement implements OGrafGraphic {
     }
 
     const isNewImage = dataCheck.data.logoUrl !== this.requireData().logoUrl;
-    await this.redrawWithData(dataCheck.data);
-    if (isNewImage) {
-      await waitForImagesToSettle(this.renderRoot);
+    const isRetryOfAFailedImage = !isNewImage && this.images.hasTheWantedImageFailed();
+    let imageSettles: Promise<void> | undefined = undefined;
+    if (isNewImage || isRetryOfAFailedImage) {
+      imageSettles = this.images.startFetching(dataCheck.data.logoUrl);
     }
+    await this.redrawWithData(dataCheck.data);
+    await this.images.waitForTheImageOnItsWay(imageSettles);
     if (this.readLifecycleNow() === 'disposed') {
       return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
+    }
+    // Deliberate: only an update that brought a new address answers for its image. One
+    // that kept the address asked for a move or a size, which happened; the operator was
+    // told about the file when it first failed.
+    if (!isNewImage) {
+      return okAnswer;
     }
     return this.answerForTheImage(dataCheck.data);
   }
@@ -221,9 +237,10 @@ export default class LogoBugGraphic extends LitElement implements OGrafGraphic {
     return buildRefusalAnswer(404, ptBR.actionProblems.unknownCustomAction(params.id));
   }
 
-  /** OGraf dispose: ends a running fade; pending actions resolve. */
+  /** OGraf dispose: ends a running fade and any wait for an image; pending actions resolve. */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
+    this.images.endAnyWait();
     const runningTimeline = this.runningPanelTimeline;
     this.runningPanelTimeline = undefined;
     if (runningTimeline !== undefined) {
@@ -232,27 +249,30 @@ export default class LogoBugGraphic extends LitElement implements OGrafGraphic {
     return okAnswer;
   }
 
-  /**
-   * Keeps the data and waits until Lit has drawn it. A new image address starts out
-   * waiting, so the old file's state never stands for the new one.
-   */
+  /** Keeps the data and waits until Lit has drawn it. */
   private async redrawWithData(data: LogoBugData): Promise<void> {
-    const isNewImage = this.data?.logoUrl !== data.logoUrl;
-    if (isNewImage) {
-      this.imageState = 'waiting';
-    }
     this.data = data;
     this.requestUpdate();
     await this.updateComplete;
   }
 
-  /** 200, or 422 naming the address when the image failed; the image's events are drawn first. */
+  /**
+   * 200, or 422 naming the address when the image failed: "fica vazio" when nothing is on
+   * screen, "o logo anterior continua" when an older logo still is. The image's events
+   * are drawn first.
+   */
   private async answerForTheImage(data: LogoBugData): Promise<OGrafReturnPayload> {
     await this.updateComplete;
-    if (this.imageState === 'failed') {
+    if (!this.images.hasTheWantedImageFailed()) {
+      return okAnswer;
+    }
+    if (!this.images.isALogoOnScreen()) {
       return buildRefusalAnswer(422, ptBR.actionProblems.imageDidNotLoad(data.logoUrl));
     }
-    return okAnswer;
+    return buildRefusalAnswer(
+      422,
+      ptBR.actionProblems.imageDidNotLoadKeepingThePreviousLogo(data.logoUrl),
+    );
   }
 
   /**

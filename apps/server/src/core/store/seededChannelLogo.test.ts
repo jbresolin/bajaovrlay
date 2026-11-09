@@ -4,20 +4,22 @@
  * What this module is for:
  *   The channel logo (BAJAOVRLAY-63, packages/graphics/logo-bug) goes on its own layer,
  *   "Logo do canal", so it can be on air beside the sponsor bug, and comes with an item of
- *   the same name in the first quick-fire panel ("Atalhos"), with no image chosen: the
- *   operator only picks the file. Both are seeded once per database: on a new one, and on
+ *   the same name, with no image chosen: the operator only picks the file. The item is
+ *   the only button of a quick-fire panel of its own, "Logo", so it never takes a button
+ *   of "Atalhos" from the operator's own (João's ruling at gate 2 of PR #56). Both are seeded once per database: on a new one, and on
  *   one written before them at its first boot with them. A database remembers that it got
  *   them in the `seeds_done` table, so a layer or an item the operator deleted later is
  *   never brought back.
  *
  * What these tests prove (with a real SQLite file and a stand-in graphics folder):
  *   - A new database has the layer at z 15 on program, between the bug (10) and the ticker
- *     (20), persistent, out-then-in; and the item after the other items of "Atalhos", on
- *     the logo bug and that layer, its corner, height and opacity at the defaults and no
- *     image.
+ *     (20), persistent, out-then-in; a "Logo" panel after "Atalhos" and "Avisos"; and the
+ *     item as its only button, on the logo bug and that layer, its corner, height and
+ *     opacity at the defaults and no image. "Atalhos" and the rundown stay empty.
  *   - A database written before them, with outputs (the operator's own layers since
- *     BAJAOVRLAY-49), gains both at its next boot, its own layers and items kept, and the
- *     layers and items rows are written; an info line says so.
+ *     BAJAOVRLAY-49), gains all three at its next boot, its own layers, panels and items
+ *     kept (its "Atalhos" button stays alone there), and the layers, panels and items
+ *     rows are written; an info line says so.
  *   - Once the operator deleted them, neither comes back after a restart.
  *   - A database where the operator already put a layer of their own at z 15 gains neither
  *     (the item would have no layer to go on), keeps its layer, and logs a warning naming
@@ -25,7 +27,8 @@
  *
  * What these tests deliberately do not cover:
  *   - The logo bug itself, and the form refusing a take with no image; the graphic's own
- *     tests and apps/control's ItemEditorPanelProblems.test.tsx cover them.
+ *     tests and apps/control's ItemEditorPanelChannelLogo.test.tsx cover them; the server
+ *     refusing the take is ws/takeSeededChannelLogo.test.ts.
  *   - The other layers' seed; outputsAtBoot.test.ts and loadInitialSlicesNewSeededLayer.test.ts.
  */
 import type { Item, Layer } from '@bajaovrlay/shared';
@@ -54,10 +57,10 @@ const seededChannelLogoLayer: Layer = {
   persistent: true,
 };
 
-/** The "Logo do canal" item as the server seeds it, first in an "Atalhos" with no items. */
+/** The "Logo do canal" item as the server seeds it: the one button of the "Logo" panel. */
 const seededChannelLogoItem: Item = {
   id: 'logo-do-canal',
-  home: { kind: 'quickFire', panelId: 'atalhos' },
+  home: { kind: 'quickFire', panelId: 'logo' },
   order: 0,
   graphicId: 'logo-bug',
   layerId: 'channel-logo',
@@ -97,6 +100,7 @@ function openDatabaseOfAServerBeforeTheChannelLogo() {
   const operatorsSponsorButton: Item = {
     ...seededChannelLogoItem,
     id: 'patrocinio-bosch',
+    home: { kind: 'quickFire', panelId: 'atalhos' },
     graphicId: 'sponsor-bug',
     layerId: 'bug',
     label: 'Patrocínio',
@@ -110,6 +114,11 @@ function openDatabaseOfAServerBeforeTheChannelLogo() {
       updatedAt: '2026-11-08T22:10:00.000Z',
     },
     {
+      name: 'quickFirePanels',
+      json: slicesOfTheOldBoot.quickFirePanels.filter((panel) => panel.id !== 'logo'),
+      updatedAt: '2026-11-08T22:10:00.000Z',
+    },
+    {
       name: 'items',
       json: [...itemsBefore, operatorsSponsorButton],
       updatedAt: '2026-11-08T22:10:00.000Z',
@@ -120,7 +129,7 @@ function openDatabaseOfAServerBeforeTheChannelLogo() {
 }
 
 describe('a new database', () => {
-  it('has the layer between the bug and the ticker, and the item with no image in "Atalhos"', () => {
+  it('has the layer between the bug and the ticker, and the item with no image alone in a "Logo" panel', () => {
     // Arrange: an empty database.
     const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
     const { database } = openTemporaryDatabase();
@@ -141,6 +150,24 @@ describe('a new database', () => {
       slices.items.find((item) => item.id === 'logo-do-canal'),
       'the item is seeded with no image, the rest at the defaults',
     ).toEqual(seededChannelLogoItem);
+    expect(
+      slices.quickFirePanels.map((panel) => [panel.id, panel.name, panel.order]),
+      'the "Logo" panel comes after the two seeded before it',
+    ).toEqual([
+      ['atalhos', 'Atalhos', 0],
+      ['avisos', 'Avisos', 1],
+      ['logo', 'Logo', 2],
+    ]);
+    expect(
+      slices.items.filter(
+        (item) => item.home.kind === 'quickFire' && item.home.panelId === 'atalhos',
+      ),
+      '"Atalhos" stays empty, so the operator’s first button is button 1',
+    ).toEqual([]);
+    expect(
+      slices.items.filter((item) => item.home.kind === 'rundown'),
+      'the rundown stays empty, so the operator’s first item gets the cursor',
+    ).toEqual([]);
   });
 });
 
@@ -153,7 +180,8 @@ describe('a database written before the channel logo', () => {
     // Act: boot the updated server on it.
     const slices = loadSlicesAtBoot({ database, graphicPackagesFolder, logger });
 
-    // Assert: the layer in its z-order place, the item after the operator's button, both
+    // Assert: the layer in its z-order place, the panel last, the item alone in it, the
+    // operator's button alone in "Atalhos", the three
     // rows written, and an info line.
     expect(
       slices.layers.map((layer) => [layer.id, layer.zIndex]).slice(0, 3),
@@ -165,13 +193,20 @@ describe('a database written before the channel logo', () => {
     ]);
     expect(
       slices.items
-        .filter((item) => item.home.kind === 'quickFire' && item.home.panelId === 'atalhos')
-        .map((item) => [item.id, item.order]),
-      'the item follows the operator’s own button in "Atalhos"',
+        .filter((item) => item.home.kind === 'quickFire' && item.home.panelId !== 'avisos')
+        .map((item) => [
+          item.id,
+          item.home.kind === 'quickFire' ? item.home.panelId : '',
+          item.order,
+        ]),
+      'the logo goes alone in its own panel; the operator’s button stays alone in "Atalhos"',
     ).toEqual([
-      ['patrocinio-bosch', 0],
-      ['logo-do-canal', 1],
+      ['patrocinio-bosch', 'atalhos', 0],
+      ['logo-do-canal', 'logo', 0],
     ]);
+    expect(slices.quickFirePanels.at(-1), 'the "Logo" panel is added after the last panel').toEqual(
+      { id: 'logo', name: 'Logo', order: 2 },
+    );
     const storedRows = readAllSliceRows(database);
     expect(
       storedRows.find((row) => row.name === 'layers')?.json,
@@ -181,6 +216,10 @@ describe('a database written before the channel logo', () => {
       storedRows.find((row) => row.name === 'items')?.json,
       'the items row is written with the new item',
     ).toEqual(slices.items);
+    expect(
+      storedRows.find((row) => row.name === 'quickFirePanels')?.json,
+      'the panels row is written with the new panel',
+    ).toEqual(slices.quickFirePanels);
     expect(readRecordedLines(), 'an info line says what was seeded').toContainEqual(
       expect.objectContaining({
         level: 'info',

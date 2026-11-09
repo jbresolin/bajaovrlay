@@ -281,7 +281,7 @@ describe('previewItem that must be refused', () => {
       expectedError: {
         code: 'INVALID_GRAPHIC_DATA',
         message:
-          'Dados inválidos para o gráfico "race-clock": o campo "referenceTimeMs" tem um valor que o gráfico não aceita.',
+          'Dados inválidos para o gráfico "race-clock": o campo "Tempo de referência" tem um valor que o gráfico não aceita.',
       },
     },
     // "The moment of the take" asked of a field that is a duration, not a moment.

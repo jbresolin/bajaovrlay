@@ -13,7 +13,10 @@ import '@bajaovrlay/theme/fonts/fonts.css';
 
 import { setUpPreviewControls } from '@bajaovrlay/graphics-kit/previewControls';
 import { choosePreviewStage } from '@bajaovrlay/graphics-kit/previewStage';
-import { screenCorners } from '@bajaovrlay/graphics-kit/screenCornerPosition';
+import {
+  screenCornerNamesInPortuguese,
+  screenCorners,
+} from '@bajaovrlay/graphics-kit/screenCornerPosition';
 
 import LogoBugGraphic from './logo-bug.js';
 import { choosePreviewData } from './previewData.js';
@@ -25,7 +28,7 @@ const { previewStage, addPreviewButton, runActionAndShowAnswer, showProblem, rea
 /** Adds one button per corner; each moves the logo there with an update, on air or off. */
 function addCornerButtons(logoBug: LogoBugGraphic): void {
   for (const corner of screenCorners) {
-    addPreviewButton(ptBR.preview.cornerButton(ptBR.preview.cornerNames[corner]), () => {
+    addPreviewButton(ptBR.preview.cornerButton(screenCornerNamesInPortuguese[corner]), () => {
       const stateAfterUpdate = readPreviewState() === 'offAir' ? 'offAir' : 'onAir';
       void runActionAndShowAnswer(
         'updateAction',

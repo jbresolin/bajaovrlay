@@ -106,6 +106,8 @@ export const ptBR = {
   seededQuickFirePanelName: 'Atalhos',
   // Label of the channel logo item seeded once per database (BAJAOVRLAY-63).
   seededChannelLogoItemLabel: 'Logo do canal',
+  // Name of the quick-fire panel that holds the channel logo item alone (BAJAOVRLAY-63).
+  seededChannelLogoPanelName: 'Logo',
   // Refusals of the rundown and item commands; each goes with a stable code, like
   // commandErrors above. A rundown and an item are named by what the
   // operator reads on screen (name, label) whenever the server has it, and by id when

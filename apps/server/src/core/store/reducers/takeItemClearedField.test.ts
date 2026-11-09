@@ -116,7 +116,7 @@ describe('takeItem of an item whose required field was cleared', () => {
       error: {
         code: 'INVALID_GRAPHIC_DATA',
         message:
-          'Dados inválidos para o gráfico "race-clock": o campo "sessionName" é obrigatório e não foi enviado.',
+          'Dados inválidos para o gráfico "race-clock": o campo "Título" é obrigatório e não foi enviado.',
       },
     });
     expect(slicesBefore, 'a refused take must change nothing').toEqual(copyOfSlicesBefore);

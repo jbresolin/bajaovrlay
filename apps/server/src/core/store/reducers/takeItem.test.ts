@@ -355,7 +355,7 @@ describe('takeItem, when it must be refused', () => {
       error: {
         code: 'INVALID_GRAPHIC_DATA',
         message:
-          'Dados inválidos para o gráfico "race-clock": o campo "referenceTimeMs" tem um valor que o gráfico não aceita.',
+          'Dados inválidos para o gráfico "race-clock": o campo "Tempo de referência" tem um valor que o gráfico não aceita.',
       },
     });
     expect(

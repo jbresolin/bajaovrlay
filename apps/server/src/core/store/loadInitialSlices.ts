@@ -114,7 +114,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     updatedAt,
     options.logger,
   );
-  // The channel logo's layer and item (BAJAOVRLAY-63), once per database (seeds_done).
+  // The channel logo's layer, panel and item (BAJAOVRLAY-63), once per database (seeds_done).
   // Before the graphics are discovered: the logo bug's manifest names the layer, and a
   // graphic whose default layer is unknown falls back to fullscreen.
   const channelLogoSeed = addChannelLogoLayerAndItemOnce({
@@ -194,7 +194,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
       ...quickFireAndMacroSlices.rowsToSaveAtBoot,
       ...dataSourceSlices.rowsToSaveAtBoot,
       ...eventInboxSlices.rowsToSaveAtBoot,
-      // Last, so these rows win over any earlier layers or items row of this boot.
+      // Last, so these rows win over any earlier layers, panels or items row of this boot.
       ...listRowsOfTheChannelLogoSeed(channelLogoSeed, updatedAt),
     ],
     sliceRowNamesToDelete: dataSourceSlices.sliceRowNamesToDeleteAtBoot,
@@ -255,7 +255,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     eventLog,
     rundowns: rundownSlices.rundowns,
     items,
-    quickFirePanels: eventInboxSlices.quickFirePanels,
+    quickFirePanels: channelLogoSeed.quickFirePanels,
     macros: quickFireAndMacroSlices.macros,
     macroRuns: [],
     // Memory only too (BAJAOVRLAY-27): where a run stopped short means nothing after a
@@ -344,6 +344,7 @@ function listRowsOfTheChannelLogoSeed(
   }
   return [
     { name: 'layers', json: channelLogoSeed.layers, updatedAt },
+    { name: 'quickFirePanels', json: channelLogoSeed.quickFirePanels, updatedAt },
     { name: 'items', json: channelLogoSeed.items, updatedAt },
   ];
 }

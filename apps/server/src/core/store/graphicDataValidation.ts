@@ -63,6 +63,28 @@ export function findProblemInGraphicData(
 }
 
 /**
+ * The name a refusal gives a field: its `title` in the manifest when it is a top-level
+ * field that has one (the label the item form shows, "Imagem"), its path otherwise
+ * ("logoUrl", "leader.teamNumber"). A nested field keeps its path, because its title
+ * alone would not say which object it is in.
+ */
+export function nameFieldOfGraphicAsTheFormDoes(graphic: Graphic, fieldPath: string): string {
+  const properties = graphic.manifest.schema?.properties;
+  if (typeof properties !== 'object' || properties === null) {
+    return fieldPath;
+  }
+  const property: unknown = (properties as Record<string, unknown>)[fieldPath];
+  if (typeof property !== 'object' || property === null || !('title' in property)) {
+    return fieldPath;
+  }
+  const title = property.title;
+  if (typeof title !== 'string' || title === '') {
+    return fieldPath;
+  }
+  return title;
+}
+
+/**
  * Says whether the data schema in a graphic's manifest can be used to check data. False
  * means every take and update of the graphic will be refused, so the boot calls this to
  * warn about it before the first take. A manifest with no schema is usable: it accepts

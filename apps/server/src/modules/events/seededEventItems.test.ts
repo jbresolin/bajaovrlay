@@ -87,10 +87,12 @@ describe('the seeded "Avisos" panel', () => {
     // Act: open the store on it.
     const slices = openEventInboxOnTheStore().stateStore.readAllSlices();
 
-    // Assert: the panel after "Atalhos", the two items in it, and the rules wired.
+    // Assert: the panel after "Atalhos" (and before the channel logo's "Logo", seeded
+    // after it), the two items in it, and the rules wired.
     expect(slices.quickFirePanels, 'the panel "Avisos" follows "Atalhos"').toEqual([
       { id: 'atalhos', name: 'Atalhos', order: 0 },
       { id: 'avisos', name: 'Avisos', order: 1 },
+      { id: 'logo', name: 'Logo', order: 2 },
     ]);
     expect(listItemsOfAvisos(slices.items), 'the two notice items, as seeded').toEqual([
       seededFastestLapItem,
@@ -149,11 +151,11 @@ describe('the seeded "Avisos" panel', () => {
     // Act: restart.
     const slices = restartTheServer(inbox).stateStore.readAllSlices();
 
-    // Assert: neither the panel nor the items came back.
+    // Assert: neither the panel nor the items came back; the channel logo's panel stays.
     expect(
       slices.quickFirePanels.map((panel) => panel.id),
       'a deleted panel is not seeded again',
-    ).toEqual(['atalhos']);
+    ).toEqual(['atalhos', 'logo']);
     expect(listItemsOfAvisos(slices.items), 'nor its items').toEqual([]);
   });
 });

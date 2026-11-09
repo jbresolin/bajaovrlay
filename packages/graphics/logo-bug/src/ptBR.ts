@@ -14,9 +14,12 @@ export const ptBR = {
     invalidPlayStep: 'Passo inválido para playAction: o logo tem só o passo 0.',
     unknownCustomAction: (actionId: string) =>
       `Ação personalizada desconhecida: "${actionId}". O logo não tem ações personalizadas.`,
-    /** The answer when the image fails: the operator learns why the corner is empty. */
+    /** The answer when the image fails with no logo before it: the corner stays empty. */
     imageDidNotLoad: (logoUrl: string) =>
       `A imagem do logo não carregou (${logoUrl}); o logo fica vazio. Escolha outra imagem.`,
+    /** The answer when a new image fails: the logo already on screen stays there. */
+    imageDidNotLoadKeepingThePreviousLogo: (logoUrl: string) =>
+      `A imagem do logo não carregou (${logoUrl}); o logo anterior continua na tela. Escolha outra imagem.`,
   },
 
   validationProblems: {
@@ -32,12 +35,6 @@ export const ptBR = {
     playButton: 'Entrar (play)',
     stopButton: 'Sair (stop)',
     cornerButton: (cornerName: string) => `Canto: ${cornerName}`,
-    cornerNames: {
-      'top-left': 'superior esquerdo',
-      'top-right': 'superior direito',
-      'bottom-left': 'inferior esquerdo',
-      'bottom-right': 'inferior direito',
-    },
     unreadableAddressData: 'O parâmetro ?data= do endereço não é um JSON válido.',
     lastAnswer: (actionName: string, statusCode: number, statusMessage: string | undefined) => {
       const statusText = `${actionName}: ${statusCode}`;

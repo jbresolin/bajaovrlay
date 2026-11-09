@@ -10,9 +10,6 @@
  *
  * What these tests prove:
  *   - load draws the logo off air and answers 200; data without the image answers 400.
- *   - An image that fails to load leaves the graphic empty (no image element, so never a
- *     broken-image icon) and answers 422 with a pt-BR message naming the address, at load
- *     and when an update brings a broken image; a later good image fills it again.
  *   - Until the image has arrived it is not shown, so a slow file never flashes half drawn.
  *   - play fades the logo in at step 0 and nothing moves while it is up (no pulse, no
  *     cycling); stop fades it out; play while on air takes it off.
@@ -24,7 +21,8 @@
  *   - Real rendering, the corner on screen and timing; jsdom draws nothing and loads no
  *     image (the tests fire the image's events), and no theme token is on the page, so
  *     every timeline lasts 0 ms. e2e/ runs the built graphic in Chromium.
- *   - The 2 s most that load waits for an image; the kit's waitForImagesToSettle tests.
+ *   - An image that fails, a new image while the old one is up, and fetching again;
+ *     logoBugImages.test.ts covers them.
  */
 import { gsap } from 'gsap';
 import { describe, expect, it } from 'vitest';
@@ -33,7 +31,6 @@ import {
   createChannelLogoData,
   createLogoBugOnThePage,
   findPartOfLogoBug,
-  letTheLogoFail,
   letTheLogoLoad,
   letThePageCatchUp,
   loadLogoBugAndItsLogo,
@@ -95,80 +92,6 @@ describe('load', () => {
     expect(
       findPartOfLogoBug(logoBug, 'logo-bug-image')?.dataset.imageState,
       'an arrived image must be marked loaded',
-    ).toBe('loaded');
-  });
-});
-
-describe('an image that fails to load', () => {
-  it('leaves the graphic empty and answers 422 naming the address, at load', async () => {
-    // Arrange: a logo bug loading an address whose file is gone.
-    const logoBug = createLogoBugOnThePage();
-    const pendingLoad = loadLogoBugWithData(logoBug, {
-      logoUrl: '/media/9c4d2a10-logo-apagado',
-    });
-    await letThePageCatchUp();
-
-    // Act: the browser reports the image as broken.
-    letTheLogoFail(logoBug);
-    const answer = await pendingLoad;
-
-    // Assert: a 422 saying so, and no image element left to show a broken-image icon.
-    expect(answer, 'a broken image must answer 422 with a pt-BR message').toEqual({
-      statusCode: 422,
-      statusMessage:
-        'A imagem do logo não carregou (/media/9c4d2a10-logo-apagado); o logo fica vazio. Escolha outra imagem.',
-    });
-    expect(
-      findPartOfLogoBug(logoBug, 'logo-bug-image'),
-      'a broken image must leave the graphic empty',
-    ).toBeUndefined();
-  });
-
-  it('leaves the graphic empty and answers 422 when an update on air brings a broken image', async () => {
-    // Arrange: the channel's logo on air.
-    const logoBug = createLogoBugOnThePage();
-    await loadLogoBugAndItsLogo(logoBug, createChannelLogoData());
-    await logoBug.playAction({ skipAnimation: true });
-
-    // Act: the operator picks a file that turns out to be broken.
-    const pendingUpdate = logoBug.updateAction({
-      data: { logoUrl: '/media/9c4d2a10-logo-apagado' },
-    });
-    await letThePageCatchUp();
-    letTheLogoFail(logoBug);
-    const answer = await pendingUpdate;
-
-    // Assert: a 422 naming the new address, and the corner is empty.
-    expect(answer, 'a broken image on update must answer 422').toEqual({
-      statusCode: 422,
-      statusMessage:
-        'A imagem do logo não carregou (/media/9c4d2a10-logo-apagado); o logo fica vazio. Escolha outra imagem.',
-    });
-    expect(
-      findPartOfLogoBug(logoBug, 'logo-bug-image'),
-      'a broken image must leave the graphic empty',
-    ).toBeUndefined();
-  });
-
-  it('fills the corner again when a later update brings a good image', async () => {
-    // Arrange: a logo bug whose first image was broken.
-    const logoBug = createLogoBugOnThePage();
-    const pendingLoad = loadLogoBugWithData(logoBug, { logoUrl: '/media/9c4d2a10-logo-apagado' });
-    await letThePageCatchUp();
-    letTheLogoFail(logoBug);
-    await pendingLoad;
-
-    // Act: the operator picks the right file.
-    const pendingUpdate = logoBug.updateAction({ data: createChannelLogoData() });
-    await letThePageCatchUp();
-    letTheLogoLoad(logoBug);
-    const answer = await pendingUpdate;
-
-    // Assert: 200 and the good image is drawn.
-    expect(answer, 'a good image must answer 200').toEqual({ statusCode: 200 });
-    expect(
-      findPartOfLogoBug(logoBug, 'logo-bug-image')?.dataset.imageState,
-      'the good image must be shown',
     ).toBe('loaded');
   });
 });
