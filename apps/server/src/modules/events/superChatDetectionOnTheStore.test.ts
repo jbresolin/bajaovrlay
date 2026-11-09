@@ -59,7 +59,10 @@ function moveToTheStoreClock<Entry extends { publishedAtMs: number }>(
   entry: Entry,
 ): Entry {
   const minutesBeforeInTheSupport = Date.parse('2027-08-14T15:00:00.000Z') - entry.publishedAtMs;
-  return { ...entry, publishedAtMs: inbox.clock.readCurrentTime().getTime() - minutesBeforeInTheSupport };
+  return {
+    ...entry,
+    publishedAtMs: inbox.clock.readCurrentTime().getTime() - minutesBeforeInTheSupport,
+  };
 }
 
 describe('the first poll of a source answering Super Chats', () => {
@@ -88,7 +91,10 @@ describe('the first poll of a source answering Super Chats', () => {
 
     // Act: the next poll adds Família Carnaúba's.
     inbox.clock.letTimePass(30_000);
-    pollSuperChats(inbox, [torcidaPequi, moveToTheStoreClock(inbox, buildSuperChatOfFamiliaCarnauba())]);
+    pollSuperChats(inbox, [
+      torcidaPequi,
+      moveToTheStoreClock(inbox, buildSuperChatOfFamiliaCarnauba()),
+    ]);
 
     // Assert: both listed once each.
     expect(listSuperChatsInTheInbox(inbox), 'each Super Chat must be listed once').toEqual([

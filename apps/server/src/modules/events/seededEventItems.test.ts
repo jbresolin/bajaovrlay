@@ -273,7 +273,9 @@ describe('the seeded "Super Chat" item on a database older than it', () => {
       .prepare("UPDATE slices SET json = ? WHERE name = 'eventRules'")
       .run(
         JSON.stringify(
-          rules.map((rule) => (rule.kind === 'superChat' ? { ...rule, itemId: 'penalidade' } : rule)),
+          rules.map((rule) =>
+            rule.kind === 'superChat' ? { ...rule, itemId: 'penalidade' } : rule,
+          ),
         ),
       );
     database.$client.close();

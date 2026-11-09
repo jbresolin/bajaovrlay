@@ -140,7 +140,9 @@ export function addSeededSuperChatItemToAnOlderDatabase(
     return undefined;
   }
   const ordersInThePanel = items
-    .filter((item) => item.home.kind === 'quickFire' && item.home.panelId === eventsQuickFirePanelId)
+    .filter(
+      (item) => item.home.kind === 'quickFire' && item.home.panelId === eventsQuickFirePanelId,
+    )
     .map((item) => item.order);
   const itemAdded: Item = { ...seededSuperChatItem, order: Math.max(-1, ...ordersInThePanel) + 1 };
   const rulesAfter = eventRules.map((rule) =>

@@ -255,9 +255,14 @@ describe('a pending Super Chat on air', () => {
   it('is refused with "Tomar" on its Prévia until approved, then airs', () => {
     // Arrange: the Produtor previews the pending Super Chat on its item.
     const stateStore = startWithAPendingSuperChatAndPenalty();
-    const itemId = stateStore.readAllSlices().eventRules.find((rule) => rule.kind === 'superChat')
-      ?.itemId;
-    applyOrThrow(stateStore, { type: 'previewItem', itemId, eventId: superChatEventId }, producerActor);
+    const itemId = stateStore
+      .readAllSlices()
+      .eventRules.find((rule) => rule.kind === 'superChat')?.itemId;
+    applyOrThrow(
+      stateStore,
+      { type: 'previewItem', itemId, eventId: superChatEventId },
+      producerActor,
+    );
     const clockLayerId = 'clock';
 
     // Act: "Tomar" before the approval, then Dados approves, then "Tomar" again.

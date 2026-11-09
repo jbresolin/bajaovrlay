@@ -47,7 +47,10 @@ describe('a new Super Chat between two answers', () => {
   it('fires one event with the viewer, the amount and the message, and no car', () => {
     // Arrange: Torcida Pequi's message in both answers, Família Carnaúba's only in the new one.
     const previous = buildSuperChats([buildSuperChatOfTorcidaPequi()]);
-    const next = buildSuperChats([buildSuperChatOfTorcidaPequi(), buildSuperChatOfFamiliaCarnauba()]);
+    const next = buildSuperChats([
+      buildSuperChatOfTorcidaPequi(),
+      buildSuperChatOfFamiliaCarnauba(),
+    ]);
 
     // Act: detect between them.
     const events = detectNewSuperChats(previous, next, moment);

@@ -16,8 +16,8 @@ import { DeleteEntityCommandSchema } from '../entities/deleteEntity.js';
 import { ImportEntitiesCommandSchema } from '../entities/importEntities.js';
 import { UpsertEntityCommandSchema } from '../entities/upsertEntity.js';
 import {
-  CreateManualEventCommandSchema,
   ApproveEventCommandSchema,
+  CreateManualEventCommandSchema,
   DismissEventCommandSchema,
   RecordDetectedEventsCommandSchema,
   RestoreEventCommandSchema,
