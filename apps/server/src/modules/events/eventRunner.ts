@@ -6,6 +6,7 @@ import type { ServerLogger } from '../../core/logger/createLogger.js';
 import { eventInboxActor } from '../../core/store/commandActors.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
 import { readServerTime } from '../../core/time/serverClock.js';
+import { isEventWaiting } from './reducers/inboxEventChanges.js';
 
 /**
  * The theme's --motion-out (packages/theme/ardosia/tokens.css): how long a graphic takes
@@ -203,7 +204,9 @@ export function startEventRunner(options: EventRunnerOptions): EventRunner {
  * whose rule has no max age.
  */
 function findMomentEventExpires(event: InboxEvent, rules: EventRule[]): number | undefined {
-  const isWaiting = event.status === 'pending' || event.status === 'queued';
+  // Approved Super Chats too (gate 2 of PR #54): a maximum wait on their rule shows them
+  // expired on the page, as it does a pending one.
+  const isWaiting = isEventWaiting(event);
   const maxAgeMs = rules.find((rule) => rule.kind === event.kind)?.maxAgeMs;
   if (!isWaiting || maxAgeMs === null || maxAgeMs === undefined) {
     return undefined;

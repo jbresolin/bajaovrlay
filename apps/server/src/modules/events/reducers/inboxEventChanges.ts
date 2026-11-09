@@ -27,12 +27,13 @@ export function isEventWaiting(event: InboxEvent): boolean {
 }
 
 /**
- * True for a Super Chat no person has approved yet (BAJAOVRLAY-35): it may wait, be
- * previewed and be discarded, but never go on air, by "No ar" or by "Tomar" on its Prévia.
- * Every other kind needs no approval.
+ * True for a Super Chat no person has approved (BAJAOVRLAY-35): it may wait, be previewed
+ * and be discarded, but never go on air, by "No ar" or by "Tomar" on its Prévia. Every
+ * other kind needs no approval. Any status but approved counts as not approved (gate 2 of
+ * PR #54), so a queued Super Chat could never pass if the rule schema ever let one be auto.
  */
 export function isSuperChatAwaitingApproval(event: InboxEvent): boolean {
-  return event.kind === 'superChat' && event.status === 'pending';
+  return event.kind === 'superChat' && event.status !== 'approved';
 }
 
 /**
