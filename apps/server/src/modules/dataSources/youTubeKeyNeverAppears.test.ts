@@ -13,13 +13,18 @@
  *   - the fake YouTube did receive the key (so the search below is not vacuous);
  *   - no log line at any level, no slice, no line of the recording and no event-log row
  *     holds `youtube-test-api-key-0001`;
- *   - the source's status shows the quota spent, which is how the operator follows it.
+ *   - the source's status shows the quota spent, which is how the operator follows it;
+ *   - a connection that fails (nothing listening at YouTube's address) leaves the key in
+ *     no log line, slice or event-log row either, and neither does a poll called off while
+ *     its request is in flight, whose error and log lines are searched too (gate 2 of PR #54).
  *   - redactTheKeyInAnAddress replaces the key's value, wherever it is in the address.
  *
  * What these tests deliberately do not cover:
  *   - Each refusal's sentence: adapters/youtubeLiveChat/youTubeLiveChatAdapter.test.ts.
  */
 import { readdirSync, readFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { join } from 'node:path';
 
 import type { DataSource } from '@bajaovrlay/shared';
@@ -32,6 +37,7 @@ import {
   buildChatPage,
   buildGoogleError,
   buildSuperChatOfTorcidaCarnauba,
+  createYouTubeAdapterForTests,
   enduroLiveAddress,
   fakeYouTubeApiKey,
   startFakeYouTube,
@@ -50,6 +56,18 @@ function readTheYouTubeSource(stateStore: StateStore): DataSource {
     throw new Error('the YouTube source must have been made');
   }
   return source;
+}
+
+/**
+ * A YouTube address on 127.0.0.1 where nothing listens: a port a server held a moment ago
+ * and gave back, so a request there fails to connect at once.
+ */
+async function findAYouTubeAddressNothingAnswers(): Promise<string> {
+  const server = createServer();
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address() as AddressInfo;
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  return `http://127.0.0.1:${String(port)}/youtube/v3`;
 }
 
 /** Every line of every recording file under the folder, as one text. */
@@ -151,6 +169,105 @@ describe('the YouTube API key', () => {
       readTheYouTubeSource(stateStore).status.youTubeQuota,
       'the status must show the units spent: a look-up and two reads',
     ).toEqual({ unitsSpentToday: 11, dailyUnitsBudget: 9_000 });
+  });
+});
+
+describe('the YouTube API key when the request does not get through', () => {
+  it('appears nowhere after a connection that fails', async () => {
+    // Arrange: the store and the real poller with the server's adapters, logging every
+    // level, pointed at an address where nothing answers.
+    const youTubeApiBaseUrl = await findAYouTubeAddressNothingAnswers();
+    const { stateStore, recordingsFolder } = startRecorderWatchingAStore();
+    const { logger, readRecordedLines } = createRecordingLogger();
+    const poller = startDataSourcePoller({
+      stateStore,
+      logger,
+      adapters: createDataSourceAdapters({
+        recordingsFolder,
+        logger,
+        readSourceEnvironmentVariable: (variableName) =>
+          variableName === 'BAJAOVRLAY_YOUTUBE_API_KEY' ? fakeYouTubeApiKey : undefined,
+        youTubeApiBaseUrl,
+      }),
+    });
+    onTestFinished(() => poller.stop());
+
+    // Act: make the source and turn it on; its first poll fails to connect.
+    stateStore.applyCommand(
+      {
+        type: 'createDataSource',
+        label: 'YouTube — Enduro ao vivo',
+        kind: 'youtubeLiveChat',
+        config: { liveAddress: enduroLiveAddress },
+        pollIntervalMs: 30_000,
+      },
+      operatorActor,
+    );
+    const sourceId = readTheYouTubeSource(stateStore).id;
+    stateStore.applyCommand(
+      { type: 'setDataSourceEnabled', sourceId, isEnabled: true },
+      operatorActor,
+    );
+    await vi.waitFor(
+      () => {
+        expect(readTheYouTubeSource(stateStore).status.lastError).not.toBeNull();
+      },
+      { timeout: 5_000, interval: 20 },
+    );
+
+    // Assert: the operator reads "no connection", and no log, slice or row holds the key.
+    expect(
+      readTheYouTubeSource(stateStore).status.lastError,
+      'a failed connection reads as such',
+    ).toBe('Sem conexão com o YouTube.');
+    expect(JSON.stringify(readRecordedLines()), 'no log line may hold the key').not.toContain(
+      fakeYouTubeApiKey,
+    );
+    expect(
+      JSON.stringify(stateStore.readAllSlices()),
+      'no slice, the event log included, may hold the key',
+    ).not.toContain(fakeYouTubeApiKey);
+  });
+
+  it('appears nowhere after a poll called off while its request is in flight', async () => {
+    // Arrange: a fake YouTube whose chat never answers, and the adapter logging every level.
+    const fakeYouTube = await startFakeYouTube();
+    fakeYouTube.neverAnswerTheChat();
+    const { logger, readRecordedLines } = createRecordingLogger();
+    const adapter = createYouTubeAdapterForTests({ fakeYouTube, logger });
+    const abortController = new AbortController();
+
+    // Act: poll, and call the poll off once the chat read has gone out.
+    const polling = adapter.pollOnce(
+      { liveAddress: enduroLiveAddress },
+      {
+        readCurrentTime: () => new Date('2026-10-10T15:02:30.000Z'),
+        signal: abortController.signal,
+      },
+    );
+    await vi.waitFor(
+      () => {
+        const paths = fakeYouTube.readRequestsReceived().map((request) => request.path);
+        expect(paths).toContain('/youtube/v3/liveChat/messages');
+      },
+      { timeout: 5_000, interval: 20 },
+    );
+    abortController.abort();
+    const abortError: unknown = await polling.then(
+      () => undefined,
+      (pollError: unknown) => pollError,
+    );
+
+    // Assert: the poll was called off, and neither its error nor any log line holds the key.
+    expect(abortError, 'the poll must stop when its signal fires').toBeInstanceOf(Error);
+    const errorText =
+      abortError instanceof Error ? `${abortError.message} ${abortError.stack ?? ''}` : '';
+    expect(errorText, 'the error of a poll called off may not hold the key').not.toContain(
+      fakeYouTubeApiKey,
+    );
+    expect(JSON.stringify(readRecordedLines()), 'no log line may hold the key').not.toContain(
+      fakeYouTubeApiKey,
+    );
   });
 });
 
