@@ -36,6 +36,13 @@
       "when": 1794632400000,
       "tag": "0004_hash_operator_session_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1794187877688,
+      "tag": "0005_add_seeds_done",
+      "breakpoints": true
     }
   ]
 }

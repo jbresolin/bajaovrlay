@@ -92,6 +92,7 @@ export const ptBR = {
   // Names of the layers seeded on the first boot, as the operator sees them.
   seededLayerNames: {
     bug: 'Logo',
+    channelLogo: 'Logo do canal',
     ticker: 'Letreiro',
     clock: 'Relógio',
     tower: 'Torre',
@@ -103,6 +104,8 @@ export const ptBR = {
   seededRundownName: 'Sessão principal',
   // Name of the one quick-fire panel seeded on the first boot, as the operator sees it.
   seededQuickFirePanelName: 'Atalhos',
+  // Label of the channel logo item seeded once per database (BAJAOVRLAY-63).
+  seededChannelLogoItemLabel: 'Logo do canal',
   // Refusals of the rundown and item commands; each goes with a stable code, like
   // commandErrors above. A rundown and an item are named by what the
   // operator reads on screen (name, label) whenever the server has it, and by id when

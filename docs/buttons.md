@@ -178,8 +178,8 @@ curl -s $BAJA/state | jq -r '.macros[] | "\(.id)  \(.label)"'
 curl -s $BAJA/state | jq -r '.layers[] | "\(.id)  \(.outputId)  \(.name)"'
 ```
 
-A new database seeds the program output's layers as `bug`, `ticker`, `clock`, `tower`,
-`lower-third`, `notice` and `fullscreen`. An item's id never changes while the item exists; a
+A new database seeds the program output's layers as `bug`, `channel-logo`, `ticker`, `clock`,
+`tower`, `lower-third`, `notice` and `fullscreen`. An item's id never changes while the item exists; a
 deleted and recreated item gets a new one, and its button must be edited.
 
 ## 6. Make the buttons
@@ -211,7 +211,9 @@ Buttons are counted from 1 in the panel's order, as the digit keys 1–9 count t
 stop at nine). The seeded panel "Atalhos" has the id `atalhos`; the ids of other panels are in
 `curl -s $BAJA/state | jq -r '.quickFirePanels[] | "\(.id)  \(.name)"'`. A panel that does not
 exist, or a number past its last button, answers 422 with the reason in pt-BR. Moving a button
-on the page moves what its number fires, as with the digit keys.
+on the page moves what its number fires, as with the digit keys. A new database starts with one
+button in "Atalhos", "Logo do canal" (BAJAOVRLAY-63), so the first button you add is number 2;
+delete it, or move it to the end, if you would rather number yours from 1.
 
 ### "Limpar tudo"
 

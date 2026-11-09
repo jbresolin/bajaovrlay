@@ -21,6 +21,7 @@ import { writeBootRows } from '../db/bootRowStorage.js';
 import { readAllDataSnapshotRows } from '../db/dataSnapshotRowStorage.js';
 import { readNewestEventLogRows } from '../db/eventLogRowStorage.js';
 import type { ServerDatabase } from '../db/openDatabase.js';
+import { readSeedNamesDone } from '../db/seedDoneRowStorage.js';
 import { readAllSliceRows } from '../db/sliceRowStorage.js';
 import type { SliceRow } from '../db/tables.js';
 import { convertEventLogRowToEntry } from '../events/eventLogRowConversion.js';
@@ -32,6 +33,11 @@ import { loadOrSeedRundownSlices } from './loadRundownSlices.js';
 import { forgetChangesThatCannotComeBack } from './programHistory/forgetChangesThatCannotComeBack.js';
 import { bringStepsWithinTheirCount } from './reducers/instanceStepsWithinTheirCount.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
+import {
+  addChannelLogoLayerAndItemOnce,
+  channelLogoSeedName,
+  type ChannelLogoSeedOutcome,
+} from './seedChannelLogo.js';
 
 /** What loadInitialSlices needs: the open database, the graphics folder and a clock. */
 export type LoadInitialSlicesOptions = {
@@ -80,9 +86,49 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     options.logger,
   );
   const operatorSlices = isFirstBoot ? { instances: [] } : readStoredOperatorSlices(storedRows);
+  // Rundowns and items are loaded, or seeded when their row is missing (a first boot,
+  // or a database written before they existed); see loadRundownSlices.ts.
+  const rundownSlices = loadOrSeedRundownSlices(storedRows, updatedAt, options.logger);
+  const quickFireAndMacroSlices = loadOrSeedQuickFireAndMacroSlices(
+    storedRows,
+    updatedAt,
+    options.logger,
+  );
+  // Data sources and their snapshots are loaded, the simulator seeded when there is no
+  // source, and every source that was on comes back stale (modules/dataSources). The
+  // snapshots come one row per source from their own table; a legacy single row of them
+  // is split there, once.
+  const dataSourceSlices = loadOrSeedDataSourceSlices(
+    storedRows,
+    readAllDataSnapshotRows(options.database),
+    updatedAt,
+    options.logger,
+  );
+  // The event inbox's events and rules (BAJAOVRLAY-44): loaded, the rules seeded when
+  // their row is missing; see modules/events/loadEventInboxSlices.ts.
+  // Seeding the rules also seeds the "Avisos" panel and its two items, once per database,
+  // so the panels and items go through it.
+  const eventInboxSlices = loadOrSeedEventInboxSlices(
+    storedRows,
+    { quickFirePanels: quickFireAndMacroSlices.quickFirePanels, items: rundownSlices.items },
+    updatedAt,
+    options.logger,
+  );
+  // The channel logo's layer and item (BAJAOVRLAY-63), once per database (seeds_done).
+  // Before the graphics are discovered: the logo bug's manifest names the layer, and a
+  // graphic whose default layer is unknown falls back to fullscreen.
+  const channelLogoSeed = addChannelLogoLayerAndItemOnce({
+    seedNamesDone: readSeedNamesDone(options.database),
+    layers: outputAndLayerSlices.layers,
+    quickFirePanels: eventInboxSlices.quickFirePanels,
+    items: eventInboxSlices.items,
+  });
+  logChannelLogoSeed(channelLogoSeed, options.logger);
+  const layers = channelLogoSeed.layers;
+  const items = channelLogoSeed.items;
   const graphics = discoverBuiltGraphics({
     graphicPackagesFolder: options.graphicPackagesFolder,
-    existingLayerIds: outputAndLayerSlices.layers.map((layer) => layer.id),
+    existingLayerIds: layers.map((layer) => layer.id),
     logger: options.logger,
   });
 
@@ -135,34 +181,6 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   if (instanceBindingsAtBoot.wasAnyEntryDropped) {
     rowsOfALaterBoot.push(instanceBindingsRow);
   }
-  // Rundowns and items are loaded, or seeded when their row is missing (a first boot,
-  // or a database written before they existed); see loadRundownSlices.ts.
-  const rundownSlices = loadOrSeedRundownSlices(storedRows, updatedAt, options.logger);
-  const quickFireAndMacroSlices = loadOrSeedQuickFireAndMacroSlices(
-    storedRows,
-    updatedAt,
-    options.logger,
-  );
-  // Data sources and their snapshots are loaded, the simulator seeded when there is no
-  // source, and every source that was on comes back stale (modules/dataSources). The
-  // snapshots come one row per source from their own table; a legacy single row of them
-  // is split there, once.
-  const dataSourceSlices = loadOrSeedDataSourceSlices(
-    storedRows,
-    readAllDataSnapshotRows(options.database),
-    updatedAt,
-    options.logger,
-  );
-  // The event inbox's events and rules (BAJAOVRLAY-44): loaded, the rules seeded when
-  // their row is missing; see modules/events/loadEventInboxSlices.ts.
-  // Seeding the rules also seeds the "Avisos" panel and its two items, once per database,
-  // so the panels and items go through it.
-  const eventInboxSlices = loadOrSeedEventInboxSlices(
-    storedRows,
-    { quickFirePanels: quickFireAndMacroSlices.quickFirePanels, items: rundownSlices.items },
-    updatedAt,
-    options.logger,
-  );
   const eventsAtBoot = markEventsOnAirAsShownAtBoot(eventInboxSlices.events, updatedAt);
   if (eventsAtBoot.wereAnyMarked) {
     rowsOfALaterBoot.push({ name: 'events', json: eventsAtBoot.events, updatedAt });
@@ -176,9 +194,13 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
       ...quickFireAndMacroSlices.rowsToSaveAtBoot,
       ...dataSourceSlices.rowsToSaveAtBoot,
       ...eventInboxSlices.rowsToSaveAtBoot,
+      // Last, so these rows win over any earlier layers or items row of this boot.
+      ...listRowsOfTheChannelLogoSeed(channelLogoSeed, updatedAt),
     ],
     sliceRowNamesToDelete: dataSourceSlices.sliceRowNamesToDeleteAtBoot,
     dataSnapshotRowChanges: dataSourceSlices.dataSnapshotRowChangesAtBoot,
+    seedNamesDone: channelLogoSeed.isSeedApplied ? [channelLogoSeedName] : [],
+    bootedAt: updatedAt,
   });
   if (isFirstBoot) {
     options.logger.info('empty database seeded with the program output and its layers');
@@ -209,7 +231,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   );
   return {
     outputs: outputAndLayerSlices.outputs,
-    layers: outputAndLayerSlices.layers,
+    layers,
     graphics,
     instances: instancesWithinTheirSteps.instances,
     // The "will be cleared" markers are never stored, like the macro runs: every boot
@@ -227,12 +249,12 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
       SlicesSchema.shape.programHistory.parse(
         storedRows.find((row) => row.name === 'programHistory')?.json ?? [],
       ),
-      eventInboxSlices.items,
+      items,
       graphics,
     ),
     eventLog,
     rundowns: rundownSlices.rundowns,
-    items: eventInboxSlices.items,
+    items,
     quickFirePanels: eventInboxSlices.quickFirePanels,
     macros: quickFireAndMacroSlices.macros,
     macroRuns: [],
@@ -307,4 +329,36 @@ function readInstanceBindingsKeptAcrossTheRestart(
 function readStoredOperatorSlices(storedRows: SliceRow[]): OperatorSlices {
   const instancesRow = storedRows.find((row) => row.name === 'instances');
   return { instances: SlicesSchema.shape.instances.parse(instancesRow?.json ?? []) };
+}
+
+/**
+ * The layers and items rows the channel logo's seed must write: both when it was applied
+ * (one of them may be unchanged, which costs one row), none otherwise.
+ */
+function listRowsOfTheChannelLogoSeed(
+  channelLogoSeed: ChannelLogoSeedOutcome,
+  updatedAt: string,
+): SliceRow[] {
+  if (!channelLogoSeed.isSeedApplied) {
+    return [];
+  }
+  return [
+    { name: 'layers', json: channelLogoSeed.layers, updatedAt },
+    { name: 'items', json: channelLogoSeed.items, updatedAt },
+  ];
+}
+
+/** Says in the log what the channel logo's seed did, when it ran at this boot. */
+function logChannelLogoSeed(channelLogoSeed: ChannelLogoSeedOutcome, logger: ServerLogger): void {
+  if (!channelLogoSeed.isSeedApplied) {
+    return;
+  }
+  if (channelLogoSeed.zIndexTakenByTheOperator !== undefined) {
+    logger.warn(
+      { z_index: channelLogoSeed.zIndexTakenByTheOperator },
+      'the "Logo do canal" layer and item were not seeded: a layer of the operator holds their height',
+    );
+    return;
+  }
+  logger.info('seeded the "Logo do canal" layer and item');
 }

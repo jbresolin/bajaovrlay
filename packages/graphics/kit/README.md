@@ -47,6 +47,7 @@ src/boardStyles.ts                       the narrow boards' frame (--board-width
 src/boardMotion.ts                       the boards' rise (each piece at its own start) and the crossfade of a state
 src/clockCardStyles.ts                   the clock card's frame, head and body: the race clock's and the countdown card's
 src/bugCardStyles.ts                     the bug's card: the sponsor bug's and the sponsor roll's corner card
+src/screenCornerPosition.ts              the four screen corners and their safe-area offsets as CSS (logo bug; roll, match bug next)
 src/pointsText.ts                        a score as the boards write it ("921,8", "−15"): the standings' and the intermission's
 src/standingsRowStyles.ts                a standings row's pill and cells: the standings' and the intermission's top five
 src/wideBoardHead.ts                     the wide boards' head card (standings, podium): markup, parts, writer

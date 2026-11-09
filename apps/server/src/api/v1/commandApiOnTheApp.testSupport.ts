@@ -143,9 +143,12 @@ export type RaceDayOnTheStore = {
 /**
  * Prepares the race day on a store, as the operator would on the control page: two clock
  * items and the podium, the cursor on the enduro clock, and the macro "Abrir a sessão".
- * Throws when the store refuses a step, so a broken Arrange fails loudly.
+ * First the seeded "Logo do canal" button is deleted (BAJAOVRLAY-63; YouTube shows the
+ * channel's own logo, so it goes unused here), so "Atalhos" holds the day's buttons alone,
+ * numbered from 1. Throws when the store refuses a step, so a broken Arrange fails loudly.
  */
 export function prepareTheRaceDay(stateStore: StateStore): RaceDayOnTheStore {
+  applyOrThrow(stateStore, { type: 'deleteItem', itemId: 'logo-do-canal' });
   const enduroClockItemId = createRaceClockItemOnTheStore(stateStore);
   const cornerClockItemId = createRaceClockItemOnTheStore(stateStore, {
     label: 'Relógio no canto',

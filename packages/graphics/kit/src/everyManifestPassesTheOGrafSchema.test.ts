@@ -97,6 +97,7 @@ describe('the manifests under packages/graphics', () => {
       join('bracket', 'bracket.ograf.json'),
       join('countdown', 'countdown.ograf.json'),
       join('intermission-board', 'intermission-board.ograf.json'),
+      join('logo-bug', 'logo-bug.ograf.json'),
       join('lower-strip', 'lower-strip.ograf.json'),
       join('lower-third', 'lower-third.ograf.json'),
       join('message-ticker', 'message-ticker.ograf.json'),

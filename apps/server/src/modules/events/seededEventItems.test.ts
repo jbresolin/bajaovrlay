@@ -34,6 +34,11 @@ import {
   restartTheServer,
 } from './eventInboxOnTheStore.testSupport.js';
 
+/** The items in the "Avisos" panel (Atalhos has its own seeded "Logo do canal"). */
+function listItemsOfAvisos(items: Item[]): Item[] {
+  return items.filter((item) => item.home.kind === 'quickFire' && item.home.panelId === 'avisos');
+}
+
 /** The "Volta mais rápida" item as the server seeds it. */
 const seededFastestLapItem: Item = {
   id: 'volta-mais-rapida',
@@ -87,10 +92,10 @@ describe('the seeded "Avisos" panel', () => {
       { id: 'atalhos', name: 'Atalhos', order: 0 },
       { id: 'avisos', name: 'Avisos', order: 1 },
     ]);
-    expect(
-      slices.items.filter((item) => item.home.kind === 'quickFire'),
-      'the two notice items, as seeded',
-    ).toEqual([seededFastestLapItem, seededPenaltyItem]);
+    expect(listItemsOfAvisos(slices.items), 'the two notice items, as seeded').toEqual([
+      seededFastestLapItem,
+      seededPenaltyItem,
+    ]);
     expect(
       slices.eventRules.map((rule) => [rule.kind, rule.itemId]),
       'fastest laps, incidents and manual events have their item',
@@ -149,9 +154,6 @@ describe('the seeded "Avisos" panel', () => {
       slices.quickFirePanels.map((panel) => panel.id),
       'a deleted panel is not seeded again',
     ).toEqual(['atalhos']);
-    expect(
-      slices.items.filter((item) => item.home.kind === 'quickFire'),
-      'nor its items',
-    ).toEqual([]);
+    expect(listItemsOfAvisos(slices.items), 'nor its items').toEqual([]);
   });
 });
