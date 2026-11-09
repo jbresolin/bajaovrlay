@@ -18,7 +18,9 @@
  *     "Super Chat" item on the super-chat graphic, BAJAOVRLAY-35).
  *   - A database whose Super Chat rule still has no item gets the "Super Chat" item and the
  *     rule naming it, once; one whose operator chose another item, or chose none and kept
- *     the item, keeps that choice; one whose panel "Avisos" was deleted gets nothing.
+ *     the item, keeps that choice; one whose panel "Avisos" was deleted gets nothing; and
+ *     an operator who deletes the item and clears the rule never gets it back (gate 2 of
+ *     PR #54: the seed is remembered in its own row).
  *   - A database written before the inbox gets the panel, the items and the rules at its
  *     next boot, its own panels and items kept.
  *   - Once deleted by the operator, the panel and its items stay deleted after a restart.
@@ -104,7 +106,7 @@ const seededSuperChatItem: Item = {
 
 /**
  * Rewrites a closed database as one written before BAJAOVRLAY-35: the Super Chat rule with
- * no item and no "Super Chat" item, the rest as seeded.
+ * no item, no "Super Chat" item and no row remembering its seed, the rest as seeded.
  */
 function makeTheDatabaseOlderThanSuperChats(databasePath: string): void {
   const database = openDatabaseForTests(databasePath);
@@ -131,6 +133,8 @@ function makeTheDatabaseOlderThanSuperChats(databasePath: string): void {
     'items',
     items.filter((item) => item.id !== 'super-chat'),
   );
+  // Nor the row that remembers the seed was considered (gate 2 of PR #54).
+  database.$client.prepare("DELETE FROM slices WHERE name = 'eventInboxSeedsApplied'").run();
   database.$client.close();
 }
 
@@ -254,6 +258,30 @@ describe('the seeded "Super Chat" item on a database older than it', () => {
       slices.items.some((item) => item.id === 'super-chat'),
       'the item stays where it was',
     ).toBe(true);
+  });
+
+  it('is added once: an operator who deleted it and cleared the rule never gets it back', () => {
+    // Arrange: an older database gets the item at its boot; the operator then deletes it
+    // and sets the Super Chat rule to no item.
+    const inboxBefore = openEventInboxOnTheStore();
+    inboxBefore.shutDown();
+    makeTheDatabaseOlderThanSuperChats(inboxBefore.databasePath);
+    const inbox = openEventInboxOnTheStore(inboxBefore);
+    applyOrThrow(inbox.stateStore, { type: 'deleteItem', itemId: 'super-chat' });
+    applyOrThrow(inbox.stateStore, { type: 'updateEventRule', kind: 'superChat', itemId: null });
+
+    // Act: restart.
+    const slices = restartTheServer(inbox).stateStore.readAllSlices();
+
+    // Assert: neither the item nor the rule's item came back.
+    expect(
+      slices.items.some((item) => item.id === 'super-chat'),
+      'a seed the operator undid must not come back',
+    ).toBe(false);
+    expect(
+      slices.eventRules.find((rule) => rule.kind === 'superChat')?.itemId,
+      'the rule keeps the operator’s "no item"',
+    ).toBeNull();
   });
 
   it('leaves alone a rule whose operator chose another item', () => {

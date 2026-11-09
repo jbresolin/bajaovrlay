@@ -163,6 +163,8 @@ describe('the rundowns and items on a database written before they existed (M0)'
       dataSources: '2026-10-09T08:00:00.000Z',
       // The default event rules, seeded at the first boot too (BAJAOVRLAY-44).
       eventRules: '2026-10-09T08:00:00.000Z',
+      // The inbox's one-time seeds remembered, at the first boot too (BAJAOVRLAY-35).
+      eventInboxSeedsApplied: '2026-10-09T08:00:00.000Z',
     });
   });
 });

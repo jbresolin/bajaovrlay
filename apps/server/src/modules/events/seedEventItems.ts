@@ -120,12 +120,11 @@ export function addSeededEventPanelAndItems(
  * The items and rules of a database seeded before BAJAOVRLAY-35, with the "Super Chat" item
  * added to "Avisos" (after its last item) and the Super Chat rule naming it, or undefined
  * when nothing is to change. Added only when the rule still has no item and no item of its
- * id exists: a rule whose operator chose another item keeps it, and so does one set to no
- * item after the seed (the item is still there), so it is added once. Not added either when
- * the operator deleted "Avisos": a deleted panel is never brought back for it.
- * What could go wrong: an operator who deletes the item and then sets the rule to no item
- * gets it back at the next boot; deleting the item alone leaves the rule naming it, and
- * that is never re-seeded.
+ * id exists: a rule whose operator chose another item keeps it. Not added either when the
+ * operator deleted "Avisos": a deleted panel is never brought back for it. Called once per
+ * database: the boot remembers it in the row eventInboxSeedsApplied
+ * (loadEventInboxSlices.ts), so an operator who later deletes the item and clears the rule
+ * never gets it back.
  */
 export function addSeededSuperChatItemToAnOlderDatabase(
   eventRules: EventRule[],
