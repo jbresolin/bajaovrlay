@@ -18,6 +18,10 @@
  *   - The band toggle animates the card's height between the two heights it is given
  *     and leaves no inline height behind once it ends, so the styles own the height
  *     again.
+ *   - The band toggle writes its starting look (the card's height, the band's opacity)
+ *     the moment it is built, even when GSAP would rather wait for its next render: built
+ *     between a GSAP frame and that frame's render, the card already reads 192 px. Under
+ *     load a test landed in that gap by chance and read '' (BAJAOVRLAY-68).
  *   - The band toggle runs on `--ease-out` whether the band comes on or goes, like the
  *     flag crossfade (the design's motion.md: a flag change settles, it is not a piece
  *     leaving on `--ease-in`).
@@ -81,6 +85,26 @@ function createAnimatedElementsInAnEmptyPage(): RaceClockAnimatedElements {
   document.body.append(panel);
   onTestFinished(() => panel.remove());
   return { panel, flagBand, incomingFlagLayer };
+}
+
+/**
+ * Runs `callback` between a GSAP frame and that frame's render: the ticker has counted a
+ * new frame, but GSAP has not yet rendered its root timeline for it. In that gap GSAP
+ * holds back the first render of a new tween ("lazy" rendering) until the root renders.
+ * A listener added with `prioritize` runs before GSAP's own root render, and ticking by
+ * hand makes the frame happen now, so the gap is reached every time, not just under load.
+ */
+function runBetweenAGsapFrameAndItsRender(callback: () => void): void {
+  const runOnEveryFrame = false;
+  const runBeforeGsapRendersTheFrame = true;
+  gsap.ticker.add(callback, runOnEveryFrame, runBeforeGsapRendersTheFrame);
+  try {
+    gsap.ticker.tick();
+  } finally {
+    // Removed here rather than with GSAP's run-once flag, which would leave the listener
+    // running on every frame after a callback that threw.
+    gsap.ticker.remove(callback);
+  }
 }
 
 /** The card's heights with and without the band, as Ardósia draws them: 192 and 152 px. */
@@ -183,6 +207,39 @@ describe('the flag-band toggle', () => {
       'half way the card must be between the two heights',
     ).toBeGreaterThan(cardHeightWithoutBandPx);
     expect(inlineHeightAfterTheEnd, 'the toggle must leave no inline height behind').toBe('');
+  });
+
+  it('starts the card at its height with the band the moment the toggle is built, even between a GSAP frame and its render', () => {
+    // Arrange: the tokens on :root and the card at 192 px with the band, the band about
+    // to go.
+    placeArdosiaMotionTokensOnTheRoot();
+    const animatedElements = createAnimatedElementsInAnEmptyPage();
+    let inlineHeightAtStart = 'not read yet';
+    let bandOpacityAtStart = 'not read yet';
+
+    // Act: in the gap where GSAP would rather wait, build the toggle and at once note the
+    // card's inline height and the band's opacity, before GSAP gets to render anything.
+    runBetweenAGsapFrameAndItsRender(() => {
+      const timeline = buildFlagBandToggleTimeline(animatedElements, {
+        heightBeforePx: cardHeightWithBandPx,
+        heightAfterPx: cardHeightWithoutBandPx,
+        isShowing: false,
+      });
+      inlineHeightAtStart = animatedElements.panel.style.height;
+      bandOpacityAtStart = animatedElements.flagBand.style.opacity;
+      timeline.kill();
+    });
+
+    // Assert: both start values are already written: the card is 192 px tall and the band
+    // fully shown, so nothing can catch the card at the height the styles now give it.
+    expect(
+      inlineHeightAtStart,
+      'the toggle must write the height with the band as soon as it is built',
+    ).toBe(`${cardHeightWithBandPx}px`);
+    expect(
+      bandOpacityAtStart,
+      'the toggle must write the band fully shown as soon as it is built',
+    ).toBe('1');
   });
 
   const bandToggleDirections = [

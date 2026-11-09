@@ -91,13 +91,24 @@ export function buildFlagBandToggleTimeline(
   const durationInSeconds = motion.flagMs / 1000;
   const ease = gsapEaseOfToken(motion.easeOut);
   const timeline = gsap.timeline({ paused: true });
+  // lazy: false writes the starting height the moment the tween is built. Left lazy,
+  // GSAP may hold it back until its next render (when its ticker has counted a frame it
+  // has not rendered yet), and until then the card stands at the height the styles
+  // already give it after the switch: a test read '' there under load (BAJAOVRLAY-68).
   timeline.fromTo(
     elements.panel,
     { height: toggle.heightBeforePx },
-    { height: toggle.heightAfterPx, duration: durationInSeconds, ease, clearProps: 'height' },
+    {
+      height: toggle.heightAfterPx,
+      duration: durationInSeconds,
+      ease,
+      clearProps: 'height',
+      lazy: false,
+    },
   );
   // autoAlpha sets visibility along with opacity, so a band fading out is also hidden
   // from the page once invisible, and a band fading in is visible from its first frame.
+  // lazy: false for the same reason as the height: the band's start goes with it.
   timeline.fromTo(
     elements.flagBand,
     { autoAlpha: toggle.isShowing ? 0 : 1 },
@@ -106,6 +117,7 @@ export function buildFlagBandToggleTimeline(
       duration: durationInSeconds,
       ease,
       clearProps: 'opacity,visibility',
+      lazy: false,
     },
     0,
   );
