@@ -5,6 +5,7 @@ import type { EventRule, InboxEvent, Slices } from '@bajaovrlay/shared';
 import type { ServerLogger } from '../../core/logger/createLogger.js';
 import { eventInboxActor } from '../../core/store/commandActors.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
+import { readServerTime } from '../../core/time/serverClock.js';
 
 /**
  * The theme's --motion-out (packages/theme/ardosia/tokens.css): how long a graphic takes
@@ -51,7 +52,7 @@ export type EventRunner = { stop: () => void };
  */
 export function startEventRunner(options: EventRunnerOptions): EventRunner {
   const { stateStore, logger } = options;
-  const readCurrentTime = options.readCurrentTime ?? (() => new Date());
+  const readCurrentTime = options.readCurrentTime ?? readServerTime;
   const startTimer = options.startTimer ?? startNodeTimer;
   const cancelTimer = options.cancelTimer ?? cancelNodeTimer;
   const emptiedAtMsByLayerId = new Map<string, number>();

@@ -60,6 +60,7 @@ try {
         ? undefined
         : { url: environment.BAJAOVRLAY_OBS_URL, password: environment.BAJAOVRLAY_OBS_PASSWORD },
     operatorPins: environment.operatorPins,
+    ntpSettings: environment.BAJAOVRLAY_NTP_SERVERS,
     controlPageFolder,
     rendererPageFolder,
     buildIdFileUrl,

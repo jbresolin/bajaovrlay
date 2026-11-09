@@ -5,7 +5,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import type { SliceName, Slices } from '@bajaovrlay/shared';
+import type { CommandResultMessage, SliceName, Slices } from '@bajaovrlay/shared';
 
 import { parseApiTokens } from '../../core/apiAccess/apiTokens.js';
 import { writeSliceRows } from '../../core/db/sliceRowStorage.js';
@@ -189,13 +189,21 @@ export function applyOrThrow(stateStore: StateStore, command: Record<string, unk
  * Sends one command as the control page does, over the WebSocket protocol (the same
  * handler the hub calls for each message), and returns the commandResult it answers.
  */
-export function sendCommandOverTheWebSocket(stateStore: StateStore, command: unknown) {
-  return answerClientMessage({
+export function sendCommandOverTheWebSocket(
+  stateStore: StateStore,
+  command: unknown,
+): CommandResultMessage {
+  const answer = answerClientMessage({
     messageText: JSON.stringify({ type: 'command', requestId: 'tomar-1', command }),
     stateStore,
     actor: operatorActor,
     logger: createLogger({ level: 'silent' }),
   });
+  // A command is always answered with a commandResult; only a clockProbe is not.
+  if (answer.type !== 'commandResult') {
+    throw new Error(`A command was answered with ${answer.type}.`);
+  }
+  return answer;
 }
 
 /**

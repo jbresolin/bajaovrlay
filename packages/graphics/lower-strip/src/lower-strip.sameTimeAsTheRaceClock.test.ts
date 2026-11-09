@@ -19,7 +19,11 @@
  *   - Two graphics in the real renderer; the control page's e2e walk shows both on air.
  */
 import RaceClockGraphic from '@bajaovrlay/race-clock/src/race-clock';
-import { forgetServerClockSamples, recordServerClockSample } from '@bajaovrlay/shared/clock';
+import {
+  forgetTheServerClockAlignment,
+  lineUpWithTheServerClockAt,
+  readThisMachineMonotonicTimeMs,
+} from '@bajaovrlay/shared/clock';
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import type LowerStripGraphic from './lower-strip.js';
@@ -53,7 +57,7 @@ function createRaceClockDataForTheSameReading(
  */
 function takeControlOfFramesAndTime() {
   vi.useFakeTimers({ toFake: ['Date'] });
-  forgetServerClockSamples();
+  forgetTheServerClockAlignment();
   const pendingCallbacks = new Map<number, FrameRequestCallback>();
   let lastFrameId = 0;
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
@@ -63,7 +67,7 @@ function takeControlOfFramesAndTime() {
   });
   vi.stubGlobal('cancelAnimationFrame', (frameId: number) => pendingCallbacks.delete(frameId));
   onTestFinished(() => {
-    forgetServerClockSamples();
+    forgetTheServerClockAlignment();
     vi.useRealTimers();
     vi.unstubAllGlobals();
   });
@@ -143,7 +147,7 @@ describe('the strip’s clock block beside the race clock', () => {
     const framesAndTime = takeControlOfFramesAndTime();
     const serverTimeMs = twoInTheAfternoonMs + 10_000;
     vi.setSystemTime(serverTimeMs - 2300);
-    recordServerClockSample(serverTimeMs, Date.now());
+    lineUpWithTheServerClockAt(serverTimeMs, readThisMachineMonotonicTimeMs());
     const stripData = { ...createRealEnduroStripData(), running: true };
     const lowerStrip = createLowerStripOnThePage();
     const raceClock = createRaceClockOnThePage();

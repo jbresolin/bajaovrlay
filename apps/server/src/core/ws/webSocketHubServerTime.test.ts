@@ -150,6 +150,7 @@ describe('the time message of the hub', () => {
     const timeMessageOfTenSeconds = {
       type: 'time',
       serverNowMs: momentTheServerClockStartsAtInMilliseconds + 10_000,
+      serverClockStepCount: expect.any(Number),
     };
     expect(
       [readTimeMessagesReceivedBy(controlPage), readTimeMessagesReceivedBy(renderer)],
@@ -172,8 +173,16 @@ describe('the time message of the hub', () => {
       readTimeMessagesReceivedBy(renderer),
       'a time message must be sent at ten and at twenty seconds, each with its own time',
     ).toEqual([
-      { type: 'time', serverNowMs: momentTheServerClockStartsAtInMilliseconds + 10_000 },
-      { type: 'time', serverNowMs: momentTheServerClockStartsAtInMilliseconds + 20_000 },
+      {
+        type: 'time',
+        serverNowMs: momentTheServerClockStartsAtInMilliseconds + 10_000,
+        serverClockStepCount: expect.any(Number),
+      },
+      {
+        type: 'time',
+        serverNowMs: momentTheServerClockStartsAtInMilliseconds + 20_000,
+        serverClockStepCount: expect.any(Number),
+      },
     ]);
   });
 
@@ -192,6 +201,7 @@ describe('the time message of the hub', () => {
     expect(timeMessage, 'a late client must get the very next tick').toEqual({
       type: 'time',
       serverNowMs: momentTheServerClockStartsAtInMilliseconds + 10_000,
+      serverClockStepCount: expect.any(Number),
     });
     expect(clockAndTimer.countRunningTimers(), 'the hub must run one timer for all clients').toBe(
       1,

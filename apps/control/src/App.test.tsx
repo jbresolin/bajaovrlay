@@ -9,9 +9,8 @@
  *   tudo" on the right.
  *
  * What these tests prove:
- *   - The page shows the title, the connection badge and the "Verificar servidor" button.
- *   - Pressing that button reads `GET /health` and shows the server's version; when the
- *     server cannot be reached, the page says so in pt-BR instead of breaking.
+ *   - The page shows the title, the connection badge and the header's "Menu", whose
+ *     "Verificar servidor" reads `GET /health` and shows the server's version.
  *   - The three areas are there: the rundown with "+ Item"; the "Prévia" monitor (a frame
  *     on `/render/?target=preview&monitor=1`) to the left of the "Programa" monitor (a
  *     frame on `/render/?monitor=1`, the page OBS loads but marked as a monitor so it
@@ -35,6 +34,8 @@
  *     tests of its own. What "Edição rápida" sends: features/playout/ has tests of its own.
  *   - Styling and the three-column layout; those are checked by eye in the browser.
  *   - The header's "Fontes" link and the page it opens: AppPages.test.tsx.
+ *   - The menu's other entries, and a server that cannot be reached:
+ *     features/headerMenu/HeaderMenu.test.tsx.
  */
 import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -50,13 +51,6 @@ function createFetchAnsweringLikeAHealthyServer() {
   return vi.fn(async () => Response.json(healthyServerAnswer));
 }
 
-/** Builds a stand-in for `fetch` that fails like a server that is switched off. */
-function createFetchFailingLikeAServerThatIsOff() {
-  return vi.fn(async () => {
-    throw new TypeError('Failed to fetch');
-  });
-}
-
 /** Draws the whole page, connected to a fake server that has the race clock on air. */
 function renderControlPageWithTheRaceClockOnAir() {
   return renderOnControlPageConnectedToFakeServer(
@@ -66,13 +60,13 @@ function renderControlPageWithTheRaceClockOnAir() {
 }
 
 describe('the control page', () => {
-  it('shows the title, the connection badge and the button to check the server', () => {
+  it('shows the title, the connection badge and the header menu', () => {
     // Arrange: nothing to prepare beyond a connected page.
 
     // Act: draw the page.
     renderControlPageWithTheRaceClockOnAir();
 
-    // Assert: the title, the badge and the button are on screen.
+    // Assert: the title, the badge and the menu are on screen.
     expect(
       screen.getByRole('heading', { name: 'BajaOvrLay' }),
       'the page must show the product name as its title',
@@ -82,8 +76,8 @@ describe('the control page', () => {
       'the header must show the connection badge',
     ).toHaveTextContent('Conectado');
     expect(
-      screen.getByRole('button', { name: 'Verificar servidor' }),
-      'the page must offer the button that checks the server',
+      screen.getByRole('button', { name: 'Menu' }),
+      'the header must offer the menu that checks the server',
     ).toBeInTheDocument();
   });
 
@@ -93,8 +87,9 @@ describe('the control page', () => {
     vi.stubGlobal('fetch', fetchLikeAHealthyServer);
     renderControlPageWithTheRaceClockOnAir();
 
-    // Act: press the button.
-    fireEvent.click(screen.getByRole('button', { name: 'Verificar servidor' }));
+    // Act: open the header's menu and pick "Verificar servidor".
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Menu' }), { key: 'Enter' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Verificar servidor' }));
 
     // Assert: the page asked /health and shows the version it got back.
     expect(
@@ -104,21 +99,6 @@ describe('the control page', () => {
     expect(fetchLikeAHealthyServer, 'the page must ask the /health address').toHaveBeenCalledWith(
       '/health',
     );
-  });
-
-  it('says the server is unreachable when the check fails', async () => {
-    // Arrange: a server that is switched off, so the request never gets an answer.
-    vi.stubGlobal('fetch', createFetchFailingLikeAServerThatIsOff());
-    renderControlPageWithTheRaceClockOnAir();
-
-    // Act: press the button.
-    fireEvent.click(screen.getByRole('button', { name: 'Verificar servidor' }));
-
-    // Assert: the page explains the problem in pt-BR.
-    expect(
-      await screen.findByText('Não foi possível falar com o servidor.'),
-      'the page must tell the operator the server did not answer',
-    ).toBeInTheDocument();
   });
 });
 

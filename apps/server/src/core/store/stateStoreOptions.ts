@@ -6,7 +6,7 @@ import type { LoadInitialSlicesOptions } from './loadInitialSlices.js';
 export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'> & {
   /** The authorisation step; defaults to allowCommandForActorRole (roles included). */
   isCommandAllowed?: IsCommandAllowed | undefined;
-  /** The clock used for every timestamp, at boot and per command; defaults to real time. */
+  /** The clock for every timestamp, at boot and per command; the server clock by default. */
   readCurrentTime?: (() => Date) | undefined;
   /** Makes the id of each new instance; defaults to a random UUID. */
   createInstanceId?: (() => string) | undefined;

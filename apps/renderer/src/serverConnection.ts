@@ -9,14 +9,14 @@
  * the stage), with one slice replaced (after a `slice` message) or with several replaced
  * at once (after a `slices` message: one state change, one delivery).
  *
- * What the renderer says over it is one kind of message, `instanceStatus`: what really
- * happened on screen to an instance. It sends no commands.
+ * What the renderer says over it is `instanceStatus` (what really happened on screen to
+ * an instance) and `clockProbe`. It sends no commands.
  *
- * It also learns the server's clock here: every `hello`, `slice` and `slices` message, and the
- * `time` message the server sends every ten seconds, says what the server's clock showed
- * (`serverNowMs`), and each is recorded as one sample for the shared "now" the graphics
- * read (@bajaovrlay/shared/clock). A program monitor does the same, since it runs this
- * very code.
+ * It also lines up with the server's clock here, for the shared "now" the graphics read
+ * (@bajaovrlay/shared/clock): at each `hello` at once with the hello's own time, then
+ * with four clock probes, keeping the shortest round trip; then one probe per ten-second
+ * `time` message, whose answer slews any drift of this machine at 0.5% (BAJAOVRLAY-62).
+ * A program monitor does the same, since it runs this very code.
  *
  * And it learns the server's build: a `hello` naming another build than the one this page
  * was loaded from reloads the page, at most once per announced build
@@ -27,6 +27,7 @@
  * build is it once a minute, a reload skipped as too recent tried again after the minute.
  */
 import {
+  type ClockProbeMessage,
   type InstanceStatusMessage,
   mergeChangedSlicesIntoSlices,
   type PageReloadForNewBuild,
@@ -38,7 +39,12 @@ import {
   SlicesSchema,
   startServerBuildWatch,
 } from '@bajaovrlay/shared';
-import { recordServerClockSample } from '@bajaovrlay/shared/clock';
+import {
+  readThisMachineMonotonicTimeMs,
+  recordClockProbeAnswer,
+  startLiningUpAgainIfTheServerClockStepped,
+  startLiningUpAtAHello,
+} from '@bajaovrlay/shared/clock';
 
 import { logRendererEvent } from './rendererLog.js';
 
@@ -155,6 +161,22 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     socketThatIsOpen.send(JSON.stringify(statusReport));
   }
 
+  /**
+   * Asks the server what its clock reads (packages/shared/src/clock/serverAlignedTime.ts):
+   * after a hello, four in a row; then one per `time` message. With no open socket there
+   * is nothing to ask, and the next hello starts over.
+   */
+  function sendClockProbe(): void {
+    if (socketThatIsOpen === undefined) {
+      return;
+    }
+    const clockProbe: ClockProbeMessage = {
+      type: 'clockProbe',
+      pageSentAtMs: readThisMachineMonotonicTimeMs(),
+    };
+    socketThatIsOpen.send(JSON.stringify(clockProbe));
+  }
+
   function deliverFullSnapshot(slices: Slices): void {
     slicesFromServer = slices;
     // A full snapshot proves the server is healthy, so the next drop starts with a short wait.
@@ -172,7 +194,7 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
   function handleMessage(data: unknown): { wasHello: boolean } {
     // Read first, before the message is even parsed: checking a large hello takes a few
     // milliseconds, and each of them would make the sample of the server's clock later.
-    const localTimeAtArrivalMs = Date.now();
+    const localTimeAtArrivalMs = readThisMachineMonotonicTimeMs();
     const messageJson = readJsonOfMessage(data);
     const message = parseServerMessage(messageJson);
     if (message === undefined) {
@@ -185,8 +207,10 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       }
       return { wasHello: false };
     }
-    recordServerClockSampleOfMessage(message, localTimeAtArrivalMs);
     if (message.type === 'hello') {
+      // Four probes line the page up; a late hello never moves a page already lined up.
+      startLiningUpAtAHello(message, localTimeAtArrivalMs);
+      sendClockProbe();
       // Drawn first: a page that does not reload (same build, or already reloaded for this
       // one) goes on as always, and one that reloads rebuilds the same stage.
       deliverFullSnapshot(message.slices);
@@ -217,9 +241,22 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       return { wasHello: false };
     }
     if (message.type === 'time') {
-      // The server's ten-second time message. Its sample was recorded just above, and
-      // that is all there is to do with it: nothing on the stage changes, and a log
-      // line every ten seconds would bury the lines that matter in the OBS console.
+      // The ten-second time message (or the one right after a step of the server clock,
+      // whose new step count starts four probes): one probe keeps the alignment fresh.
+      // No log line: one every ten seconds would bury the ones that matter in OBS.
+      startLiningUpAgainIfTheServerClockStepped(message.serverClockStepCount);
+      sendClockProbe();
+      return { wasHello: false };
+    }
+    if (message.type === 'clockProbeAnswer') {
+      const { isAnotherProbeNeeded } = recordClockProbeAnswer({
+        pageSentAtMs: message.pageSentAtMs,
+        serverNowMs: message.serverNowMs,
+        pageReceivedAtMs: localTimeAtArrivalMs,
+      });
+      if (isAnotherProbeNeeded) {
+        sendClockProbe();
+      }
       return { wasHello: false };
     }
     if (message.type === 'dataSnapshot') {
@@ -339,34 +376,6 @@ function startWatchOnTheServerBuild(
       return () => clearTimeout(timer);
     },
   });
-}
-
-/**
- * Records what a `hello`, `slice`, `slices` or `time` message says the server's clock showed, as
- * one sample for the shared "now" the graphics read. A `commandResult` carries no clock,
- * and neither does a hello or slice from a stand-in server that leaves `serverNowMs`
- * out. Such a message records NOTHING: it is "no sample", never a sample saying the two
- * clocks agree, which would pull a correction already learned back towards zero.
- * What could go wrong: the message spent some time on the network, so every sample is
- * late by that much and the clock on air runs that much behind the server's (a few
- * milliseconds on a local network). One message held up for longer is left aside by the
- * median of the last five samples. The state read over HTTP when a hello is late gives
- * no sample: GET /api/v1/state answers the slices alone. A step of this machine's clock
- * is corrected by the `time` messages, which come every ten seconds even when no slice
- * changes; the median needs three of them, so the clock on air is wrong for about
- * thirty seconds after such a step.
- */
-function recordServerClockSampleOfMessage(
-  message: ServerMessage,
-  localTimeAtArrivalMs: number,
-): void {
-  if (message.type === 'commandResult') {
-    return;
-  }
-  if (message.serverNowMs === undefined) {
-    return;
-  }
-  recordServerClockSample(message.serverNowMs, localTimeAtArrivalMs);
 }
 
 /** Reads the JSON of one WebSocket message; undefined when it is not text or not JSON. */

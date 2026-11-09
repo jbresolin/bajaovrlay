@@ -3,6 +3,7 @@ import { type CommandError, readTriggerDataFromHttpBody } from '@bajaovrlay/shar
 import { ptBR } from '../../core/messages/ptBR.js';
 import { triggerServiceActor } from '../../core/store/commandActors.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
+import { readServerTime } from '../../core/time/serverClock.js';
 import { refuseTriggerThatIsNotHttp, refuseUnknownTrigger } from './triggerRefusals.js';
 import { findWhyTriggerMayNotFireNow } from './whenATriggerMayFire.js';
 
@@ -41,7 +42,7 @@ export function fireTriggerFromAnHttpCall(call: {
       error: { code: 'INVALID_TRIGGER_BODY', message: bodyReading.reason },
     };
   }
-  const nowMs = Date.now();
+  const nowMs = readServerTime().getTime();
   const reasonNotToFire = findWhyTriggerMayNotFireNow(slices, trigger, nowMs, call.callerActor);
   if (reasonNotToFire !== undefined) {
     return {

@@ -35,10 +35,25 @@ export const InstanceStatusMessageSchema = z.object({
 /** One instanceStatus message after validation. */
 export type InstanceStatusMessage = z.infer<typeof InstanceStatusMessageSchema>;
 
+/**
+ * A page asks the server what its clock reads (BAJAOVRLAY-62): `pageSentAtMs` is the
+ * page's own monotonic time when it sent the probe, in whole ms, which the server echoes
+ * in its `clockProbeAnswer`. Any connection may send it, a screen as well as an operator,
+ * and the server answers it at once, before anything else; it changes no state.
+ */
+export const ClockProbeMessageSchema = z.object({
+  type: z.literal('clockProbe'),
+  pageSentAtMs: z.number().int(),
+});
+
+/** One clockProbe message after validation. */
+export type ClockProbeMessage = z.infer<typeof ClockProbeMessageSchema>;
+
 /** Every message a client may send, told apart by `type`. */
 export const ClientMessageSchema = z.discriminatedUnion('type', [
   CommandMessageSchema,
   InstanceStatusMessageSchema,
+  ClockProbeMessageSchema,
 ]);
 
 /** Any client message after validation. */

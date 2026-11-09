@@ -11,6 +11,7 @@ import { ptBRObs } from './ptBRObs';
 import { ptBROutputs } from './ptBROutputs';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
 import { ptBRQuickFire } from './ptBRQuickFire';
+import { ptBRServerClock } from './ptBRServerClock';
 import { ptBRTextList } from './ptBRTextList';
 import { ptBRTriggers } from './ptBRTriggers';
 import { ptBRUndo } from './ptBRUndo';
@@ -60,6 +61,14 @@ export const ptBR = {
       reloadButton: 'Recarregar a página',
     },
   },
+  // The header's menu (features/headerMenu, BAJAOVRLAY-62): its button shows the symbol,
+  // and a screen reader reads the label.
+  headerMenu: {
+    buttonLabel: 'Menu',
+    buttonSymbol: '☰',
+  },
+  // The server clock on NTP (features/serverClock, BAJAOVRLAY-62), in ptBRServerClock.ts.
+  serverClock: ptBRServerClock,
   serverHealth: {
     checkButton: 'Verificar servidor',
     checking: 'Verificando o servidor…',

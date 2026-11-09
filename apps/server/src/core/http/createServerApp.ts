@@ -12,6 +12,7 @@ import type { ApiTokens } from '../apiAccess/apiTokens.js';
 import type { ServerLogger } from '../logger/createLogger.js';
 import type { OperatorLogin } from '../operatorLogin/operatorLogin.js';
 import type { StateStore } from '../store/createStateStore.js';
+import type { ServerClockControl } from '../time/serverClockControl.js';
 import { serveControlPage, serveRendererPage } from './builtPageFolders.js';
 import { answerRouteNotFound, answerUnexpectedError } from './errorAnswers.js';
 import { serveGraphicPackages } from './graphicPackages.js';
@@ -62,6 +63,11 @@ export type ServerAppOptions = {
    * default (gate 2 of PR #51): a wiring that forgot it must not compile into an open console.
    */
   operatorLogin: OperatorLogin;
+  /**
+   * The server clock's NTP (BAJAOVRLAY-62): /health reports it, and "Acertar relógio
+   * agora" calls it. Left out (tests): NTP off.
+   */
+  serverClockControl?: ServerClockControl | undefined;
 };
 
 /**
@@ -76,7 +82,7 @@ export function createServerApp(options: ServerAppOptions): Hono<ServerAppEnviro
   app.use(requestId());
   app.use(logEachRequest(options.logger));
 
-  app.route('/', createHealthRoute(options.version));
+  app.route('/', createHealthRoute(options.version, options.serverClockControl));
 
   if (options.stateStore !== undefined) {
     app.route(
@@ -93,6 +99,7 @@ export function createServerApp(options: ServerAppOptions): Hono<ServerAppEnviro
         publicOrigins: options.publicOrigins,
         backupDownloads: options.backupDownloads,
         operatorLogin: options.operatorLogin,
+        serverClockControl: options.serverClockControl,
       }),
     );
     if (options.mediaFolder !== undefined) {

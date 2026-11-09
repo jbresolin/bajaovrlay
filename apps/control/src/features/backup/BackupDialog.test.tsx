@@ -2,7 +2,7 @@
  * "Cópia de segurança": the size of a backup and the last copy made (apps/control)
  *
  * What this module is for:
- *   At every session break the operator opens "Cópia de segurança" in the page header,
+ *   At every session break the operator opens "Cópia de segurança" from the header's menu,
  *   leaves "Incluir gravações" ticked or not, checks the expected size against the USB
  *   stick, and clicks "Baixar"; the browser saves the zip (BAJAOVRLAY-33). The dialog then
  *   says "Última cópia: 14:32, 48 MB", read from the event log, so the operator sees when
@@ -25,11 +25,10 @@ import type { BackupSummary, EventLogEntry } from '@bajaovrlay/shared';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { HeaderMenu } from '@/features/headerMenu/HeaderMenu';
 import { formatDateAndTimeOfDay } from '@/i18n/timeOfDayText';
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildSlicesWithNothingOnAir } from '@/state/slicesLikeTheServerSends.testSupport';
-
-import { BackupDialog } from './BackupDialog';
 
 const oneMegabyte = 1024 * 1024;
 
@@ -61,13 +60,15 @@ function answerTheSummaryWith(summary: BackupSummary): void {
   vi.stubGlobal('fetch', answerTheSummary);
 }
 
-/** Draws the header's button on a connected page, and opens the dialog. */
+/** Draws the header's menu on a connected page, and opens the dialog from it. */
 function openTheBackupDialog() {
   const controlPage = renderOnControlPageConnectedToFakeServer(
-    <BackupDialog />,
+    <HeaderMenu />,
     buildSlicesWithNothingOnAir(),
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Cópia de segurança' }));
+  // Radix opens its menu on a pointer press or on Enter; Enter needs no pointer stand-in.
+  fireEvent.keyDown(screen.getByRole('button', { name: 'Menu' }), { key: 'Enter' });
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Cópia de segurança' }));
   const dialog = within(screen.getByRole('dialog', { name: 'Cópia de segurança' }));
   return { controlPage, dialog };
 }

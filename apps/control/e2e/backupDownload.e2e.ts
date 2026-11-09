@@ -48,9 +48,10 @@ test.describe('"Cópia de segurança"', () => {
     await openControlPageAndWaitUntilConnected(page);
     await createRaceClockButtonInPanelShown(page, 'Relógio da largada', 'Enduro — Largada');
 
-    // Act: open "Cópia de segurança", wait for the size, click "Baixar" and let the
-    // browser save the file; then unzip it.
-    await page.getByRole('button', { name: 'Cópia de segurança' }).click();
+    // Act: open "Cópia de segurança" from the header's menu, wait for the size, click
+    // "Baixar" and let the browser save the file; then unzip it.
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await page.getByRole('menuitem', { name: 'Cópia de segurança' }).click();
     const dialog = page.getByRole('dialog', { name: 'Cópia de segurança' });
     await expect(
       dialog.getByText(/^Tamanho previsto: /),

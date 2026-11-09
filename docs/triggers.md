@@ -8,8 +8,9 @@ eventos registra uma penalidade, ou chega um horário da programação. Cada gat
 - **então** uma macro roda, na hora (**auto**) ou depois que o operador diz sim (**perguntar**);
 - **com** os dados do gatilho preenchendo campos dos itens que a macro põe no ar.
 
-Os gatilhos ficam em **Eventos** (`#/eventos`), aba **Gatilhos**, ao lado de **Regras**. O botão
-**Pausar gatilhos** fica no topo do console.
+Os gatilhos ficam em **Eventos** (`#/eventos`), aba **Gatilhos**, ao lado de **Regras**. **Pausar gatilhos**
+fica no **Menu** (☰) no topo do console; enquanto os gatilhos estão pausados, o topo mostra
+**Gatilhos pausados** com **Retomar**.
 
 ## Os quatro tipos e os dados de cada um
 
