@@ -159,6 +159,9 @@ test.describe('the lower third, the team card and the standings', () => {
       { title: 'Logo da equipe', attribute: 'Logo' },
       { title: 'Logo sobre placa clara', attribute: 'Logo sobre placa clara' },
     ];
+    // The car, the team and the school are one car group (BAJAOVRLAY-66), whose picker reads
+    // a source; read from Cadastros, they are edited one by one under "Campos separados".
+    await itemEditor.getByRole('switch', { name: 'Campos separados — Carro', exact: true }).click();
     for (const { title, attribute } of fieldsAndAttributes) {
       await readFieldFromTheLibrary(consolePage, itemEditor, {
         title,
