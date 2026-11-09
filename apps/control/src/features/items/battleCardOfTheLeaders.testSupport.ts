@@ -12,7 +12,7 @@ import type {
   ServerMessage,
   Slices,
 } from '@bajaovrlay/shared';
-import { fireEvent, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 
 import {
   buildEnduroSnapshotAtLap34,
@@ -169,13 +169,23 @@ export function findRowOfField(fieldLabel: string): HTMLElement {
 }
 
 /**
- * Turns "Campos separados" on for both cars of the card, so each of the eleven fields is
- * edited in its own row again, as before the car picker (BAJAOVRLAY-66).
+ * The same card with each car's position frozen at the take and its other fields live, as
+ * an item saved field by field may be: each car's fields are then no single pick, so the
+ * editor opens both cars with "Campos separados" on and every field in its own row
+ * (BAJAOVRLAY-66). The rows still follow the polls: "Valor agora" does not depend on
+ * "Ao vivo".
  */
-export function showEachCarsFieldsSeparately(): void {
-  for (const carLabel of ['Carro da frente', 'Carro de trás']) {
-    fireEvent.click(screen.getByRole('switch', { name: `Campos separados — ${carLabel}` }));
-  }
+export function buildBattleCardOfTheLeadersItemThatOpensSplit(): Item {
+  const item = buildBattleCardOfTheLeadersItem();
+  item.fields.aheadPosition = {
+    ...buildLiveBindingToCar('position', leaderCarNumber),
+    isLive: false,
+  };
+  item.fields.behindPosition = {
+    ...buildLiveBindingToCar('position', secondCarNumber),
+    isLive: false,
+  };
+  return item;
 }
 
 /** The operator's correction of car 38's team name, as the inscription spells it. */

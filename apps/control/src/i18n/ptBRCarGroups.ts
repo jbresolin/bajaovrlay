@@ -9,7 +9,7 @@ export const ptBRCarGroups = {
   wayLabel: (groupLabel: string) => `Como escolher ${groupLabel}`,
   wayOptions: {
     carNumber: 'Pelo número do carro',
-    place: 'Pela posição',
+    place: 'Pelo lugar na corrida',
     typed: 'Digitado à mão',
   },
   sourceLabel: (groupLabel: string) => `Fonte de ${groupLabel}`,
@@ -28,6 +28,9 @@ export const ptBRCarGroups = {
     `Os campos de ${groupLabel} leem carros diferentes, por isso estão separados.`,
   notOnePickNote: (groupLabel: string) =>
     `Os campos de ${groupLabel} não vêm de uma escolha só, por isso estão separados.`,
+  // Under that line: they stay separate until a way is chosen, which fills them alike.
+  chooseWayToGroupNote: (groupLabel: string) =>
+    `Para juntá-los, escolha como preencher ${groupLabel}.`,
   // The group's own message when a save finds one of its hidden fields wrong.
   wayMissing: (groupLabel: string) => `Escolha como preencher ${groupLabel}.`,
   sourceMissing: (groupLabel: string) => `Escolha a fonte de ${groupLabel}.`,

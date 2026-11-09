@@ -11,6 +11,8 @@
  *   - The five fields of the 2nd place and the gap read exactly what the same fields read
  *     for car 38 chosen by number, car 38 running 2nd at lap 34.
  *   - The position of a place reads the place itself (2 for the 2nd place).
+ *   - When the cars running 2nd and 3rd swap, the same bindings of the 2nd place read the
+ *     other car, with no change to the item: that is what picking by place is for.
  *
  * What these tests deliberately do not cover:
  *   - A car chosen by number in every other way; bindingResolution.test.ts.
@@ -19,7 +21,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { BindingFieldValue } from './bindingFieldValue.js';
-import { resolveBindingAgainstSources } from './bindingResolution.js';
+import { resolveBindingAgainstSources, type SourcesForBindings } from './bindingResolution.js';
 import {
   buildSourcesWithTheSimulatorAtLap34,
   simulatorSourceId,
@@ -55,6 +57,27 @@ function buildBindingOfCarPickedByPlace(fieldName: string, placeNumber: number):
     path: `entries.${placeNumber - 1}.${fieldName}`,
     isLive: true,
   };
+}
+
+/**
+ * The simulator at lap 34 after car 25 (Bem-te-vi Off-Road), 3rd, passed car 38 (Coruja
+ * Racing), 2nd: the two entries trade places in the list and take each other's position.
+ */
+function buildSourcesAfterCar25PassedCar38(): SourcesForBindings {
+  const sources = buildSourcesWithTheSimulatorAtLap34([]);
+  const positions = sources.dataSnapshots[0]?.shapes.positions as {
+    entries: Array<{ position: number; carNumber: number }>;
+  };
+  const carRunningSecond = positions.entries[1];
+  const carRunningThird = positions.entries[2];
+  if (carRunningSecond === undefined || carRunningThird === undefined) {
+    throw new Error('the lap-34 sample must list a 2nd and a 3rd car');
+  }
+  carRunningThird.position = 2;
+  carRunningSecond.position = 3;
+  positions.entries[1] = carRunningThird;
+  positions.entries[2] = carRunningSecond;
+  return sources;
 }
 
 describe('a car picked by its place', () => {
@@ -103,5 +126,28 @@ describe('a car picked by its place', () => {
       value: 2,
       isOverridden: false,
     });
+  });
+
+  it('reads the other car with the same bindings once the 3rd passes the 2nd', () => {
+    // Arrange: car 25 has just passed car 38, so car 25 now runs 2nd.
+    const sources = buildSourcesAfterCar25PassedCar38();
+
+    // Act: read the 2nd place's position, number and team with the bindings an item holds.
+    const [position, carNumber, teamName] = ['position', 'carNumber', 'teamName'].map(
+      (fieldName) =>
+        resolveBindingAgainstSources(
+          buildBindingOfCarPickedByPlace(fieldName, 2),
+          sources,
+          contextWithNoTeams,
+        ),
+    );
+
+    // Assert: the 2nd place is now car 25, Bem-te-vi Off-Road, still at position 2.
+    expect(
+      [position, carNumber, teamName].map((resolution) =>
+        resolution?.status === 'resolved' ? resolution.value : resolution?.status,
+      ),
+      'the bindings of the 2nd place must follow the pass to car 25',
+    ).toEqual([2, 25, 'Bem-te-vi Off-Road']);
   });
 });

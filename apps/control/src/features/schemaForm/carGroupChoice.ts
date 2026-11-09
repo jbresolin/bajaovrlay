@@ -175,7 +175,9 @@ export function chooseCarGroupWayAtOpening(
 
 /**
  * How a group shows once "Campos separados" is turned off: grouped when its fields agree,
- * otherwise nothing chosen, so the next pick fills every field alike.
+ * otherwise still separate. Hiding fields that disagree would leave on screen a picker
+ * saying nothing while a save stores the mixed bindings; only a pick (or "Digitado à
+ * mão") changes the fields, so only that ends "Campos separados" for them.
  */
 export function chooseCarGroupWayAfterSeparateFields(
   carGroup: CarGroup,
@@ -184,7 +186,7 @@ export function chooseCarGroupWayAfterSeparateFields(
   return chooseWayFromAgreement(
     readAgreementOfCarGroupFields(carGroup, formValues),
     'typed',
-    'notChosen',
+    'separate',
   );
 }
 
@@ -202,8 +204,8 @@ export function buildCarGroupWaysAtOpening(
 
 /**
  * The pick a group shows, read from its first field's binding: the source and "Ao vivo"
- * as they are, the number as typed, the place when the field reads one. All fields hold
- * the same, as the picker writes them all at once.
+ * as they are, the number without the spaces around it (as the agreement reads it), the
+ * place when the field reads one. All fields hold the same, as the picker writes them all.
  */
 export function readCarPickShownInGroup(
   carGroup: CarGroup,
@@ -223,7 +225,7 @@ export function readCarPickShownInGroup(
     return {
       pickedBy: 'number',
       sourceId: bindingValue.sourceId,
-      carNumberText: bindingValue.carNumberText,
+      carNumberText: bindingValue.carNumberText.trim(),
       isLive: bindingValue.isLive,
     };
   }

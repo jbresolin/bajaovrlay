@@ -12,92 +12,38 @@
  *   - Fields that follow one car by number agree on that car; fields that follow one place
  *     agree on that place; fields all typed agree on "typed by hand".
  *   - Fields that follow different cars disagree as "different cars"; fields of which one
- *     reads something else (the library, another path) disagree as "not one pick".
+ *     reads something else (another path, another source, a transform, frozen among
+ *     live ones) disagree as "not one pick".
  *   - The way a group opens: by number, by place, typed, nothing chosen yet (a new item)
  *     or separate (any disagreement).
  *   - A pick by number writes each field's binding to its own meaning of that car; a pick
  *     by place writes the place's paths, the gap of the car behind its interval.
  *
  * What these tests deliberately do not cover:
+ *   - Turning "Campos separados" off, and the pick a group shows;
+ *     carGroupChoiceWhileEditing.test.ts.
  *   - The picker on screen and what a save sends; ItemEditorPanelCarGroups.test.tsx.
  *   - Reading the groups from a manifest; carGroupsOfManifest.test.ts in packages/shared.
  */
 import battleCardManifest from '@bajaovrlay/battle-card/battle-card.ograf.json';
-import {
-  type BindingFieldValue,
-  type CarGroup,
-  type ItemFields,
-  readCarGroupsOfManifest,
-} from '@bajaovrlay/shared';
+import type { ItemFields } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { buildEmptySchemaFormValues } from './buildSchemaFormValues';
-import { buildSchemaFormValuesFromItemFields } from './buildSchemaFormValuesFromItemFields';
 import {
   buildBindingValuesOfCarPick,
   chooseCarGroupWayAtOpening,
   readAgreementOfCarGroupFields,
 } from './carGroupChoice';
+import {
+  buildFieldsOfTheCarAheadOnCar31,
+  buildFieldsOfTheCarAheadTypedAsCar47,
+  buildLiveBinding,
+  fillBattleCardFormFrom,
+  readBattleCardGroup,
+  simulatorId,
+} from './carGroupsOfTheBattleCard.testSupport';
 import { describeSchemaFormFromDataSchema } from './describeSchemaFormFromDataSchema';
-import type { SchemaFormValues } from './schemaFormValues';
-
-const simulatorId = 'simulador-enduro';
-
-/** One of the battle card's groups, read from its real manifest ("ahead" or "behind"). */
-function readBattleCardGroup(groupId: string): CarGroup {
-  const reading = readCarGroupsOfManifest(battleCardManifest);
-  const carGroup =
-    reading.status === 'groups'
-      ? reading.carGroups.find((candidate) => candidate.id === groupId)
-      : undefined;
-  if (carGroup === undefined) {
-    throw new Error(`the battle card's manifest must declare the group ${groupId}`);
-  }
-  return carGroup;
-}
-
-/** A live binding of one positions path on the simulator, a car number when one is given. */
-function buildLiveBinding(path: string, carNumber?: number): BindingFieldValue {
-  const binding: BindingFieldValue = {
-    kind: 'binding',
-    sourceId: simulatorId,
-    shapeKey: 'positions',
-    path,
-    isLive: true,
-  };
-  if (carNumber !== undefined) {
-    binding.carNumber = carNumber;
-  }
-  return binding;
-}
-
-/** The car ahead's five fields, each on car 31 chosen by number, as BAJAOVRLAY-47 stored them. */
-function buildFieldsOfTheCarAheadOnCar31(): ItemFields {
-  return {
-    aheadPosition: buildLiveBinding('entryOfCar.position', 31),
-    aheadCarNumber: buildLiveBinding('entryOfCar.carNumber', 31),
-    aheadTeamName: buildLiveBinding('entryOfCar.teamName', 31),
-    aheadSchoolName: buildLiveBinding('entryOfCar.schoolName', 31),
-    aheadLaps: buildLiveBinding('entryOfCar.laps', 31),
-  };
-}
-
-/** The car ahead typed by hand: car 47 of Carnaúba Baja (UFERSA), 6th with 33 laps. */
-function buildFieldsOfTheCarAheadTypedAsCar47(): ItemFields {
-  return {
-    aheadPosition: { kind: 'literal', value: 6 },
-    aheadCarNumber: { kind: 'literal', value: 47 },
-    aheadTeamName: { kind: 'literal', value: 'Carnaúba Baja' },
-    aheadSchoolName: { kind: 'literal', value: 'UFERSA' },
-    aheadLaps: { kind: 'literal', value: 33 },
-  };
-}
-
-/** The battle card's form filled from these stored fields, as the item editor fills it. */
-function fillBattleCardFormFrom(fields: ItemFields): SchemaFormValues {
-  const description = describeSchemaFormFromDataSchema(battleCardManifest.schema);
-  return buildSchemaFormValuesFromItemFields(description, fields).formValues;
-}
 
 describe('readAgreementOfCarGroupFields', () => {
   // Each row is one way the car ahead's five fields may have been stored.
@@ -165,6 +111,28 @@ describe('readAgreementOfCarGroupFields', () => {
       fields: {
         ...buildFieldsOfTheCarAheadOnCar31(),
         aheadLaps: { ...buildLiveBinding('entryOfCar.laps', 31), isLive: false },
+      },
+      expected: { status: 'notOnePick' },
+    },
+    {
+      // Car 31 on the simulator and on the official timing are two choices, even for one
+      // car: one picker can show only one source.
+      name: 'disagrees as "not one pick" when one field reads car 31 on another source',
+      fields: {
+        ...buildFieldsOfTheCarAheadOnCar31(),
+        aheadTeamName: {
+          ...buildLiveBinding('entryOfCar.teamName', 31),
+          sourceId: 'cronometragem-oficial',
+        },
+      },
+      expected: { status: 'notOnePick' },
+    },
+    {
+      // A pick writes no transform, so grouping this field would drop its trimText.
+      name: 'disagrees as "not one pick" when one field of car 31 has a transform',
+      fields: {
+        ...buildFieldsOfTheCarAheadOnCar31(),
+        aheadTeamName: { ...buildLiveBinding('entryOfCar.teamName', 31), transformId: 'trimText' },
       },
       expected: { status: 'notOnePick' },
     },

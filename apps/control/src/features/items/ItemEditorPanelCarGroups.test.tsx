@@ -21,6 +21,11 @@
  *   - An item saved before this change whose fields follow one car opens grouped; one
  *     whose fields follow different cars opens with "Campos separados" on and a line
  *     saying so, the other car still grouped.
+ *   - Turning "Campos separados" off on that car keeps it on, with its line and every
+ *     field still shown, so mixed bindings a save would store are never hidden; picking
+ *     a car from there groups the fields and saves that car in each.
+ *   - A save refused for a car not chosen yet ties the group's message to its picker
+ *     (announced, the picker marked invalid and described by the message).
  *   - Two picks save exactly the eleven bindings the leaders' battle card was stored with
  *     field by field.
  *
@@ -31,7 +36,7 @@
  *     step 4 of e2e/podiumBattleQrWalk.e2e.ts.
  */
 import type { BindingFieldValue, Item } from '@bajaovrlay/shared';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -147,7 +152,7 @@ describe('the car picker of the item editor', () => {
     expect(
       readChoiceShownInDropdown('Como escolher Carro de trás'),
       'the car behind is chosen by place too',
-    ).toBe('Pela posição');
+    ).toBe('Pelo lugar na corrida');
     expect(readFieldsOfTheFirstCommand(fakeServer), 'eleven bindings by place').toEqual({
       aheadPosition: buildExpectedBinding('entries.1.position'),
       aheadCarNumber: buildExpectedBinding('entries.1.carNumber'),
@@ -269,6 +274,82 @@ describe('a battle card saved before the car picker', () => {
       screen.getByRole('switch', { name: 'Campos separados — Carro de trás' }),
       'the car behind stays grouped',
     ).not.toBeChecked();
+  });
+});
+
+describe('a car whose fields follow two cars, with "Campos separados" turned off', () => {
+  /** The leaders' battle card with the car ahead's laps read from car 25, open in the editor. */
+  function renderEditorOnTheMixedBattleCard() {
+    const mixedItem = buildBattleCardOfTheLeadersItem();
+    mixedItem.fields.aheadLaps = buildExpectedBinding('entryOfCar.laps', 25);
+    return { mixedItem, ...renderEditorOnStoredBattleCard(mixedItem) };
+  }
+
+  it('stays separate, with its line and every field shown, until a car is picked', () => {
+    // Arrange: the mixed card open, the car ahead split.
+    renderEditorOnTheMixedBattleCard();
+    const separateSwitch = screen.getByRole('switch', {
+      name: 'Campos separados — Carro da frente',
+    });
+
+    // Act: turn "Campos separados" off.
+    fireEvent.click(separateSwitch);
+
+    // Assert: still on, still saying why, the laps of car 25 still in their own row.
+    expect(separateSwitch, 'the switch stays on while the fields disagree').toBeChecked();
+    expect(
+      screen.getByText(
+        'Os campos de Carro da frente leem carros diferentes, por isso estão separados.',
+      ),
+      'the line still says why',
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', { name: 'Como preencher Voltas do carro da frente' }),
+      'the field a save would store on car 25 stays on screen',
+    ).toBeVisible();
+  });
+
+  it('groups the fields once a car is picked, and saves that car in each', async () => {
+    // Arrange: the mixed card open, the car ahead split.
+    const { mixedItem, fakeServer } = renderEditorOnTheMixedBattleCard();
+
+    // Act: pick car 31 for the car ahead from the split group, and save.
+    pickCarByNumber('Carro da frente', 31);
+    await pressSaveAndWaitForCommand(1, fakeServer);
+
+    // Assert: grouped again, and the laps saved on car 31 like the other four fields.
+    expect(
+      screen.getByRole('switch', { name: 'Campos separados — Carro da frente' }),
+      'a pick turns "Campos separados" off',
+    ).not.toBeChecked();
+    expect(fakeServer.listCommandsReceived()[0], 'the laps now follow car 31').toEqual({
+      type: 'updateItemFields',
+      itemId: mixedItem.id,
+      fields: { aheadLaps: buildExpectedBinding('entryOfCar.laps', 31) },
+    });
+  });
+});
+
+describe('the message of a car not chosen yet', () => {
+  it('is announced and tied to the picker of that car', async () => {
+    // Arrange: a new battle card with only the car behind picked.
+    const { fakeServer } = renderNewBattleCardItemEditor();
+    pickCarByNumber('Carro de trás', 25);
+
+    // Act: try to save.
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
+    const message = await screen.findByRole('alert');
+
+    // Assert: the message names the car, and the car's picker is invalid and described by it.
+    const picker = screen.getByRole('combobox', { name: 'Como escolher Carro da frente' });
+    expect(message, 'the message says which car to choose').toHaveTextContent(
+      'Escolha como preencher Carro da frente.',
+    );
+    expect(picker, 'the picker is marked invalid').toHaveAttribute('aria-invalid', 'true');
+    expect(picker, 'the picker is described by the message').toHaveAccessibleDescription(
+      'Escolha como preencher Carro da frente.',
+    );
+    expect(fakeServer.listCommandsReceived(), 'nothing is saved').toEqual([]);
   });
 });
 

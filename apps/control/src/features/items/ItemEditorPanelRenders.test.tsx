@@ -8,8 +8,9 @@
  *   than the last (BAJAOVRLAY-45). The editor must redraw only what changed.
  *
  * What these tests prove, on a stored battle card whose eleven fields read the two
- * leaders live, each car's fields shown one by one ("Campos separados", BAJAOVRLAY-66;
- * the rows these tests count are drawn only then):
+ * leaders, each car's position frozen at the take and the rest live, so the editor opens
+ * each car's fields one by one ("Campos separados", BAJAOVRLAY-66; the rows these tests
+ * count are drawn only then, and opening split costs no click before the counting):
  *   - A poll that changes nothing the card shows (the gap of a car further back) redraws
  *     no field row.
  *   - A poll that changes one value the card shows (the 2nd car's gap to the leader)
@@ -42,12 +43,12 @@ import type { ServerStateStore } from '@/state/serverStateStore';
 import {
   battleCardFieldLabels,
   buildBattleCardOfTheLeadersItem,
+  buildBattleCardOfTheLeadersItemThatOpensSplit,
   buildNextPollWhereOnlyACarOffTheCardMoves,
   buildNextPollWhereTheSecondCarCloses,
   buildSlicesWithTheBattleCardOfTheLeaders,
   findRowOfField,
   momentOfTheNextPollMs,
-  showEachCarsFieldsSeparately,
 } from './battleCardOfTheLeaders.testSupport';
 import {
   countGeneratedFormDraws,
@@ -69,6 +70,13 @@ vi.mock('@/features/schemaForm', async (importOriginal) => {
     SchemaFormFields: buildSchemaFormFieldsThatCountTheirDraws(schemaForm.SchemaFormFields),
   };
 });
+
+// Twice the suite's 15 s for this file only: the card is the editor's worst case (eleven
+// bound rows, each with its own dropdowns), and two picks in it took about 2.5 s here and
+// 16.5 s on a slower machine under the full suite (gate 2 of PR #55), over the 15 s that
+// is meant to catch a hang. Opening the card already split saved under 0.5 s; the
+// dropdowns are the cost. A test that hangs still fails, at 30 s.
+vi.setConfig({ testTimeout: 30_000 });
 
 /** The labels of the battle card's rows, as the editor draws them. */
 const gapLabel = 'Diferença entre os carros (ms)';
@@ -92,15 +100,14 @@ function buildNoDrawForEach(labelTexts: string[]): Record<string, number> {
 
 /**
  * Opens the editor on the stored battle card of the two leaders, the race at lap 34, with
- * each car's fields in rows of their own ("Campos separados").
+ * each car's fields in rows of their own ("Campos separados") from the start.
  */
 function renderEditorOnTheBattleCardOfTheLeaders() {
-  const editorOnFakeServer = renderItemEditorPanelOnFakeServerWithSlices(
-    buildBattleCardOfTheLeadersItem(),
-    buildSlicesWithTheBattleCardOfTheLeaders(),
-  );
-  showEachCarsFieldsSeparately();
-  return editorOnFakeServer;
+  const itemThatOpensSplit = buildBattleCardOfTheLeadersItemThatOpensSplit();
+  return renderItemEditorPanelOnFakeServerWithSlices(itemThatOpensSplit, {
+    ...buildSlicesWithTheBattleCardOfTheLeaders(),
+    items: [itemThatOpensSplit],
+  });
 }
 
 /** The labels each car's picker draws once per draw: its car number's. */

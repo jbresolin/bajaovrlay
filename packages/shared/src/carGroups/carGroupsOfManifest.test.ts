@@ -17,6 +17,8 @@
  *     the schema does not have, an unknown meaning, a meaning whose value does not fit
  *     the field, a group named twice, a group with no field, and a group said to run
  *     behind one that does not exist.
+ *   - Each refusal starts with where in the manifest it is (`v_baja.carGroups.0.label: …`),
+ *     so the server's boot warning points the author at the line to fix.
  *
  * What these tests deliberately do not cover:
  *   - The real manifests' groups; each graphic's manifest test reads its own.
@@ -145,7 +147,7 @@ describe('readCarGroupsOfManifest', () => {
       changeTheGroups: (carGroups: CarGroupAsWritten[]) => {
         readGroupAt(carGroups, 1).fields.aheadLaps = 'laps';
       },
-      expectedProblem: 'the field "aheadLaps" is in two car groups ("ahead" and "behind")',
+      expectedProblem: 'v_baja.carGroups: the field "aheadLaps" is in two car groups ("ahead" and "behind")',
     },
     {
       // A misspelt key would make the picker fill a field the graphic never receives.
@@ -154,7 +156,7 @@ describe('readCarGroupsOfManifest', () => {
         readGroupAt(carGroups, 0).fields.aheadLap = 'laps';
       },
       expectedProblem:
-        'the car group "ahead" names the field "aheadLap", which the data schema does not have',
+        'v_baja.carGroups: the car group "ahead" names the field "aheadLap", which the data schema does not have',
     },
     {
       // A meaning must be a field of a car in the positions, or the picker cannot read it.
@@ -163,7 +165,7 @@ describe('readCarGroupsOfManifest', () => {
         readGroupAt(carGroups, 0).fields.aheadLaps = 'lapsDone';
       },
       expectedProblem:
-        'the car group "ahead" gives the field "aheadLaps" the meaning "lapsDone", which is not a field of a car',
+        'v_baja.carGroups: the car group "ahead" gives the field "aheadLaps" the meaning "lapsDone", which is not a field of a car',
     },
     {
       // A team name cannot go into a whole-number field: the take would refuse it.
@@ -172,7 +174,7 @@ describe('readCarGroupsOfManifest', () => {
         readGroupAt(carGroups, 0).fields.aheadCarNumber = 'teamName';
       },
       expectedProblem:
-        'the car group "ahead" gives the field "aheadCarNumber" the meaning "teamName", whose value does not fit it',
+        'v_baja.carGroups: the car group "ahead" gives the field "aheadCarNumber" the meaning "teamName", whose value does not fit it',
     },
     {
       // Two groups with one id could not be told apart by the editor.
@@ -182,7 +184,7 @@ describe('readCarGroupsOfManifest', () => {
         groupOfTheCarBehind.id = 'ahead';
         delete groupOfTheCarBehind.rightBehindGroup;
       },
-      expectedProblem: 'the car group "ahead" is declared twice',
+      expectedProblem: 'v_baja.carGroups: the car group "ahead" is declared twice',
     },
     {
       // A group with nothing in it would draw a picker that fills nothing.
@@ -190,7 +192,7 @@ describe('readCarGroupsOfManifest', () => {
       changeTheGroups: (carGroups: CarGroupAsWritten[]) => {
         readGroupAt(carGroups, 0).fields = {};
       },
-      expectedProblem: 'the car group "ahead" has no field',
+      expectedProblem: 'v_baja.carGroups: the car group "ahead" has no field',
     },
     {
       // "Disputa pela 2ª posição" needs to know which car runs right ahead of which.
@@ -198,7 +200,7 @@ describe('readCarGroupsOfManifest', () => {
       changeTheGroups: (carGroups: CarGroupAsWritten[]) => {
         readGroupAt(carGroups, 1).rightBehindGroup = 'leader';
       },
-      expectedProblem: 'the car group "behind" runs right behind "leader", which is no car group',
+      expectedProblem: 'v_baja.carGroups: the car group "behind" runs right behind "leader", which is no car group',
     },
   ];
 
@@ -217,5 +219,22 @@ describe('readCarGroupsOfManifest', () => {
       reading.status === 'refused' ? reading.problems : [],
       'the refusal must say what is wrong',
     ).toContain(expectedProblem);
+  });
+
+  it('starts a refusal of a group\'s own shape with where it is in the manifest', () => {
+    // Arrange: the battle card's groups with the car ahead's label left out.
+    const carGroups: Array<Partial<CarGroupAsWritten>> = buildBattleCardCarGroups();
+    delete carGroups[0]?.label;
+    const manifest = buildBattleCardManifestWithCarGroups(carGroups as CarGroupAsWritten[]);
+
+    // Act: read the car groups.
+    const reading = readCarGroupsOfManifest(manifest);
+
+    // Assert: refused, the sentence starting with the path of the missing label.
+    const problems = reading.status === 'refused' ? reading.problems : [];
+    expect(
+      problems.some((problem) => problem.startsWith('v_baja.carGroups.0.label: ')),
+      `the refusal must point at the car ahead's label, got ${JSON.stringify(problems)}`,
+    ).toBe(true);
   });
 });

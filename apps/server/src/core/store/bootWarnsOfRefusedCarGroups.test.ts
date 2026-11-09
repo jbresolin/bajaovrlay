@@ -11,7 +11,8 @@
  * What these tests prove (with a real SQLite file and a stand-in graphics folder, both
  * in temporary folders):
  *   - A built graphic whose group names a field its schema lacks is still registered, and
- *     the boot logs exactly one warning naming it and the problem.
+ *     the boot logs exactly one warning naming it and the problem, with where it is in the
+ *     manifest.
  *   - A graphic whose group is right, and one with no group, cause no such warning.
  *
  * What these tests deliberately do not cover:
@@ -81,7 +82,7 @@ describe('a built graphic that declares car groups', () => {
           level: 'warn',
           graphic_package: 'scoreboard',
           car_group_problems: [
-            'the car group "car" names the field "teamNam", which the data schema does not have',
+            'v_baja.carGroups: the car group "car" names the field "teamNam", which the data schema does not have',
           ],
         }),
       ],

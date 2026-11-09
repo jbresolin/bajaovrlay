@@ -13,14 +13,7 @@
   "stepCount": 1,
   "v_baja": {
     "defaultLayerId": "notice",
-    "category": "notice",
-    "carGroups": [
-      {
-        "id": "car",
-        "label": "Carro",
-        "fields": { "carNumber": "carNumber", "teamName": "teamName", "schoolName": "schoolName" }
-      }
-    ]
+    "category": "notice"
   },
   "actionDurations": [
     { "type": "playAction", "duration": 400 },

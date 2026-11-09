@@ -22,7 +22,8 @@ reads the manifest's JSON Schema into field descriptions (`schemaFormDescription
   `TextListLineRow.tsx`, `textListDragAnnouncements.ts`; BAJAOVRLAY-23);
   `textShownInUntouchedField.ts` for a panel's text; `BindingValueNowLine.tsx` is "Valor agora".
 - Car groups (BAJAOVRLAY-66): `CarGroupFields.tsx` draws one picker per car group of the manifest in place
-  of the car's fields (by number, by place, typed by hand, "Campos separados"), `CarBattleSelect.tsx` the
+  of the car's fields (by number, by place, typed by hand, "Campos separados"), `CarPickControls.tsx` a
+  pick's source, number or place and "Ao vivo", `CarBattleSelect.tsx` the
   battle card's "Disputa pela Nª posição"; `carGroupChoice.ts` reads whether a group's fields agree on one
   car and builds a pick's per-field bindings, `carGroupFormWrites.ts` writes them, so every builder above
   reads the fields as before.

@@ -33,7 +33,9 @@ Each field is stored as its own binding, as before the pickers: "Posição do ca
 reads Posições › Carro escolhido pelo número (8) › Posição, and so on. For a battle for a
 place rather than two given cars, "Disputa pela posição" › "Disputa pela 2ª posição" picks
 the car ahead at the 2nd place and the car behind at the 3rd, so the card follows whichever
-cars run there. "Campos separados" under a car shows its fields one by one again.
+cars run there ("Pelo lugar na corrida" does the same for one car). "Campos separados" under a
+car shows its fields one by one again; an item whose car's fields follow two cars stays that way
+until a way is chosen for the car.
 
 The trend is remembered by the graphic itself, so a renderer reload or a new take starts it again:
 the first lap after that shows "ESTÁVEL" with no number. Choose a "Tendência à mão" (and its change

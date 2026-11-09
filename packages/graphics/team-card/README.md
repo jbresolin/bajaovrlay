@@ -34,8 +34,3 @@ Every field is named after the team entity's attribute, so in the item editor ea
 | Logo sobre placa clara | Cadastro › Equipe 7 › Logo sobre placa clara |
 
 A team with no city, photo or logo in Cadastros leaves that field out, and the card draws without it.
-
-The car, the team and the school are one car group ("Carro", `v_baja.carGroups`, BAJAOVRLAY-66): for
-a card that follows the race, the item editor fills the three at once from one car of a source, by
-its number or its place ("1º lugar" for the leader's card). An item like the one above, reading
-Cadastros, opens with "Campos separados" on and a line saying the three do not come from one pick.

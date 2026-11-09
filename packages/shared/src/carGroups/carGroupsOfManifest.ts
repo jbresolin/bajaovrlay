@@ -115,6 +115,15 @@ export type CarGroupsOfManifestReading =
   | { status: 'refused'; problems: string[] };
 
 /**
+ * One refusal as the boot warning logs it, after where it is in the manifest
+ * (`v_baja.carGroups.0.label: …`): a shape issue's own message names no group.
+ */
+function describeIssueWithWhereItIs(issue: z.core.$ZodIssue): string {
+  const whereItIs = issue.path.join('.');
+  return whereItIs === '' ? issue.message : `${whereItIs}: ${issue.message}`;
+}
+
+/**
  * Reads a manifest's `v_baja.carGroups` against its own data schema. Pure; never throws.
  * Refused as a whole on any mistake: half a group would let the picker fill some of a
  * car's fields and leave the rest on another car.
@@ -124,7 +133,7 @@ export function readCarGroupsOfManifest(manifest: unknown): CarGroupsOfManifestR
   if (!reading.success) {
     return {
       status: 'refused',
-      problems: reading.error.issues.map((issue) => issue.message),
+      problems: reading.error.issues.map(describeIssueWithWhereItIs),
     };
   }
   const carGroupsAsWritten = reading.data.v_baja?.carGroups;

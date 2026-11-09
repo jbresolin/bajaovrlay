@@ -1,11 +1,6 @@
-import {
-  type CarGroup,
-  type EntityLibrary,
-  highestPlaceACarCanBePickedAt,
-} from '@bajaovrlay/shared';
+import type { CarGroup, EntityLibrary } from '@bajaovrlay/shared';
 import { type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -31,6 +26,11 @@ import {
   writeCarGroupWay,
   writeCarPickIntoForm,
 } from './carGroupFormWrites';
+import {
+  type AttributesOfTheGroupMessage,
+  CarPickControls,
+  type ControlOfTheGroupMessage,
+} from './CarPickControls';
 import type { SchemaFormBindingOptions } from './schemaFormBindingOptions';
 import type { SchemaFormFieldDescription } from './schemaFormDescription';
 import { SchemaFormFieldRow } from './SchemaFormFieldRow';
@@ -48,7 +48,7 @@ export type FieldOfCarGroup = { field: SchemaFormFieldDescription; controlId: st
  * the source, the number or the place, "Ao vivo / Congelado" once for the whole car and
  * what each field reads now; typed by hand shows the car's fields together, typed only.
  * "Campos separados" shows each field's own row as before, and a line says why when the
- * fields do not follow one car. On the car ahead of a battle, "Disputa pela posição" sets
+ * fields do not follow one car; such fields stay separate until a way is chosen for them. On the car ahead of a battle, "Disputa pela posição" sets
  * this car and the one right behind it at once.
  * The picks are written into each field's kind and binding (carGroupFormWrites.ts), so the
  * form's check and the commands read the fields exactly as they always did.
@@ -110,6 +110,8 @@ export function CarGroupFields(props: {
     });
   }
 
+  // Fields that disagree stay separate when the switch is turned off (the switch stays
+  // on): hiding them would hide mixed bindings a save still stores.
   function chooseSeparateFields(isSeparate: boolean): void {
     const wayAfter = isSeparate
       ? 'separate'
@@ -118,13 +120,14 @@ export function CarGroupFields(props: {
   }
 
   const groupMessage = chooseGroupMessage();
+  const groupMessageId = `${controlId}-message`;
 
   /**
-   * The group's own message while a field of it shows one and its fields are hidden: what
-   * is missing in the pick, or else the first field's own message. Typed and separate
-   * fields show their messages in their own rows.
+   * The group's own message while a field of it shows one and its fields are hidden, with
+   * the control it is about: what is missing in the pick, or else the first field's own
+   * message (on the way). Typed and separate fields show their messages in their own rows.
    */
-  function chooseGroupMessage(): string | undefined {
+  function chooseGroupMessage(): GroupMessage | undefined {
     const firstMessage = fieldKeys
       .map((fieldKey) => errors.values?.[fieldKey]?.message)
       .find((message) => message !== undefined);
@@ -132,21 +135,31 @@ export function CarGroupFields(props: {
       return undefined;
     }
     if (pickShown === undefined) {
-      return texts.wayMissing(groupLabel);
+      return { text: texts.wayMissing(groupLabel), controlAbout: 'way' };
     }
     if (pickShown.sourceId === '') {
-      return texts.sourceMissing(groupLabel);
+      return { text: texts.sourceMissing(groupLabel), controlAbout: 'source' };
     }
     if (
       pickShown.pickedBy === 'number' &&
       !wholeNumberFromOnePattern.test(pickShown.carNumberText.trim())
     ) {
-      return texts.carNumberMissing(groupLabel);
+      return { text: texts.carNumberMissing(groupLabel), controlAbout: 'carNumber' };
     }
     if (pickShown.pickedBy === 'place' && pickShown.placeNumber === undefined) {
-      return texts.placeMissing(groupLabel);
+      return { text: texts.placeMissing(groupLabel), controlAbout: 'place' };
     }
-    return firstMessage;
+    return { text: firstMessage, controlAbout: 'way' };
+  }
+
+  /** aria-invalid and aria-describedby for one control, set only when the message is its. */
+  function describeControlWithTheMessage(
+    control: ControlOfTheGroupMessage,
+  ): AttributesOfTheGroupMessage {
+    if (groupMessage?.controlAbout !== control) {
+      return {};
+    }
+    return { 'aria-invalid': true, 'aria-describedby': groupMessageId };
   }
 
   return (
@@ -163,27 +176,28 @@ export function CarGroupFields(props: {
         />
       )}
 
-      {way !== 'separate' && (
-        <Select
-          value={way === 'notChosen' ? '' : way}
-          onValueChange={chooseWay}
-          disabled={isDisabled}
+      {/* Shown in "Campos separados" too: a way chosen there fills every field alike,
+          which is how fields that disagree are grouped again. */}
+      <Select
+        value={way === 'notChosen' || way === 'separate' ? '' : way}
+        onValueChange={chooseWay}
+        disabled={isDisabled}
+      >
+        <SelectTrigger
+          id={controlId}
+          size="sm"
+          className="w-full"
+          aria-label={texts.wayLabel(groupLabel)}
+          {...describeControlWithTheMessage('way')}
         >
-          <SelectTrigger
-            id={controlId}
-            size="sm"
-            className="w-full"
-            aria-label={texts.wayLabel(groupLabel)}
-          >
-            <SelectValue placeholder={ptBR.schemaForm.nothingChosenPlaceholder} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="carNumber">{texts.wayOptions.carNumber}</SelectItem>
-            <SelectItem value="place">{texts.wayOptions.place}</SelectItem>
-            <SelectItem value="typed">{texts.wayOptions.typed}</SelectItem>
-          </SelectContent>
-        </Select>
-      )}
+          <SelectValue placeholder={ptBR.schemaForm.nothingChosenPlaceholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="carNumber">{texts.wayOptions.carNumber}</SelectItem>
+          <SelectItem value="place">{texts.wayOptions.place}</SelectItem>
+          <SelectItem value="typed">{texts.wayOptions.typed}</SelectItem>
+        </SelectContent>
+      </Select>
 
       {pickShown !== undefined && (
         <CarPickControls
@@ -192,6 +206,7 @@ export function CarGroupFields(props: {
           controlId={controlId}
           bindingOptions={bindingOptions}
           isDisabled={isDisabled}
+          describeControlWithTheMessage={describeControlWithTheMessage}
           onPickChanged={(pickAfter) => writeCarPickIntoForm(form, carGroup, pickAfter)}
         />
       )}
@@ -258,119 +273,38 @@ export function CarGroupFields(props: {
         </Label>
       </div>
 
-      {groupMessage !== undefined && <p className="text-sm text-destructive">{groupMessage}</p>}
+      {groupMessage !== undefined && (
+        <p id={groupMessageId} role="alert" className="text-sm text-destructive">
+          {groupMessage.text}
+        </p>
+      )}
     </fieldset>
   );
 }
 
-/** The line that says why a group's fields are separate, when they do not follow one car. */
-function SeparateFieldsNote(props: { carGroup: CarGroup; formValues: SchemaFormValues }) {
-  const agreement = readAgreementOfCarGroupFields(props.carGroup, props.formValues);
-  if (agreement.status === 'differentCars') {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {texts.differentCarsNote(props.carGroup.label)}
-      </p>
-    );
-  }
-  if (agreement.status === 'notOnePick') {
-    return (
-      <p className="text-sm text-muted-foreground">{texts.notOnePickNote(props.carGroup.label)}</p>
-    );
-  }
-  return null;
-}
-
-/** The places a car can be picked at, 1st to 10th. */
-const placeNumbersOffered = Array.from(
-  { length: highestPlaceACarCanBePickedAt },
-  (_unused, index) => index + 1,
-);
+/** A group's message and the control it is about, which it describes. */
+type GroupMessage = { text: string; controlAbout: ControlOfTheGroupMessage };
 
 /**
- * The controls of one pick: the source, the car's number or its place, and "Ao vivo /
- * Congelado na entrada", each change handed back as the whole pick after it.
+ * The lines that say why a group's fields are separate, when they do not follow one car,
+ * and how to group them again: choosing a way, which fills every field alike.
  */
-function CarPickControls(props: {
-  pick: CarPickInForm;
-  groupLabel: string;
-  controlId: string;
-  bindingOptions: SchemaFormBindingOptions;
-  isDisabled: boolean;
-  onPickChanged: (pickAfter: CarPickInForm) => void;
-}) {
-  const { pick, groupLabel, controlId, bindingOptions, isDisabled, onPickChanged } = props;
-  const editorTexts = ptBR.bindings.editor;
-
+function SeparateFieldsNote(props: { carGroup: CarGroup; formValues: SchemaFormValues }) {
+  const agreement = readAgreementOfCarGroupFields(props.carGroup, props.formValues);
+  const groupLabel = props.carGroup.label;
+  let whyNote: string | undefined;
+  if (agreement.status === 'differentCars') {
+    whyNote = texts.differentCarsNote(groupLabel);
+  } else if (agreement.status === 'notOnePick') {
+    whyNote = texts.notOnePickNote(groupLabel);
+  }
+  if (whyNote === undefined) {
+    return null;
+  }
   return (
-    <div className="flex flex-col gap-2">
-      {bindingOptions.dataSources.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{editorTexts.noSourceYet}</p>
-      ) : (
-        <Select
-          value={pick.sourceId}
-          onValueChange={(sourceId) => onPickChanged({ ...pick, sourceId })}
-          disabled={isDisabled}
-        >
-          <SelectTrigger size="sm" className="w-full" aria-label={texts.sourceLabel(groupLabel)}>
-            <SelectValue placeholder={ptBR.schemaForm.nothingChosenPlaceholder} />
-          </SelectTrigger>
-          <SelectContent>
-            {bindingOptions.dataSources.map((dataSource) => (
-              <SelectItem key={dataSource.id} value={dataSource.id}>
-                {dataSource.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-
-      {pick.pickedBy === 'number' && (
-        <div className="flex flex-col gap-1">
-          <Label htmlFor={`${controlId}-car-number`}>{texts.carNumberLabel(groupLabel)}</Label>
-          <Input
-            id={`${controlId}-car-number`}
-            inputMode="numeric"
-            autoComplete="off"
-            disabled={isDisabled}
-            value={pick.carNumberText}
-            onChange={(event) => onPickChanged({ ...pick, carNumberText: event.target.value })}
-          />
-        </div>
-      )}
-
-      {pick.pickedBy === 'place' && (
-        <Select
-          value={pick.placeNumber === undefined ? '' : String(pick.placeNumber)}
-          onValueChange={(placeText) => onPickChanged({ ...pick, placeNumber: Number(placeText) })}
-          disabled={isDisabled}
-        >
-          <SelectTrigger size="sm" className="w-full" aria-label={texts.placeLabel(groupLabel)}>
-            <SelectValue placeholder={ptBR.schemaForm.nothingChosenPlaceholder} />
-          </SelectTrigger>
-          <SelectContent>
-            {placeNumbersOffered.map((placeNumber) => (
-              <SelectItem key={placeNumber} value={String(placeNumber)}>
-                {texts.placeOption(placeNumber)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-
-      <Select
-        value={pick.isLive ? 'live' : 'frozen'}
-        onValueChange={(choice) => onPickChanged({ ...pick, isLive: choice === 'live' })}
-        disabled={isDisabled}
-      >
-        <SelectTrigger size="sm" className="w-full" aria-label={texts.whenLabel(groupLabel)}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="live">{editorTexts.whenOptions.live}</SelectItem>
-          <SelectItem value="frozen">{editorTexts.whenOptions.frozen}</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
+    <>
+      <p className="text-sm text-muted-foreground">{whyNote}</p>
+      <p className="text-sm text-muted-foreground">{texts.chooseWayToGroupNote(groupLabel)}</p>
+    </>
   );
 }
