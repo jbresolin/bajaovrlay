@@ -5,6 +5,7 @@ import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider
 
 import { listEventsDismissedJustNow } from './inboxEventLists';
 import { describeKindOfEvent, describeSubjectOfEvent } from './inboxEventText';
+import { useWhyTheDataRoleMayNotTriage } from './whyTheDataRoleMayNotTriage';
 
 const texts = ptBR.events;
 
@@ -25,6 +26,7 @@ export function RecentlyDismissedEvents() {
   // own clock is off by seconds would otherwise close the window early or keep it open.
   const nowMs = useServerAlignedTimeMs(windowCheckIntervalMs);
 
+  const findWhyTheDataRoleMayNotTriage = useWhyTheDataRoleMayNotTriage();
   const dismissedJustNow = listEventsDismissedJustNow(events, nowMs);
   if (dismissedJustNow.length === 0) {
     return null;
@@ -40,6 +42,7 @@ export function RecentlyDismissedEvents() {
           <span>{texts.statusWords.dismissed}</span>
           <ActionButton
             commandType="restoreEvent"
+            disabledReason={findWhyTheDataRoleMayNotTriage(event)}
             size="xs"
             variant="outline"
             className="ml-auto"

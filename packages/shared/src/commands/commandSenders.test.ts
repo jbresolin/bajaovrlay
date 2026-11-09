@@ -169,7 +169,8 @@ const roleTable = [
   // open to Dados; the store refuses Dados's dismissal of any other kind (server tests).
   { commandType: 'approveEvent', produtor: true, dados: true },
   { commandType: 'dismissEvent', produtor: true, dados: true },
-  { commandType: 'restoreEvent', produtor: true, dados: false },
+  // Restoring a discarded Super Chat only makes it wait again: moderation (gate 2 of PR #54).
+  { commandType: 'restoreEvent', produtor: true, dados: true },
   { commandType: 'createManualEvent', produtor: true, dados: false },
   // Firing, pausing and the waiting firings of triggers: not editing them.
   { commandType: 'setTriggersPaused', produtor: true, dados: false },

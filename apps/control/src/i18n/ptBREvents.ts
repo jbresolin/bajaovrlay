@@ -45,7 +45,7 @@ export const ptBREvents = {
   /** A Super Chat paid without a message: the row says so instead of an empty line. */
   superChatWithoutMessage: 'Sem mensagem',
   /** Why Dados's "Descartar" is off on any event but a Super Chat. */
-  dataRoleDismissesOnlySuperChats: 'O papel Dados só pode descartar Super Chats.',
+  dataRoleTriagesOnlySuperChats: 'O papel Dados só pode descartar e restaurar Super Chats.',
   /** Under the console's waiting events: what was dismissed in the last 30 s. */
   recentlyDismissedListLabel: 'Descartados agora há pouco',
   /** "Penalidade · carro 47" on a recently dismissed event's row. */

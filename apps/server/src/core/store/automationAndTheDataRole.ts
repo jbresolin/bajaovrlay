@@ -3,7 +3,6 @@ import { isDeepStrictEqual } from 'node:util';
 import {
   type Command,
   type CommandError,
-  type DismissEventCommand,
   type EventRule,
   type InboxEvent,
   type Slices,
@@ -23,7 +22,7 @@ type SlicesTheCheckReads = Pick<Slices, 'triggers' | 'eventRules' | 'macros'>;
 /**
  * The store's second authorisation check, after the hook: Dados's command refused as
  * NOT_ALLOWED when it would automate the air (findWhyTheDataRoleMayNotChangeThisAutomation)
- * or discard a race event (findWhyTheDataRoleMayNotDismissThisEvent), or undefined. Every
+ * or discard or restore a race event (findWhyTheDataRoleMayNotTriageThisEvent), or undefined. Every
  * other actor, the Produtor among them, is not judged here.
  */
 export function refuseAutomationTheActorMayNotChange(
@@ -36,8 +35,8 @@ export function refuseAutomationTheActorMayNotChange(
     return undefined;
   }
   const reason =
-    command.type === 'dismissEvent'
-      ? findWhyTheDataRoleMayNotDismissThisEvent(command, slices.events)
+    command.type === 'dismissEvent' || command.type === 'restoreEvent'
+      ? findWhyTheDataRoleMayNotTriageThisEvent(command.eventId, slices.events)
       : findWhyTheDataRoleMayNotChangeThisAutomation(command, slices);
   return reason === undefined ? undefined : { code: 'NOT_ALLOWED', message: reason };
 }
@@ -153,18 +152,19 @@ function findWhyNotForAMacroUpdate(
 }
 
 /**
- * Why Dados may not discard this event, or undefined when it may: Dados discards a viewer's
- * Super Chat, its own moderation (BAJAOVRLAY-35), and nothing else of the inbox; the race's
- * events are the Produtor's. An unknown event is left to the reducer, whose refusal
+ * Why Dados may not discard or restore this event, or undefined when it may: Dados
+ * discards a viewer's Super Chat, and restores one it discarded (it only waits again, gate
+ * 2 of PR #54), its own moderation (BAJAOVRLAY-35), and nothing else of the inbox; the
+ * race's events are the Produtor's. An unknown event is left to the reducer, whose refusal
  * (EVENT_NOT_FOUND) is the clearer one.
  */
-function findWhyTheDataRoleMayNotDismissThisEvent(
-  command: DismissEventCommand,
+function findWhyTheDataRoleMayNotTriageThisEvent(
+  eventId: string,
   events: InboxEvent[],
 ): string | undefined {
-  const event = events.find((candidate) => candidate.eventId === command.eventId);
+  const event = events.find((candidate) => candidate.eventId === eventId);
   if (event === undefined || event.kind === 'superChat') {
     return undefined;
   }
-  return ptBR.eventErrors.dataRoleDismissesOnlySuperChats;
+  return ptBR.eventErrors.dataRoleTriagesOnlySuperChats;
 }

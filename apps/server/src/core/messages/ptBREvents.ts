@@ -38,9 +38,9 @@ export const ptBREventErrors = {
   /** approveEvent of a Super Chat that is not pending: "Este Super Chat não espera aprovação: já foi aprovado." */
   superChatNotPending: (status: InboxEventStatus) =>
     `Este Super Chat não espera aprovação: ${ptBREventErrors.whatItIsInstead[status]}.`,
-  /** dismissEvent sent by Dados for a race event. */
-  dataRoleDismissesOnlySuperChats:
-    'O papel Dados só descarta Super Chats; os eventos da prova são do Produtor.',
+  /** dismissEvent or restoreEvent sent by Dados for a race event. */
+  dataRoleTriagesOnlySuperChats:
+    'O papel Dados só descarta e restaura Super Chats; os eventos da prova são do Produtor.',
   eventTooOldToRestore:
     'Este evento passou da espera máxima da regra e não pode mais ser restaurado.',
   /**

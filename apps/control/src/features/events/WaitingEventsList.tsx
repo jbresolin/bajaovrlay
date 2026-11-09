@@ -42,7 +42,7 @@ export function WaitingEventsList(props: { isOnTheReviewPage?: boolean }) {
     eventRules.find((rule) => rule.kind === kind)?.itemId ?? null;
   const isNothingWaiting = waitingEvents.length === 0 && superChatsAwaitingApproval.length === 0;
   const whyDadosMayNotDismissARaceEvent = isTheDataRoleLoggedIn
-    ? texts.dataRoleDismissesOnlySuperChats
+    ? texts.dataRoleTriagesOnlySuperChats
     : undefined;
 
   return (

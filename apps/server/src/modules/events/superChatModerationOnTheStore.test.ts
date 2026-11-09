@@ -9,8 +9,9 @@
  *   of the inbox.
  *
  * What these tests prove, through a real store on a temporary database:
- *   - Who may approve, discard and show a Super Chat, by role and by its status (one table
- *     row each), and that a race event can be neither approved nor discarded by Dados.
+ *   - Who may approve, discard, restore and show a Super Chat, by role and by its status
+ *     (one table row each), and that a race event can be neither approved, discarded nor
+ *     restored by Dados.
  *   - A pending Super Chat is refused on air ("Super Chat ainda não aprovado"), with "No ar"
  *     and with "Tomar" on its Prévia; once approved, the same Prévia goes on air.
  *   - A discarded Super Chat brought back with "Restaurar" waits for approval again.
@@ -92,11 +93,22 @@ function startWithAnApprovedSuperChat(): StateStore {
   return stateStore;
 }
 
+/** The Super Chat and the penalty both discarded by the Produtor, from the start above. */
+function startWithBothDiscarded(): StateStore {
+  const stateStore = startWithAPendingSuperChatAndPenalty();
+  applyOrThrow(stateStore, { type: 'dismissEvent', eventId: superChatEventId }, producerActor);
+  applyOrThrow(stateStore, { type: 'dismissEvent', eventId: startPenaltyEventId }, producerActor);
+  return stateStore;
+}
+
 type ModerationScenario = {
   name: string;
   startWith: () => StateStore;
   actor: string;
-  command: { type: 'approveEvent' | 'dismissEvent' | 'showEvent'; eventId: string };
+  command: {
+    type: 'approveEvent' | 'dismissEvent' | 'restoreEvent' | 'showEvent';
+    eventId: string;
+  };
   /** The outcome's error code, or 'ok'. */
   expectedOutcome: string;
   /** The event's status after the command. */
@@ -167,6 +179,24 @@ const moderationScenarios: ModerationScenario[] = [
     expectedOutcome: 'NOT_ALLOWED',
     expectedStatus: 'pending',
   },
+  // Dados undoes a discard of a Super Chat: it only waits again (gate 2 of PR #54).
+  {
+    name: 'Dados restores a discarded Super Chat, which waits for approval again',
+    startWith: startWithBothDiscarded,
+    actor: dataRoleActor,
+    command: { type: 'restoreEvent', eventId: superChatEventId },
+    expectedOutcome: 'ok',
+    expectedStatus: 'pending',
+  },
+  // Restoring a race event stays the Produtor's.
+  {
+    name: 'Dados may not restore a penalty',
+    startWith: startWithBothDiscarded,
+    actor: dataRoleActor,
+    command: { type: 'restoreEvent', eventId: startPenaltyEventId },
+    expectedOutcome: 'NOT_ALLOWED',
+    expectedStatus: 'dismissed',
+  },
   // The Produtor decides not to air one Dados approved.
   {
     name: 'the Produtor discards an approved Super Chat',
@@ -210,7 +240,7 @@ function readOutcomeCode(outcome: CommandOutcome): string {
   return outcome.ok ? 'ok' : outcome.error.code;
 }
 
-describe('who may approve, discard and show a Super Chat', () => {
+describe('who may approve, discard, restore and show a Super Chat', () => {
   it.each(moderationScenarios)(
     '$name',
     ({ startWith, actor, command, expectedOutcome, expectedStatus }) => {

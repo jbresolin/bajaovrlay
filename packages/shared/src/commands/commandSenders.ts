@@ -89,11 +89,12 @@ export const whoMaySendEachCommandType: Record<Command['type'], WhoMaySendAComma
   clearOverride: bothRoles,
   showEvent: theProducerOnly,
   // A Super Chat's moderation (BAJAOVRLAY-35): Dados reads the chat. Dados may dismiss a
-  // Super Chat and nothing else; the store holds the kind against the events slice
+  // Super Chat, and restore one (it only waits again, gate 2 of PR #54), and nothing else;
+  // the store holds the kind against the events slice
   // (apps/server/src/core/store/automationAndTheDataRole.ts).
   approveEvent: bothRoles,
   dismissEvent: bothRoles,
-  restoreEvent: theProducerOnly,
+  restoreEvent: bothRoles,
   createManualEvent: theProducerOnly,
   updateEventRule: bothRoles,
   // What the event detection found: no page may fake a race event.
