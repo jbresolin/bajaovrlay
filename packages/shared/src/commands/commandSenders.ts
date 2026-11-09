@@ -88,7 +88,11 @@ export const whoMaySendEachCommandType: Record<Command['type'], WhoMaySendAComma
   setOverride: bothRoles,
   clearOverride: bothRoles,
   showEvent: theProducerOnly,
-  dismissEvent: theProducerOnly,
+  // A Super Chat's moderation (BAJAOVRLAY-35): Dados reads the chat. Dados may dismiss a
+  // Super Chat and nothing else; the store holds the kind against the events slice
+  // (apps/server/src/core/store/automationAndTheDataRole.ts).
+  approveEvent: bothRoles,
+  dismissEvent: bothRoles,
   restoreEvent: theProducerOnly,
   createManualEvent: theProducerOnly,
   updateEventRule: bothRoles,

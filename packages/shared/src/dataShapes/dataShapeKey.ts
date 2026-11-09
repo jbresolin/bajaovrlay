@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
 /**
- * The five canonical shapes a data source can produce. Every source maps its own data
+ * The six canonical shapes a data source can produce. Every source maps its own data
  * into these, and graphics bind only to them. `incidents` (BAJAOVRLAY-44) is what the
- * event inbox watches for penalties.
+ * event inbox watches for penalties; `superChats` (BAJAOVRLAY-35) what it watches for a
+ * viewer's paid message, which only the YouTube source produces and no graphic binds to.
  */
 export const DataShapeKeySchema = z.enum([
   'session',
@@ -11,9 +12,10 @@ export const DataShapeKeySchema = z.enum([
   'standings',
   'brackets',
   'incidents',
+  'superChats',
 ]);
 
-/** One of the five canonical shape names. */
+/** One of the six canonical shape names. */
 export type DataShapeKey = z.infer<typeof DataShapeKeySchema>;
 
 /**

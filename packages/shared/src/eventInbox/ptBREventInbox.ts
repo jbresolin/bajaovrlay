@@ -14,6 +14,12 @@ export const ptBREventInbox = {
     lapNumber: 'Volta',
     lapTimeMs: 'Tempo da volta (ms)',
     lapTimeText: 'Tempo da volta (texto)',
+    authorName: 'Autor (Super Chat)',
+    amountText: 'Valor (Super Chat)',
+    messageText: 'Mensagem (Super Chat)',
+  },
+  payloadReasons: {
+    carNumberMissing: 'Falta o número do carro: só um Super Chat vem sem carro.',
   },
   fieldReasons: {
     pathDoesNotFit: (pathLabel: string) =>

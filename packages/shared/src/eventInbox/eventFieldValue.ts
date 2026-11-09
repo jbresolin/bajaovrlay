@@ -17,6 +17,9 @@ export const EventPayloadPathSchema = z.enum([
   'lapNumber',
   'lapTimeMs',
   'lapTimeText',
+  'authorName',
+  'amountText',
+  'messageText',
 ]);
 
 /** One payload path. */
@@ -55,6 +58,9 @@ const eventPayloadPathTypes: Array<{ path: EventPayloadPath; valueType: Bindable
   { path: 'lapNumber', valueType: 'integer' },
   { path: 'lapTimeMs', valueType: 'integer' },
   { path: 'lapTimeText', valueType: 'text' },
+  { path: 'authorName', valueType: 'text' },
+  { path: 'amountText', valueType: 'text' },
+  { path: 'messageText', valueType: 'text' },
 ];
 
 /** Lists every payload path an event field may read, with its label and value type. */

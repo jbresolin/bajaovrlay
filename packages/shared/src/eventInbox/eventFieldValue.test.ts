@@ -10,8 +10,9 @@
  *   An item with any such field is a template: it never goes on air by a take of its own.
  *
  * What these tests prove:
- *   - The nine payload paths are listed with their pt-BR labels and types.
- *   - A text field is offered the six text paths, an integer field the three integer
+ *   - The twelve payload paths are listed with their pt-BR labels and types (the last
+ *     three are a Super Chat's, BAJAOVRLAY-35).
+ *   - A text field is offered the nine text paths, an integer field the three integer
  *     ones, and a switch none: "Evento" is not offered there.
  *   - A text path on an integer field is a problem, worded in pt-BR; a fitting one is not.
  *   - A field reads its value from the payload, and nothing when the event lacks it.
@@ -50,7 +51,7 @@ const noticeDataSchema = {
 };
 
 describe('the payload paths of an event field', () => {
-  it('lists the nine paths with their labels and types', () => {
+  it('lists the twelve paths with their labels and types', () => {
     // Arrange: nothing; the list is fixed in code.
 
     // Act: list them.
@@ -67,13 +68,16 @@ describe('the payload paths of an event field', () => {
       { path: 'lapNumber', label: 'Volta', valueType: 'integer' },
       { path: 'lapTimeMs', label: 'Tempo da volta (ms)', valueType: 'integer' },
       { path: 'lapTimeText', label: 'Tempo da volta (texto)', valueType: 'text' },
+      { path: 'authorName', label: 'Autor (Super Chat)', valueType: 'text' },
+      { path: 'amountText', label: 'Valor (Super Chat)', valueType: 'text' },
+      { path: 'messageText', label: 'Mensagem (Super Chat)', valueType: 'text' },
     ]);
   });
 
   const fitScenarios = [
-    // The team's name is text: every text path may fill it.
+    // The team's name is text: every text path may fill it, a Super Chat's three too.
     {
-      name: 'offers the six text paths to a text field',
+      name: 'offers the nine text paths to a text field',
       fieldKey: 'teamName',
       expectedPaths: [
         'teamName',
@@ -82,6 +86,9 @@ describe('the payload paths of an event field', () => {
         'reason',
         'penaltyText',
         'lapTimeText',
+        'authorName',
+        'amountText',
+        'messageText',
       ],
     },
     // The lap is a whole number: the car, the lap and the lap time in ms.

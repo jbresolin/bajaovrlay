@@ -165,7 +165,10 @@ const roleTable = [
   { commandType: 'switchObsScene', produtor: true, dados: false },
   // An event's "No ar", and the rest of the inbox's triage, which the brief does not give Dados.
   { commandType: 'showEvent', produtor: true, dados: false },
-  { commandType: 'dismissEvent', produtor: true, dados: false },
+  // A Super Chat's moderation is Dados's (BAJAOVRLAY-35): approve, and dismiss. The type is
+  // open to Dados; the store refuses Dados's dismissal of any other kind (server tests).
+  { commandType: 'approveEvent', produtor: true, dados: true },
+  { commandType: 'dismissEvent', produtor: true, dados: true },
   { commandType: 'restoreEvent', produtor: true, dados: false },
   { commandType: 'createManualEvent', produtor: true, dados: false },
   // Firing, pausing and the waiting firings of triggers: not editing them.

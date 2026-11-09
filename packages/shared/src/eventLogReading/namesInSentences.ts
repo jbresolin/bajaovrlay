@@ -1,3 +1,4 @@
+import type { InboxEventKind, InboxEventPayload } from '../eventInbox/inboxEvent.js';
 import type { ItemHome } from '../rundown/itemHome.js';
 import type { EventLogDetails } from '../slices/eventLogEntry.js';
 import type { EventLogNames } from './eventLogNames.js';
@@ -142,8 +143,26 @@ export function nameInboxEvent(eventId: string, names: EventLogNames): string {
   if (inboxEvent === undefined) {
     return nameTexts.eventGone(eventId);
   }
-  const kindLabel = ptBREventLogReading.eventKindLabels[inboxEvent.kind];
-  return nameTexts.eventOfCar(kindLabel, inboxEvent.payload.carNumber);
+  return nameDetectedEvent(inboxEvent);
+}
+
+/**
+ * A detected event by what the reader knows it by: a Super Chat by its viewer and amount
+ * ("Super Chat de Torcida Pequi Off-Road (R$ 20,00)"), every other kind by its car.
+ */
+export function nameDetectedEvent(event: {
+  kind: InboxEventKind;
+  payload: InboxEventPayload;
+}): string {
+  const kindLabel = ptBREventLogReading.eventKindLabels[event.kind];
+  const { carNumber, authorName, amountText } = event.payload;
+  if (event.kind === 'superChat' && authorName !== undefined && amountText !== undefined) {
+    return nameTexts.superChatOfViewer(authorName, amountText);
+  }
+  if (carNumber === undefined) {
+    return nameTexts.eventWithoutCar(kindLabel);
+  }
+  return nameTexts.eventOfCar(kindLabel, carNumber);
 }
 
 /**

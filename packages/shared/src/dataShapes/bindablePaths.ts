@@ -146,6 +146,10 @@ function buildBindablePathsOfShape(shapeKey: DataShapeKey): BindablePath[] {
       return listBracketsPaths();
     case 'incidents':
       return listIncidentsPaths();
+    case 'superChats':
+      // None, on purpose: a viewer's message reaches the air only as an event a person
+      // approved (BAJAOVRLAY-35), never through a binding that would follow the chat live.
+      return [];
   }
 }
 

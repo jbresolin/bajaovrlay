@@ -2,7 +2,8 @@
 // index.ts re-exports this file with one line; other packages import from
 // '@bajaovrlay/shared', never from here.
 
-// The three kinds of source: the race simulator, a replay of a recording, a flex HTTP/JSON source.
+// The four kinds of source: the race simulator, a replay of a recording, a flex HTTP/JSON
+// source, a YouTube live's chat.
 export { type DataSourceKind, DataSourceKindSchema } from './dataSourceKind.js';
 // The simulator's config: seed, cars, duration, lap length, speed, start, failing switch.
 export { type SimulatorConfig, SimulatorConfigSchema } from './simulatorConfig.js';
@@ -27,6 +28,19 @@ export {
 } from './httpJsonConfig.js';
 // The answer of the sample route ("Buscar da fonte"): the parsed body, or the pt-BR error.
 export { type HttpJsonSampleAnswer, HttpJsonSampleAnswerSchema } from './httpJsonSampleAnswer.js';
+// The YouTube live chat source's config (the live's address), its video id read from the
+// address, its poll interval's floor and default, and the quota usage on its status.
+export {
+  readYouTubeVideoIdFromAddress,
+  type YouTubeLiveChatConfig,
+  YouTubeLiveChatConfigSchema,
+  youTubeLiveChatDefaultPollIntervalMs,
+  youTubeLiveChatShortestPollIntervalMs,
+  type YouTubeQuotaUsage,
+  YouTubeQuotaUsageSchema,
+} from './youtubeLiveChatConfig.js';
+// The pt-BR reasons a YouTube live chat source's config or interval is refused.
+export { ptBRYouTubeLiveChat } from './ptBRYouTubeLiveChat.js';
 // The pt-BR reasons a flex source's config is refused, shared with the control page's form.
 export { ptBRHttpJsonConfig } from './ptBRHttpJsonConfig.js';
 // Whether two configs or snapshots hold the same JSON, whatever their key order: the
@@ -46,6 +60,8 @@ export {
   ReplayDataSourceSchema,
   type SimulatorDataSource,
   SimulatorDataSourceSchema,
+  type YouTubeLiveChatDataSource,
+  YouTubeLiveChatDataSourceSchema,
 } from './dataSource.js';
 // The `dataSnapshots` slice: the last good shapes of each source.
 export {

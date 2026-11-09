@@ -93,6 +93,7 @@ export const commandGroupOfEachCommandType: Record<Command['type'], EventLogComm
   clearOverride: 'sourcesAndData',
   // The inbox's own bookkeeping is data; only showEvent puts something on air.
   dismissEvent: 'sourcesAndData',
+  approveEvent: 'sourcesAndData',
   restoreEvent: 'sourcesAndData',
   // "Descartar" and "Desfazer" on a trigger's firing, as on an event.
   dismissTriggerFiring: 'sourcesAndData',

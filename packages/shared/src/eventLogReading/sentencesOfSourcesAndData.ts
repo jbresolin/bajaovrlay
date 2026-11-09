@@ -3,7 +3,12 @@
 // named formatter per command type, gathered in sentenceOfEachCommandType.ts.
 import type { CommandOfType } from './commandOfType.js';
 import type { EventLogNames } from './eventLogNames.js';
-import { nameDataSource, nameInboxEvent, nameTriggerFiring } from './namesInSentences.js';
+import {
+  nameDataSource,
+  nameDetectedEvent,
+  nameInboxEvent,
+  nameTriggerFiring,
+} from './namesInSentences.js';
 import { ptBREventLogReading } from './ptBREventLogReading.js';
 import type { ImportAsTheLogKeepsIt, PollAsTheLogKeepsIt } from './trimmedPayloads.js';
 
@@ -174,6 +179,14 @@ export function describeDismissEvent(
   return sentences.dismissedEvent(nameInboxEvent(command.eventId, names));
 }
 
+/** approveEvent ("Aprovar", a Super Chat; BAJAOVRLAY-35). */
+export function describeApproveEvent(
+  command: CommandOfType<'approveEvent'>,
+  names: EventLogNames,
+): string {
+  return sentences.approvedEvent(nameInboxEvent(command.eventId, names));
+}
+
 /** restoreEvent ("Desfazer" or "Restaurar"). */
 export function describeRestoreEvent(
   command: CommandOfType<'restoreEvent'>,
@@ -215,12 +228,7 @@ export function describeUpdateEventRule(command: CommandOfType<'updateEventRule'
 export function describeRecordDetectedEvents(
   command: CommandOfType<'recordDetectedEvents'>,
 ): string {
-  const eventNames = command.events.map((detectedEvent) =>
-    ptBREventLogReading.names.eventOfCar(
-      ptBREventLogReading.eventKindLabels[detectedEvent.kind],
-      detectedEvent.payload.carNumber,
-    ),
-  );
+  const eventNames = command.events.map((detectedEvent) => nameDetectedEvent(detectedEvent));
   return sentences.detectedEvents(eventNames);
 }
 

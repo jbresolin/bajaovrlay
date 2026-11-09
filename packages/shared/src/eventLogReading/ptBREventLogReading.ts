@@ -59,6 +59,11 @@ export const ptBREventLogReading = {
     /** "volta mais rápida do carro 31". */
     eventOfCar: (kindLabel: string, carNumber: number) =>
       `${kindLabel} do carro ${String(carNumber)}`,
+    /** "Super Chat de Torcida Pequi Off-Road (R$ 20,00)": a viewer's paid message. */
+    superChatOfViewer: (authorName: string, amountText: string) =>
+      `Super Chat de ${authorName} (${amountText})`,
+    /** An event with no car and no viewer: only a database edited by hand has one. */
+    eventWithoutCar: (kindLabel: string) => kindLabel,
     /** ""Tarja – Ana Souza" na camada Tarja (Programa)": what an instance showed. */
     instanceOnLayer: (itemName: string, layerName: string) => `${itemName} na camada ${layerName}`,
     inRundown: (rundownName: string) => `no rundown ${rundownName}`,
@@ -200,6 +205,7 @@ export const ptBREventLogReading = {
       `Desfez a correção do ${fieldText} na fonte ${sourceName}`,
     dismissedEvent: (eventName: string) => `Descartou o evento ${eventName}`,
     restoredEvent: (eventName: string) => `Restaurou o evento ${eventName}`,
+    approvedEvent: (eventName: string) => `Aprovou o ${eventName}`,
     dismissedFiring: (firingName: string) => `Descartou ${firingName}`,
     restoredFiring: (firingName: string) => `Restaurou ${firingName}`,
     typedPenalty: (carNumber: number, reason: string) =>

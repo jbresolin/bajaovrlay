@@ -15,6 +15,7 @@ export const ptBRDataShapes = {
     standings: 'Pontuação',
     brackets: 'Chaves',
     incidents: 'Incidentes',
+    superChats: 'Super Chats',
   },
 
   /** "1º colocado", "10º colocado": positions, where every car has a place of its own. */
@@ -188,5 +189,7 @@ export const ptBRDataShapes = {
       'a disputa de 3º lugar vem depois das semifinais (a fase de duas disputas)',
     incidentListedTwice: (incidentId: string) =>
       `o incidente ${incidentId} aparece mais de uma vez`,
+    superChatListedTwice: (messageId: string) =>
+      `o Super Chat ${messageId} aparece mais de uma vez`,
   },
 };

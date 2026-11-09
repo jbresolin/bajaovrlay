@@ -5,6 +5,8 @@
 // sends it.
 import { z } from 'zod';
 
+import { YouTubeQuotaUsageSchema } from './youtubeLiveChatConfig.js';
+
 /**
  * A good poll: the shapes the source produced, by shape name. Left unchecked here on
  * purpose: the server checks each against its canonical shape, and a bad one turns the
@@ -15,6 +17,8 @@ const GoodPollResultSchema = z.object({
   shapes: z.record(z.string(), z.unknown()),
   /** When the poll was made. */
   receivedAtMs: z.number().int(),
+  /** A YouTube source's quota spent today, after this poll (BAJAOVRLAY-35). */
+  youTubeQuota: YouTubeQuotaUsageSchema.optional(),
 });
 
 /**
@@ -27,6 +31,8 @@ const FailedPollResultSchema = z.object({
   ok: z.literal(false),
   error: z.string(),
   attemptedAtMs: z.number().int(),
+  /** A YouTube source's quota spent today, after this poll (BAJAOVRLAY-35). */
+  youTubeQuota: YouTubeQuotaUsageSchema.optional(),
 });
 
 /**

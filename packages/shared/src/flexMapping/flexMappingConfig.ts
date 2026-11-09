@@ -89,7 +89,9 @@ export type FlexFieldRule = z.infer<typeof FlexFieldRuleSchema>;
 export const FlexShapeMappingSchema = z
   .strictObject(
     {
-      shapeKey: DataShapeKeySchema,
+      // Every shape but superChats: a viewer's paid message comes from the YouTube source
+      // only (BAJAOVRLAY-35), never from a mapping that could fake one.
+      shapeKey: DataShapeKeySchema.exclude(['superChats']),
       /** The request whose response this shape reads (the httpJson config's requests). */
       requestId: z.string().min(1),
       entriesPath: z.string().optional(),

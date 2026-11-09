@@ -4,7 +4,9 @@
 
 // One event as detected or typed: its kinds, what a notice calls it, and its payload.
 export {
+  checkCarNumberForKind,
   type DetectedEvent,
+  DetectedEventFieldsSchema,
   DetectedEventSchema,
   type EventNoticeKind,
   EventNoticeKindSchema,
@@ -33,9 +35,11 @@ export {
   EventRulesSchema,
   eventRuleTimeLimitsMs,
 } from './eventRule.js';
-// The six inbox commands: show, dismiss, restore a dismissed one, type by hand, change a
-// rule, record detected.
+// The seven inbox commands: show, approve a Super Chat, dismiss, restore a dismissed one,
+// type by hand, change a rule, record detected.
 export {
+  type ApproveEventCommand,
+  ApproveEventCommandSchema,
   type CreateManualEventCommand,
   CreateManualEventCommandSchema,
   type DismissEventCommand,
