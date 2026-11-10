@@ -141,8 +141,11 @@ export const ItemAheadOfTheAirMarker = memo(function ItemAheadOfTheAirMarker(pro
     void sendCommand({ type: 'takeItem', itemId: item.id });
   }
 
+  // Wraps inside its own part of the row: that part may shrink to 12rem (LayerStatusRow),
+  // and a marker that kept the chip and its two buttons on one line would spill over the
+  // row's "Editar" and take its clicks (seen once the page drew in Inter, BAJAOVRLAY-71).
   return (
-    <span className="flex items-center gap-1">
+    <span className="flex flex-wrap items-center gap-1">
       <Tooltip>
         <TooltipTrigger asChild>
           <Badge variant="secondary" tabIndex={0}>
