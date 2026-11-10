@@ -1,5 +1,5 @@
-import type { Graphic, Item, ItemFields } from '@bajaovrlay/shared';
-import { type Ref, useEffect, useImperativeHandle, useState } from 'react';
+import type { Graphic, InboxEventPayload, Item, ItemFields } from '@bajaovrlay/shared';
+import { type Ref, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
 import { useEntityLibrary } from '@/features/entityLibrary/useEntityLibrary';
@@ -68,6 +68,12 @@ export type ItemGraphicFieldsFormProps = {
    * keeps its save buttons off meanwhile. It must stay the same function between draws.
    */
   onImageUploadingChange: (fieldKey: string, isUploading: boolean) => void;
+  /**
+   * On an event template (BAJAOVRLAY-67): the sample event whose values the "Evento"
+   * fields show as examples, which also offers a car group "Do evento". Undefined on any
+   * other item.
+   */
+  sampleEventPayload: InboxEventPayload | undefined;
 };
 
 /**
@@ -137,7 +143,16 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
   const hasFieldsThatCouldNotBeRead = graphicFields.labelsOfFieldsThatCouldNotBeRead.length > 0;
   // The item editor alone lets a field read a data source (BAJAOVRLAY-20) or the entity
   // library (BAJAOVRLAY-19).
-  const bindingOptions = useBindingOptionsOfItemEditor();
+  const bindingOptionsOfTheEditor = useBindingOptionsOfItemEditor();
+  const { sampleEventPayload } = props;
+  // The same object between draws while neither part changes, as the rows are memoised.
+  const bindingOptions = useMemo(
+    () =>
+      sampleEventPayload === undefined
+        ? bindingOptionsOfTheEditor
+        : { ...bindingOptionsOfTheEditor, sampleEventPayload },
+    [bindingOptionsOfTheEditor, sampleEventPayload],
+  );
   const entityLibrary = useEntityLibrary();
 
   return (

@@ -120,18 +120,29 @@ describe('notice.ograf.json settings', () => {
     });
   });
 
-  it('declares the notice layer and the notice category in the v_baja vendor field', () => {
+  it('declares the notice layer, the notice category and its car in the v_baja vendor field', () => {
     // Arrange: nothing to set up; the manifest is read from disk.
 
     // Act: read BajaOvrLay's own field, which OGraf allows because its name starts with v_.
     const bajaVendorFields = noticeManifest.v_baja;
 
     // Assert: the server reads the default layer and the category from it; a notice has
-    // no clock to carry forward, so no update rule.
+    // no clock to carry forward, so no update rule. Its car, team and school are one car
+    // group (BAJAOVRLAY-67), so the item editor picks the car once, or "Do evento".
     expect(
       bajaVendorFields,
-      'the notice must ask for the notice layer and the notice category, with no update rule',
-    ).toEqual({ defaultLayerId: 'notice', category: 'notice' });
+      'the notice must ask for the notice layer and the notice category, with its car grouped',
+    ).toEqual({
+      defaultLayerId: 'notice',
+      category: 'notice',
+      carGroups: [
+        {
+          id: 'car',
+          label: 'Carro',
+          fields: { carNumber: 'carNumber', teamName: 'teamName', schoolName: 'schoolName' },
+        },
+      ],
+    });
   });
 
   it('declares the play and stop lengths the theme sets in --motion-in and --motion-out', () => {

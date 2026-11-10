@@ -190,5 +190,22 @@ export const ptBREvents = {
     pathMissing: (fieldLabel: string) => `Escolha o que "${fieldLabel}" lê do evento.`,
     filledByTheEventNote:
       'Preenchido pelo evento que este item exibe. Um item assim só entra no ar pela aba Eventos.',
+    // BAJAOVRLAY-67: where a template's field comes from, with the kind's sample value.
+    fromTheEventWithExample: (pathLabel: string, exampleText: string) =>
+      `Do evento › ${pathLabel} · exemplo: ${exampleText}`,
+    noExample: '—',
+    // The banner of a template: what fills it, worded per kind and joined for several.
+    templateBannerName: 'Modelo de evento',
+    templateFilledBy: (whatFillsItEach: string[]) =>
+      `Modelo de evento: preenchido a ${whatFillsItEach.join(' e a ')}.`,
+    templateUsedByNoRule:
+      'Modelo de evento: nenhuma regra o usa ainda; escolha-o em "Trocar", nas regras dos eventos.',
+    whatFillsATemplateOfKind: {
+      newIncident: 'cada ocorrência dos incidentes da fonte (penalidade, advertência ou incidente)',
+      fastestLap: 'cada nova volta mais rápida, vinda da fonte',
+      leaderChanged: 'cada troca de líder, vinda da fonte',
+      manual: 'cada evento digitado em "+ Evento" (penalidade ou aviso)',
+      superChat: 'cada Super Chat aprovado',
+    } satisfies Record<InboxEventKind, string>,
   },
 };

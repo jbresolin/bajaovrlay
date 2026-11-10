@@ -11,6 +11,8 @@ export const ptBRCarGroups = {
     carNumber: 'Pelo número do carro',
     place: 'Pelo lugar na corrida',
     typed: 'Digitado à mão',
+    // On an event template only (BAJAOVRLAY-67): the car of the event shown.
+    fromTheEvent: 'Do evento',
   },
   sourceLabel: (groupLabel: string) => `Fonte de ${groupLabel}`,
   carNumberLabel: (groupLabel: string) => `Número do carro — ${groupLabel}`,

@@ -35,6 +35,22 @@ export function writeCarPickIntoForm(
   checkGroupAgainAfterAFailedSave(form, carGroup);
 }
 
+/**
+ * Reads every field of the group from the event's payload field of its own meaning
+ * ("Do evento", BAJAOVRLAY-67): the car, the team and the school of the event shown.
+ */
+export function writeCarGroupFromTheEvent(
+  form: UseFormReturn<SchemaFormValues>,
+  carGroup: CarGroup,
+): void {
+  for (const [fieldKey, meaning] of Object.entries(carGroup.fields)) {
+    form.setValue(`kinds.${fieldKey}`, 'eventField', { shouldDirty: true });
+    form.setValue(`eventPaths.${fieldKey}`, meaning, { shouldDirty: true });
+  }
+  writeCarGroupWay(form, carGroup, 'fromTheEvent');
+  checkGroupAgainAfterAFailedSave(form, carGroup);
+}
+
 /** Turns every field of the group back to typed; what was typed before is still there. */
 export function writeCarGroupTypedByHand(
   form: UseFormReturn<SchemaFormValues>,

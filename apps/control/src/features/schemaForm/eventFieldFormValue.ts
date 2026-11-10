@@ -8,7 +8,9 @@ import {
   type EventFieldValue,
   type EventPayloadPathChoice,
   EventPayloadPathSchema,
+  type InboxEventPayload,
   listEventPayloadPathsThatFitField,
+  ptBREventInbox,
 } from '@bajaovrlay/shared';
 
 import { ptBR } from '@/i18n/ptBR';
@@ -54,4 +56,24 @@ export function readEventFieldOfFormField(
     return { status: 'problem', message: ptBR.events.editor.pathMissing(field.label) };
   }
   return { status: 'chosen', eventField: { kind: 'eventField', path: parsedPath.data } };
+}
+
+/**
+ * Where a field read from the event takes its value, with the sample event's value as an
+ * example (BAJAOVRLAY-67): "Do evento › Carro · exemplo: 47"; "—" when the sample has no
+ * such value. Undefined while no payload field is chosen.
+ */
+export function describeEventPathWithItsExample(
+  chosenPath: string,
+  sampleEventPayload: InboxEventPayload,
+): string | undefined {
+  const parsedPath = EventPayloadPathSchema.safeParse(chosenPath);
+  if (!parsedPath.success) {
+    return undefined;
+  }
+  const sampleValue = sampleEventPayload[parsedPath.data];
+  return ptBR.events.editor.fromTheEventWithExample(
+    ptBREventInbox.payloadPathLabels[parsedPath.data],
+    sampleValue === undefined ? ptBR.events.editor.noExample : String(sampleValue),
+  );
 }

@@ -16,16 +16,19 @@ import { emptySchemaFormBindingValue, readBindingFromSchemaFormValue } from './b
 import { BindingValueNowLine } from './BindingValueNowLine';
 import { CarBattleSelect } from './CarBattleSelect';
 import {
+  canCarGroupBeReadFromTheEvent,
   type CarPickInForm,
   chooseCarGroupWayAfterSeparateFields,
   readAgreementOfCarGroupFields,
   readCarPickShownInGroup,
 } from './carGroupChoice';
 import {
+  writeCarGroupFromTheEvent,
   writeCarGroupTypedByHand,
   writeCarGroupWay,
   writeCarPickIntoForm,
 } from './carGroupFormWrites';
+import { describeEventPathWithItsExample } from './eventFieldFormValue';
 import {
   type AttributesOfTheGroupMessage,
   CarPickControls,
@@ -49,7 +52,10 @@ export type FieldOfCarGroup = { field: SchemaFormFieldDescription; controlId: st
  * what each field reads now; typed by hand shows the car's fields together, typed only.
  * "Campos separados" shows each field's own row as before, and a line says why when the
  * fields do not follow one car; such fields stay separate until a way is chosen for them. On the car ahead of a battle, "Disputa pela posição" sets
- * this car and the one right behind it at once.
+ * this car and the one right behind it at once. On an event template (BAJAOVRLAY-67), a
+ * fourth way, "Do evento", reads the car, team and school from the event, each field
+ * listed with the sample event's value; offered only where every field has a payload
+ * field of its meaning that fits it.
  * The picks are written into each field's kind and binding (carGroupFormWrites.ts), so the
  * form's check and the commands read the fields exactly as they always did.
  */
@@ -86,6 +92,9 @@ export function CarGroupFields(props: {
   const formValuesNow = form.getValues();
 
   const isPicked = way === 'carNumber' || way === 'place';
+  const sampleEventPayload = bindingOptions.sampleEventPayload;
+  const isFromTheEventOffered =
+    sampleEventPayload !== undefined && canCarGroupBeReadFromTheEvent(carGroup, props.dataSchema);
   const pickShown: CarPickInForm | undefined = isPicked
     ? readCarPickShownInGroup(carGroup, formValuesNow, way === 'carNumber' ? 'number' : 'place')
     : undefined;
@@ -100,6 +109,10 @@ export function CarGroupFields(props: {
   function chooseWay(chosenWay: string): void {
     if (chosenWay === 'typed') {
       writeCarGroupTypedByHand(form, carGroup);
+      return;
+    }
+    if (chosenWay === 'fromTheEvent') {
+      writeCarGroupFromTheEvent(form, carGroup);
       return;
     }
     const pickedBy = chosenWay === 'carNumber' ? 'number' : 'place';
@@ -133,6 +146,9 @@ export function CarGroupFields(props: {
       .find((message) => message !== undefined);
     if (firstMessage === undefined || way === 'typed' || way === 'separate') {
       return undefined;
+    }
+    if (way === 'fromTheEvent') {
+      return { text: firstMessage, controlAbout: 'way' };
     }
     if (pickShown === undefined) {
       return { text: texts.wayMissing(groupLabel), controlAbout: 'way' };
@@ -196,6 +212,9 @@ export function CarGroupFields(props: {
           <SelectItem value="carNumber">{texts.wayOptions.carNumber}</SelectItem>
           <SelectItem value="place">{texts.wayOptions.place}</SelectItem>
           <SelectItem value="typed">{texts.wayOptions.typed}</SelectItem>
+          {isFromTheEventOffered || way === 'fromTheEvent' ? (
+            <SelectItem value="fromTheEvent">{texts.wayOptions.fromTheEvent}</SelectItem>
+          ) : null}
         </SelectContent>
       </Select>
 
@@ -232,6 +251,24 @@ export function CarGroupFields(props: {
               </li>
             );
           })}
+        </ul>
+      )}
+
+      {way === 'fromTheEvent' && (
+        <ul className="flex flex-col gap-1" aria-label={texts.valuesNowHeading}>
+          {fieldsOfTheGroup.map(({ field }) => (
+            <li key={field.key} className="flex flex-wrap items-baseline gap-x-2">
+              <span className="text-xs">{field.label}</span>
+              {sampleEventPayload === undefined ? null : (
+                <span className="text-xs text-muted-foreground">
+                  {describeEventPathWithItsExample(
+                    carGroup.fields[field.key] ?? '',
+                    sampleEventPayload,
+                  )}
+                </span>
+              )}
+            </li>
+          ))}
         </ul>
       )}
 

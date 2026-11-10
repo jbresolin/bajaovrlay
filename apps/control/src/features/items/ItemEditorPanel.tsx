@@ -1,5 +1,5 @@
-import type { Command, Item, ItemHome } from '@bajaovrlay/shared';
-import { useCallback, useRef, useState } from 'react';
+import { type Command, type Item, type ItemHome, readSampleEventPayload } from '@bajaovrlay/shared';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -8,6 +8,11 @@ import { findRundownShownOnPage } from '@/features/rundown/rundownShownOnPage';
 import { ptBR } from '@/i18n/ptBR';
 import { useServerState } from '@/state/ControlPageStateProvider';
 
+import {
+  chooseSampleEventKindOfTemplate,
+  describeTemplateBanner,
+  listKindsOfRulesUsingItem,
+} from './eventTemplateOfItemEditor';
 import { chooseFieldsToShowInGraphicForm } from './graphicFieldsOfItemEditor';
 import { ItemEditorButtons } from './ItemEditorButtons';
 import { buildItemEditorFormValuesAtOpening, type ItemEditorFormValues } from './itemEditorForm';
@@ -80,6 +85,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   const layers = useServerState((state) => state.layers);
   const rundowns = useServerState((state) => state.rundowns);
   const panels = useServerState((state) => state.quickFirePanels);
+  const eventRules = useServerState((state) => state.eventRules);
 
   // The item as it was when the panel opened. Kept on purpose, and never replaced by a
   // newer copy from the server: "what changed" is judged against the values the form
@@ -118,6 +124,19 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   // Whether a field of the graphic is "Evento" now (BAJAOVRLAY-44): the item then goes
   // on air only through its event, and "Salvar e disparar" is off.
   const [isAnyFieldFilledByAnEvent, setIsAnyFieldFilledByAnEvent] = useState(false);
+
+  // An event template (BAJAOVRLAY-67): one among "Modelos de evento", or one a field of
+  // which reads the event. The editor says so in a banner worded per kind, and its
+  // "Evento" fields show the sample event of the first kind using it as an example.
+  const homeOfTheItem = itemAsItWasWhenOpened?.home ?? chosenHomeForNewItem;
+  const isAnEventTemplate = homeOfTheItem.kind === 'eventTemplates' || isAnyFieldFilledByAnEvent;
+  const kindsUsingTheTemplate = listKindsOfRulesUsingItem(eventRules, itemAsItWasWhenOpened?.id);
+  const sampleEventKind = chooseSampleEventKindOfTemplate(kindsUsingTheTemplate);
+  // Read once per kind: a new copy at each draw would redraw every row of the form.
+  const sampleEventPayload = useMemo(
+    () => (isAnEventTemplate ? readSampleEventPayload(sampleEventKind) : undefined),
+    [isAnEventTemplate, sampleEventKind],
+  );
 
   // The keys of the graphic's image fields whose upload is still running (BAJAOVRLAY-51).
   // Until it ends the form holds the old image, so a save then would store it, and
@@ -191,6 +210,15 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
             is cancelled, as in "Edição rápida": Enter in a text field does nothing. */}
         <form onSubmit={(event) => event.preventDefault()} noValidate className="contents">
           <CardContent className="flex flex-col gap-4">
+            {isAnEventTemplate && (
+              <p
+                role="note"
+                aria-label={ptBR.events.editor.templateBannerName}
+                className="rounded-md border border-border bg-muted p-2 text-sm"
+              >
+                {describeTemplateBanner(kindsUsingTheTemplate)}
+              </p>
+            )}
             {isEditingStoredItem ? null : (
               <ItemHomeSelect
                 rundownShown={findRundownShownOnPage(rundowns)}
@@ -227,6 +255,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
                 isItemOnAir={isItemOnAir}
                 onIsFilledByAnEventChanged={setIsAnyFieldFilledByAnEvent}
                 onImageUploadingChange={markImageFieldUploading}
+                sampleEventPayload={sampleEventPayload}
               />
             )}
           </CardContent>

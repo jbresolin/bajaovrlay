@@ -177,6 +177,8 @@ export const ptBR = {
     homeOptions: {
       rundown: (rundownName: string) => `Rundown: ${rundownName}`,
       quickFirePanel: (panelName: string) => `Painel de atalhos: ${panelName}`,
+      // A new template's one place (BAJAOVRLAY-67), shown in "Regras".
+      eventTemplates: 'Modelos de evento',
     },
     // One name per colour of ItemColorSchema, so a colour is never told by colour alone.
     colorNames: {

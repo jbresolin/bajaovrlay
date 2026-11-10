@@ -15,6 +15,7 @@ import {
 
 import { buildBindingPathKey, readBindingPathKey } from './bindingChoices';
 import { emptySchemaFormBindingValue } from './bindingFormValue';
+import { listEventPathChoicesOfField } from './eventFieldFormValue';
 import { readOwnValueOfRecord } from './plainRecord';
 import type { CarGroupWay, SchemaFormBindingValue, SchemaFormValues } from './schemaFormValues';
 
@@ -31,13 +32,17 @@ export type CarPickInForm =
  * Whether a group's fields agree:
  * - `oneCarPick`: every field reads its own meaning of one car, one source, live or not;
  * - `typed`: every field is typed by hand (and whether anything is typed at all);
+ * - `fromTheEvent`: every field reads the event's payload field of its own meaning
+ *   (BAJAOVRLAY-67: a template's car, "Do evento");
  * - `differentCars`: every field reads the positions, but not of one car;
  * - `notOnePick`: anything else (one field typed among bound ones, read from the library
- *   or an event, another path, a transform, one field frozen and the others live).
+ *   or another field of an event, another path, a transform, one field frozen and the
+ *   others live).
  */
 export type CarGroupFieldsAgreement =
   | { status: 'oneCarPick'; pick: CarPickInForm }
   | { status: 'typed'; isAnythingTyped: boolean }
+  | { status: 'fromTheEvent' }
   | { status: 'differentCars' }
   | { status: 'notOnePick' };
 
@@ -109,6 +114,13 @@ export function readAgreementOfCarGroupFields(
     });
     return { status: 'typed', isAnythingTyped };
   }
+  if (kinds.every((kind) => kind === 'eventField')) {
+    const isEveryFieldReadingItsOwnMeaning = fieldEntries.every(
+      ([fieldKey, meaning]) =>
+        readOwnValueOfRecord(formValues.eventPaths ?? {}, fieldKey) === meaning,
+    );
+    return isEveryFieldReadingItsOwnMeaning ? { status: 'fromTheEvent' } : { status: 'notOnePick' };
+  }
   if (!kinds.every((kind) => kind === 'binding')) {
     return { status: 'notOnePick' };
   }
@@ -139,7 +151,7 @@ export function readAgreementOfCarGroupFields(
 
 /**
  * The way a group shows when its fields agree as they do now: its one car by number or by
- * place, typed by hand, or, when they disagree, `whenTheyDisagree`.
+ * place, typed by hand, read from the event, or, when they disagree, `whenTheyDisagree`.
  */
 function chooseWayFromAgreement(
   agreement: CarGroupFieldsAgreement,
@@ -151,6 +163,8 @@ function chooseWayFromAgreement(
       return agreement.pick.pickedBy === 'number' ? 'carNumber' : 'place';
     case 'typed':
       return agreement.isAnythingTyped ? 'typed' : whenNothingIsTyped;
+    case 'fromTheEvent':
+      return 'fromTheEvent';
     case 'differentCars':
     case 'notOnePick':
       return whenTheyDisagree;
@@ -266,4 +280,15 @@ export function buildBindingValuesOfCarPick(
     };
   }
   return bindingValues;
+}
+
+/**
+ * True when a group's car can be read from the event ("Do evento", BAJAOVRLAY-67): every
+ * field's meaning names a payload field (the car, the team, the school) that fits it.
+ * A battle card's position or laps have no such field, so its cars never offer it.
+ */
+export function canCarGroupBeReadFromTheEvent(carGroup: CarGroup, dataSchema: unknown): boolean {
+  return Object.entries(carGroup.fields).every(([fieldKey, meaning]) =>
+    listEventPathChoicesOfField(dataSchema, fieldKey).some((choice) => choice.path === meaning),
+  );
 }
