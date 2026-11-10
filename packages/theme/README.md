@@ -16,6 +16,7 @@ src/waitForThemeFonts.ts  the `@bajaovrlay/theme/fonts` entry: the wait for the 
 src/noHardCodedValues.test.ts  the guard: no colour (hex, rgb, hsl) or px font size in a graphic's source (preview.html is excluded on purpose)
 src/motionTokensDeclaredInTheme.test.ts  every token readMotionTokens reads is declared in tokens.css
 src/onAirFontCoversPtBR.test.ts  the guard: the woff2 maps every pt-BR on-air character (read by woff2CharacterMap.testSupport.ts)
+src/woff2CharacterMap.testSupport.ts  reads a woff2's character map; also exported for the control page's own face guard (apps/control/src/fonts)
 ```
 
 **Who reads what.** The server serves this folder at `/theme/` (tokens, font CSS, font file,

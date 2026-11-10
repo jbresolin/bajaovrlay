@@ -12,6 +12,39 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * The control page's face, bundled (BAJAOVRLAY-71): Inter, SIL Open Font License 1.1 (the
+ * LICENSE sits beside the file), Latin subset, one variable file for every weight the page
+ * uses (400, 500, 600). Vite bundles it next to the page, so it comes from the page's own
+ * address, never a CDN: the stream PC may be offline at the track.
+ *
+ * Why bundled: Tailwind's default stack holds system faces only, then `sans-serif`, then
+ * the colour emoji faces. With Noto Color Emoji installed, Chromium on Linux drew the
+ * space, the digits, "#" and "*" from it even with `sans-serif` before it (each space as
+ * wide as an emoji), and boxes overflowed on that machine alone. Inter draws every Latin
+ * character, so the page looks the same on every machine and the faces after it only draw
+ * what it lacks: six symbols (← → ⋯ ▲ ▼ ☰, src/fonts/controlPageFontCoversPtBR.test.ts)
+ * from the system faces, and an emoji from the emoji faces, kept last for that.
+ *
+ * `block`, not `swap`: the file is local and small, and the page should not draw first in
+ * a system face and then shift every box when Inter arrives. `italic` text (two places)
+ * gets Chromium's slanted Inter; the italic file is not shipped for that.
+ */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: block;
+  src: url('./fonts/inter/inter-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+@theme {
+  --font-sans:
+    'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    'Noto Sans', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
