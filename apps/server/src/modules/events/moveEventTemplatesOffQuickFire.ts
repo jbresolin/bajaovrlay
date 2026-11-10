@@ -65,9 +65,7 @@ export function moveEventTemplatesOffQuickFire(
 
   const isAvisosLeftEmpty =
     listItemsOfQuickFirePanelInOrder(itemsAfter, eventsQuickFirePanelId).length === 0;
-  const isAnotherPanelThere = quickFirePanels.some(
-    (panel) => panel.id !== eventsQuickFirePanelId,
-  );
+  const isAnotherPanelThere = quickFirePanels.some((panel) => panel.id !== eventsQuickFirePanelId);
   const panelsAfter =
     isAvisosLeftEmpty && isAnotherPanelThere
       ? deleteAvisosAndRenumberThePanels(quickFirePanels)

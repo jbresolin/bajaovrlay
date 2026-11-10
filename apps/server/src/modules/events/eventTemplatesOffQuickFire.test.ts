@@ -190,7 +190,12 @@ describe('the home "Modelos de evento"', () => {
     expect(
       listEventTemplateIds(stateStore.readAllSlices().items),
       'the new template comes after the seeded ones',
-    ).toEqual(['volta-mais-rapida', 'penalidade', 'super-chat', outcome.ok ? outcome.createdItemId : '']);
+    ).toEqual([
+      'volta-mais-rapida',
+      'penalidade',
+      'super-chat',
+      outcome.ok ? outcome.createdItemId : '',
+    ]);
   });
 
   it('refuses an item no event fills', () => {
@@ -221,7 +226,7 @@ describe('the home "Modelos de evento"', () => {
     });
   });
 
-  it("refuses to take a template's last \"Evento\" field away", () => {
+  it('refuses to take a template\'s last "Evento" field away', () => {
     // Arrange: a new template whose title alone reads the event.
     const { stateStore } = openEventInboxOnTheStore();
     const created = stateStore.applyCommand(

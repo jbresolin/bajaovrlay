@@ -175,7 +175,8 @@ const sentenceScenarios: Array<{
     name: 'restoreEvent of an expired event says it had expired',
     command: { type: 'restoreEvent', eventId: 'evento-volta-31' },
     details: { restoredFrom: 'expired' },
-    expected: 'Trouxe de volta para mostrar de novo o evento volta mais rápida do carro 31, expirado',
+    expected:
+      'Trouxe de volta para mostrar de novo o evento volta mais rápida do carro 31, expirado',
   },
   // A general notice in the inbox reads as one, not as an event of no car.
   {

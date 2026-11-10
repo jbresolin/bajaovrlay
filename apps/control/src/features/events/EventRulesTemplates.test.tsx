@@ -31,12 +31,12 @@ import type { Item } from '@bajaovrlay/shared';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { buildEnduranceStartClockItem } from '@/features/items/itemsLikeTheEditorSaves.testSupport';
 import {
   buildRulesNamingTheSeededTemplates,
   buildSeededPenaltyTemplate,
   buildSlicesWithTheNoticeTemplates,
 } from '@/features/items/noticeTemplates.testSupport';
-import { buildEnduranceStartClockItem } from '@/features/items/itemsLikeTheEditorSaves.testSupport';
 import { chooseOptionInDropdown } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 

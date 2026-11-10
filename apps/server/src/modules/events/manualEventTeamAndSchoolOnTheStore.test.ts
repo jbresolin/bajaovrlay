@@ -44,7 +44,10 @@ function buildGralhaAzulInCadastros(): Team {
 }
 
 /** An inbox with the teams given saved in Cadastros, and the simulator polled or not. */
-function openInboxWithCadastros(teams: Team[], isTheSimulatorPolled: boolean): EventInboxOnTheStore {
+function openInboxWithCadastros(
+  teams: Team[],
+  isTheSimulatorPolled: boolean,
+): EventInboxOnTheStore {
   const inbox = openEventInboxOnTheStore();
   for (const team of teams) {
     applyOrThrow(inbox.stateStore, { type: 'upsertEntity', entityType: 'team', record: team });

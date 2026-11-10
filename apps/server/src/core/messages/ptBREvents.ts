@@ -5,8 +5,6 @@ import type { InboxEventKind, InboxEventStatus } from '@bajaovrlay/shared';
  * ptBR.eventErrors. Kept apart from ptBR.ts to keep that file short.
  */
 export const ptBREventErrors = {
-  /** The quick-fire panel seeded with the two notice items ("Eventos" is the inbox's tab). */
-  seededPanelName: 'Avisos',
   seededItemLabels: {
     fastestLap: 'Volta mais rápida',
     penalty: 'Penalidade',

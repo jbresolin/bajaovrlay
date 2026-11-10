@@ -46,7 +46,9 @@ export function makeTheDatabaseOlderThanTemplatesInRegras(
     return { ...item, home: { kind: 'quickFire', panelId: 'avisos' }, order: orderOnAvisos };
   });
   writeSlice('items', [...itemsOnAvisos, ...itemsTheOperatorAdded]);
-  database.$client.prepare("DELETE FROM seeds_done WHERE name = 'eventTemplatesOffQuickFire'").run();
+  database.$client
+    .prepare("DELETE FROM seeds_done WHERE name = 'eventTemplatesOffQuickFire'")
+    .run();
   database.$client.close();
 }
 

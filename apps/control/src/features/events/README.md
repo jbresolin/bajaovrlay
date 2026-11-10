@@ -7,8 +7,10 @@ waiting events, "+ Evento", "Regras" and the history, `EventHistoryTable.tsx`, s
 sorted by `eventHistoryView.ts`). Both draw
 `WaitingEventsList.tsx`, whose rows (`InboxEventRow.tsx`) have "Prévia", "No ar" and
 "Descartar"; the tab's `RecentlyDismissedEvents.tsx` offers "Desfazer" for 30 s after one. The lists are
-`inboxEventLists.ts`, the words `inboxEventText.ts`; the forms are `ManualEventDialog.tsx` and
-`EventRulesDialog.tsx` with their pure readers (`manualEventForm.ts`, `eventRuleForm.ts`).
+`inboxEventLists.ts`, the words `inboxEventText.ts`; the forms are `ManualEventDialog.tsx` (its
+team pick in `manualEventTeamPick.ts`, BAJAOVRLAY-67) and `EventRulesDialog.tsx`, whose rows show
+each kind's template (`EventRuleTemplateControls.tsx`, `eventRuleTemplates.ts`), with their pure
+readers (`manualEventForm.ts`, `eventRuleForm.ts`). The history offers "Mostrar de novo".
 The badge's pulse and the chime are `usePendingEventAlert.ts` and `eventChime.ts`; the sound
 switch is this browser's own setting (`eventSoundSettingInBrowserStorage.ts`).
 Super Chats (BAJAOVRLAY-35) have their own row, `SuperChatRow.tsx` ("Aprovar" while awaiting

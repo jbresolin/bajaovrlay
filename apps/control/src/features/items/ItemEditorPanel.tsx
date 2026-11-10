@@ -1,5 +1,5 @@
-import { type Command, type Item, type ItemHome, readSampleEventPayload } from '@bajaovrlay/shared';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import type { Command, Item, ItemHome } from '@bajaovrlay/shared';
+import { useCallback, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -131,12 +131,9 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   const homeOfTheItem = itemAsItWasWhenOpened?.home ?? chosenHomeForNewItem;
   const isAnEventTemplate = homeOfTheItem.kind === 'eventTemplates' || isAnyFieldFilledByAnEvent;
   const kindsUsingTheTemplate = listKindsOfRulesUsingItem(eventRules, itemAsItWasWhenOpened?.id);
-  const sampleEventKind = chooseSampleEventKindOfTemplate(kindsUsingTheTemplate);
-  // Read once per kind: a new copy at each draw would redraw every row of the form.
-  const sampleEventPayload = useMemo(
-    () => (isAnEventTemplate ? readSampleEventPayload(sampleEventKind) : undefined),
-    [isAnEventTemplate, sampleEventKind],
-  );
+  const sampleEventKind = isAnEventTemplate
+    ? chooseSampleEventKindOfTemplate(kindsUsingTheTemplate)
+    : undefined;
 
   // The keys of the graphic's image fields whose upload is still running (BAJAOVRLAY-51).
   // Until it ends the form holds the old image, so a save then would store it, and
@@ -255,7 +252,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
                 isItemOnAir={isItemOnAir}
                 onIsFilledByAnEventChanged={setIsAnyFieldFilledByAnEvent}
                 onImageUploadingChange={markImageFieldUploading}
-                sampleEventPayload={sampleEventPayload}
+                sampleEventKind={sampleEventKind}
               />
             )}
           </CardContent>

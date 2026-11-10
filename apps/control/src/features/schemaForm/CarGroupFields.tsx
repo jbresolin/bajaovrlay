@@ -28,12 +28,12 @@ import {
   writeCarGroupWay,
   writeCarPickIntoForm,
 } from './carGroupFormWrites';
-import { describeEventPathWithItsExample } from './eventFieldFormValue';
 import {
   type AttributesOfTheGroupMessage,
   CarPickControls,
   type ControlOfTheGroupMessage,
 } from './CarPickControls';
+import { describeEventPathWithItsExample } from './eventFieldFormValue';
 import type { SchemaFormBindingOptions } from './schemaFormBindingOptions';
 import type { SchemaFormFieldDescription } from './schemaFormDescription';
 import { SchemaFormFieldRow } from './SchemaFormFieldRow';

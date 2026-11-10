@@ -26,10 +26,7 @@ import { describe, expect, it } from 'vitest';
 import { readTriggerDataEventOfInboxEvent } from './dataEventsOfTheInbox.js';
 
 /** An inbox event as detected or typed at 14:31:50 on the enduro day. */
-function buildEvent(
-  kind: DetectedEvent['kind'],
-  payload: DetectedEvent['payload'],
-): DetectedEvent {
+function buildEvent(kind: DetectedEvent['kind'], payload: DetectedEvent['payload']): DetectedEvent {
   return {
     eventId: `evento-${kind}`,
     kind,
