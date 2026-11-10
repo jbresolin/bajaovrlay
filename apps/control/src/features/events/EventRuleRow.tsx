@@ -1,6 +1,7 @@
 import {
   type EventRule,
   type EventRuleMode,
+  type Graphic,
   type Item,
   whyTheDataRoleCannotAutomate,
 } from '@bajaovrlay/shared';
@@ -27,19 +28,32 @@ import {
   noItemChoice,
   readEventRuleFormIntoCommand,
 } from './eventRuleForm';
+import { EventRuleTemplateControls } from './EventRuleTemplateControls';
 
 const texts = ptBR.events.rules;
 
 /**
- * One row of "Regras": the kind's mode, its item, its seconds on air and its maximum wait,
- * and "Salvar", which sends the whole row as updateEventRule (eventRuleForm.ts). A problem
+ * One row of "Regras": the kind's mode, its template ("Trocar": the templates its events
+ * fill, BAJAOVRLAY-67), its seconds on air and its maximum wait, and "Salvar", which sends
+ * the whole row as updateEventRule (eventRuleForm.ts). Above them, what the kind appears
+ * as, with "Editar aparência", "Prévia" and "+ Novo modelo" (EventRuleTemplateControls.tsx). A problem
  * or the server's refusal is shown in the row, and "Salvo." once the server accepted it. The Super Chat row offers "Perguntar" only
  * and says why. For Dados (gate 2 of PR #51), "Automático" is greyed out unless the rule
  * already was; an auto rule kept auto has its item and times greyed out too, each with the
  * server's sentence: what goes on air by itself is the Produtor's.
  */
-export function EventRuleRow(props: { rule: EventRule; items: Item[] }) {
-  const { rule, items } = props;
+export function EventRuleRow(props: {
+  rule: EventRule;
+  /** The templates the kind's events fill, offered in "Trocar". */
+  templatesOffered: Item[];
+  /** The template the rule names now, or undefined. */
+  templateOfTheRule: Item | undefined;
+  graphicsForANewTemplate: Graphic[];
+  onEditTemplate: (template: Item) => void;
+  onNewTemplate: (graphic: Graphic) => void;
+}) {
+  const { rule } = props;
+  const items = props.templatesOffered;
   const sendCommandAndReadItsRefusal = useSendCommandAndReadItsRefusal();
   const [values, setValues] = useState<EventRuleFormValues>(() => buildEventRuleFormValues(rule));
   const [problem, setProblem] = useState<string | undefined>(undefined);
@@ -80,6 +94,14 @@ export function EventRuleRow(props: { rule: EventRule; items: Item[] }) {
   return (
     <fieldset aria-label={kindName} className="flex flex-col gap-2 rounded-md border p-2">
       <legend className="px-1 text-sm font-semibold">{kindName}</legend>
+      <EventRuleTemplateControls
+        rule={rule}
+        kindName={kindName}
+        templateOfTheRule={props.templateOfTheRule}
+        graphicsForANewTemplate={props.graphicsForANewTemplate}
+        onEditTemplate={props.onEditTemplate}
+        onNewTemplate={props.onNewTemplate}
+      />
       <div className="grid grid-cols-2 gap-2">
         <Select
           value={values.mode}

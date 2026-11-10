@@ -75,7 +75,8 @@ describe('the rules editor', () => {
       'fastest laps go on air by themselves',
     ).toBe('Automático');
     expect(
-      fastestLapRow.getByRole('combobox', { name: 'Item de Volta mais rápida' }).textContent,
+      fastestLapRow.getByRole('combobox', { name: 'Trocar o modelo de Volta mais rápida' })
+        .textContent,
       'with the seeded item',
     ).toBe('Volta mais rápida');
     expect(
@@ -87,7 +88,8 @@ describe('the rules editor', () => {
       'and 2 minutes at most in the queue',
     ).toHaveValue('120');
     expect(
-      leaderChangeRow.getByRole('combobox', { name: 'Item de Mudança de líder' }).textContent,
+      leaderChangeRow.getByRole('combobox', { name: 'Trocar o modelo de Mudança de líder' })
+        .textContent,
       'a leader change has no item yet',
     ).toBe('Nenhum');
     expect(
@@ -153,7 +155,7 @@ describe('the rules editor', () => {
     openTheRules();
 
     // Act: read the items offered for incidents.
-    const itemsOffered = readOptionsOfDropdown('Item de Incidente');
+    const itemsOffered = readOptionsOfDropdown('Trocar o modelo de Incidente');
 
     // Assert: none, or one of the two notices.
     expect(itemsOffered, 'only templates can show events').toEqual([

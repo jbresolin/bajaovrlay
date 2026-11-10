@@ -153,7 +153,7 @@ export const ptBREvents = {
   rules: {
     title: 'Regras de eventos',
     description:
-      'Para cada tipo de evento: perguntar ao operador, entrar no ar sozinho ou ignorar, com qual item e por quanto tempo.',
+      'Para cada tipo de evento: perguntar ao operador, entrar no ar sozinho ou ignorar, com qual modelo e por quanto tempo.',
     kindNames: {
       newIncident: 'Incidente',
       fastestLap: 'Volta mais rápida',
@@ -167,8 +167,16 @@ export const ptBREvents = {
       auto: 'Automático',
       ignore: 'Ignorar',
     } satisfies Record<EventRuleMode, string>,
-    itemLabel: (kindName: string) => `Item de ${kindName}`,
+    // "Trocar" (BAJAOVRLAY-67): the template the rule shows its events with.
+    itemLabel: (kindName: string) => `Trocar o modelo de ${kindName}`,
     noItem: 'Nenhum',
+    appearsAs: (templateLabel: string) => `Aparece como: ${templateLabel}`,
+    noTemplate: 'nenhum modelo',
+    editLookButton: 'Editar aparência',
+    previewButton: 'Prévia',
+    newTemplateGraphicLabel: (kindName: string) => `Gráfico do novo modelo de ${kindName}`,
+    newTemplateGraphicPlaceholder: 'Gráfico do novo modelo',
+    newTemplateButton: '+ Novo modelo',
     durationLabel: (kindName: string) => `Segundos no ar de ${kindName}`,
     maxAgeLabel: (kindName: string) => `Espera máxima (s) de ${kindName}`,
     noMaxAgePlaceholder: 'sem limite',
