@@ -14,6 +14,7 @@ import type {
 } from '../../../core/store/reducers/reducerTypes.js';
 import { isSourceHealthy, removeFailingSinceFromStatus } from '../dataSourceHealth.js';
 import { findDataSource, replaceDataSource } from '../dataSourceListing.js';
+import { findWhyThePollEmptiedAList } from '../emptiedListOfAPoll.js';
 import { validatePolledShapes } from '../polledShapesValidation.js';
 
 /**
@@ -25,7 +26,8 @@ import { validatePolledShapes } from '../polledShapesValidation.js';
  *   no failingSinceMs. The recording's count is not touched: the recorder reports it
  *   once the line is in the file (recordRecordingProgress, gate 2 on PR #16).
  * - A failed poll, or a good one with a bad shape or no shape at all (a poll never
- *   half-succeeds): the last good snapshot and lastOkAtMs stay (rule 4), the source is
+ *   half-succeeds), or one whose positions or standings list came back empty after having
+ *   cars (findWhyThePollEmptiedAList, BAJAOVRLAY-32): the last good snapshot and lastOkAtMs stay (rule 4), the source is
  *   stale, the error is kept (a pt-BR fallback when the adapter gave none) and the
  *   failure counted. The first failure sets failingSinceMs to its moment and later ones
  *   keep it, so the page's minute to red "Erro" counts from when the failing started
@@ -64,6 +66,19 @@ export function reduceRecordDataSourcePoll(
       slices,
       sourceWithItsQuota,
       shapesValidation.errorMessage,
+      pollResult.receivedAtMs,
+    );
+  }
+  const storedSnapshot = slices.dataSnapshots.find((snapshot) => snapshot.sourceId === source.id);
+  const whyThePollEmptiedAList = findWhyThePollEmptiedAList(
+    storedSnapshot?.shapes,
+    shapesValidation.shapes,
+  );
+  if (whyThePollEmptiedAList !== null) {
+    return recordFailedPoll(
+      slices,
+      sourceWithItsQuota,
+      whyThePollEmptiedAList,
       pollResult.receivedAtMs,
     );
   }

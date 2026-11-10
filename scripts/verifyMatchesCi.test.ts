@@ -72,6 +72,11 @@ const ciCommandsVerifyLeavesOut = [
     why: "writes a control shard's slowest-tests table to CI's summary page",
   },
   {
+    command:
+      'node scripts/reportSlowestTests.js apps/control/test-results-chaos/playwright-results.json >> "$GITHUB_STEP_SUMMARY"',
+    why: "writes the chaos suite's slowest-tests table to CI's summary page",
+  },
+  {
     command: 'bash scripts/checkJobResults.sh',
     why: 'is "CI passed", which reads the results of the other CI jobs',
   },

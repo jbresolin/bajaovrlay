@@ -9,6 +9,9 @@ build-id.json
 # Playwright output (CI uploads these as artifacts when a run fails)
 test-results/
 playwright-report/
+# ...and the chaos suite's (apps/control/playwright.chaos.config.ts)
+test-results-chaos/
+playwright-report-chaos/
 # Vitest's JSON report on CI, read by scripts/reportSlowestTests.js
 vitest-report.json
 
@@ -23,6 +26,8 @@ apps/server/data/
 apps/control/e2e-data/
 # ...and of its second server, the one with the operator login on (BAJAOVRLAY-29)
 apps/control/e2e-data-login/
+# ...and of the chaos suite's servers, one data folder per scenario (BAJAOVRLAY-32)
+apps/control/e2e-data-chaos/
 # Database and data folder (DATA_DIR) of the renderer's browser tests
 apps/renderer/.e2e-data/
 # Database and data folder of the built server's browser tests (apps/server/e2e)

@@ -17,6 +17,8 @@ export default defineConfig(
       '**/coverage/',
       '**/test-results/',
       '**/playwright-report/',
+      '**/test-results-chaos/',
+      '**/playwright-report-chaos/',
       '.scratch/',
       'docs/design/vendor/',
     ],

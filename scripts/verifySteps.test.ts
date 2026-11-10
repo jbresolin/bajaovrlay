@@ -74,7 +74,8 @@ describe('chooseStepsToRun', () => {
     // Act: choose the steps of a full run.
     const steps = chooseStepsToRun(false);
 
-    // Assert: the eight steps, the cheapest first and the browser tests last.
+    // Assert: the nine steps, the cheapest first, the browser tests last, the chaos suite
+    // (BAJAOVRLAY-32) at the very end.
     expect(
       steps.map((step) => step.name),
       'a full run must take every step in order',
@@ -87,6 +88,7 @@ describe('chooseStepsToRun', () => {
       'Playwright: renderer, bracket, tower',
       'Playwright: other graphics, server',
       'Playwright: control page',
+      'Playwright: chaos suite',
     ]);
   });
 
@@ -96,15 +98,15 @@ describe('chooseStepsToRun', () => {
     // Act: choose the steps of a quick run.
     const steps = chooseStepsToRun(true);
 
-    // Assert: every step but the three Playwright ones.
+    // Assert: every step but the four Playwright ones.
     expect(
       steps.map((step) => step.name),
       '--quick must leave out the browser tests and nothing else',
     ).toEqual(['Install check', 'Lint', 'Typecheck', 'Vitest', 'Build']);
     expect(
       verifySteps.filter((step) => step.isBrowserTest),
-      'exactly three steps must be browser tests',
-    ).toHaveLength(3);
+      'exactly four steps must be browser tests',
+    ).toHaveLength(4);
   });
 });
 

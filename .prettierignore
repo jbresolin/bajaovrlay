@@ -3,6 +3,8 @@ dist/
 coverage/
 test-results/
 playwright-report/
+test-results-chaos/
+playwright-report-chaos/
 
 # Documents written by João by hand; their line breaks are deliberate.
 CLAUDE.md

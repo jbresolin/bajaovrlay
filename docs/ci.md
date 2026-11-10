@@ -31,14 +31,15 @@ everywhere but on the runner, so it reads `GITHUB_ACTIONS` (set only there) rath
 
 ## The jobs
 
-| Job                                                       | What it does                                                                                                                                                                                         | Typical time  |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| Unit and component tests (Vitest)                         | `pnpm test`: every package's Vitest suite.                                                                                                                                                           | 7:15          |
-| Lint, typecheck, build                                    | `pnpm lint`, `pnpm typecheck`, `pnpm build`. No browser.                                                                                                                                             | 3:28          |
-| Browser tests of the renderer and graphics (shard 1 of 2) | `pnpm build`, then `pnpm test:e2e:renderer-bracket-tower`: the renderer's, the bracket's and the positions tower's browser tests, one package at a time.                                             | 6:17          |
-| Browser tests of the renderer and graphics (shard 2 of 2) | `pnpm build`, then `pnpm test:e2e:other-graphics-and-server`: every other package's browser tests but the control page's (the built server's offline test included), one package at a time.          | 6:00          |
-| Browser tests of the control page (shard 1 of 2, 2 of 2)  | `pnpm build`, then `pnpm test:e2e:control --shard=N/2`: half of the control page's browser tests each, on a runner of its own with its own server, database and ports.                               | 5:37 and 7:13 |
-| CI passed                                                 | Green only when every job above passed, each shard included. **João merges only on a green "CI passed".** Branch protection is not available on this repository's plan, so nothing else enforces it. | 0:06          |
+| Job                                                       | What it does                                                                                                                                                                                         | Typical time   |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| Unit and component tests (Vitest)                         | `pnpm test`: every package's Vitest suite.                                                                                                                                                           | 7:15           |
+| Lint, typecheck, build                                    | `pnpm lint`, `pnpm typecheck`, `pnpm build`. No browser.                                                                                                                                             | 3:28           |
+| Browser tests of the renderer and graphics (shard 1 of 2) | `pnpm build`, then `pnpm test:e2e:renderer-bracket-tower`: the renderer's, the bracket's and the positions tower's browser tests, one package at a time.                                             | 6:17           |
+| Browser tests of the renderer and graphics (shard 2 of 2) | `pnpm build`, then `pnpm test:e2e:other-graphics-and-server`: every other package's browser tests but the control page's (the built server's offline test included), one package at a time.          | 6:00           |
+| Browser tests of the control page (shard 1 of 2, 2 of 2)  | `pnpm build`, then `pnpm test:e2e:control --shard=N/2`: half of the control page's browser tests each, on a runner of its own with its own server, database and ports.                               | 5:37 and 7:13  |
+| Chaos suite (Playwright)                                  | `pnpm build`, then `pnpm test:chaos`: the failure scenarios of `apps/control/e2e/chaos` (BAJAOVRLAY-32), on servers of their own that they kill and restart.                                         | about 5 (est.) |
+| CI passed                                                 | Green only when every job above passed, each shard included. **João merges only on a green "CI passed".** Branch protection is not available on this repository's plan, so nothing else enforces it. | 0:06           |
 
 Times are whole jobs, setup included, from #45's run on 2026-11-06 (run 42309763948). The
 browser-test step itself took 5:04 in shard 1 and 4:43 in shard 2 of the renderer and
@@ -73,6 +74,15 @@ its lint and typecheck, 3:07 in on #45.
 
 `pnpm verify` runs the two scripts one after the other; `pnpm test:e2e:renderer-and-graphics`
 runs both too.
+
+### The chaos suite
+
+A job of its own since BAJAOVRLAY-32: its scenarios start, kill and restart built servers on
+ports of their own (5230 to 5233), so they share a runner with no other browser test. The
+tests take 3 min 46 s on João's machine (19 scenarios and one quarantined, 2026-11-09); two
+of them wait on time itself: a console offline for a minute, and an NTP step confirmed 16 s
+after it was seen (about 45 s). The brief keeps the suite under 8 minutes; with setup, the
+build and the browser install the job is estimated at about 5. `pnpm verify` runs it last.
 
 ### Installing the browser
 

@@ -1,5 +1,5 @@
 // Test support: what a test can set up, do and read with the fake OBS
-// (fakeObsWebSocketServer.testSupport.ts), kept apart so the fake's own file holds only
+// (openFakeObs.testSupport.ts), kept apart so the fake's own file holds only
 // how it speaks the protocol. Every "ByHand" call does what a person working OBS does,
 // and the fake sends the events real OBS sends for it.
 

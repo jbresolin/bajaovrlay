@@ -37,6 +37,13 @@ export const verifySteps = [
     command: 'pnpm test:e2e:control',
     isBrowserTest: true,
   },
+  // The chaos suite (BAJAOVRLAY-32): its own servers and ports, killed and restarted on
+  // purpose, so it runs alone, after everything else; on CI it is a job of its own.
+  {
+    name: 'Playwright: chaos suite',
+    command: 'pnpm test:chaos',
+    isBrowserTest: true,
+  },
 ];
 
 /**

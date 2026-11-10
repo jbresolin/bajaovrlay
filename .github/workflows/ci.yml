@@ -284,6 +284,81 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  chaos-suite:
+    name: Chaos suite (Playwright)
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    # The failure scenarios of apps/control/e2e/chaos (BAJAOVRLAY-32): about 4 minutes of
+    # tests on João's machine, kept under 8 by the brief; 15 means something is stuck. A job
+    # of its own: every scenario starts, kills and restarts servers of its own, on ports of
+    # its own, so it shares a runner with no other browser test.
+    timeout-minutes: 15
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node from .nvmrc
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies exactly as locked
+        run: pnpm install --frozen-lockfile
+
+      # The scenarios run the BUILT server, which serves the built control page and
+      # renderer, as on the stream PC.
+      - name: Build every package
+        run: pnpm build
+
+      - name: Read the Playwright version
+        id: playwright-version
+        run: echo "version=$(pnpm exec playwright --version | sed 's/^Version //')" >> "$GITHUB_OUTPUT"
+
+      # Same key as in the other browser jobs (image, architecture, Playwright version).
+      - name: Restore the Playwright browser
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browser-${{ runner.os }}-${{ env.ImageOS }}-${{ runner.arch }}-${{ steps.playwright-version.outputs.version }}
+
+      # 5 minutes per try, and one more try after a failed or slow download, as in the
+      # other browser jobs.
+      - name: Install the Playwright browser
+        id: install-browser
+        timeout-minutes: 5
+        continue-on-error: true
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install the Playwright browser, second try
+        if: steps.install-browser.outcome == 'failure'
+        timeout-minutes: 5
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Chaos suite (Playwright)
+        run: pnpm test:chaos
+
+      - name: Report the slowest tests
+        if: always()
+        run: >-
+          node scripts/reportSlowestTests.js apps/control/test-results-chaos/playwright-results.json
+          >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Playwright results
+        # A job past its timeout ends as cancelled, and its traces matter most then.
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-results-chaos-suite
+          path: |
+            apps/control/test-results-chaos/
+            apps/control/playwright-report-chaos/
+          if-no-files-found: ignore
+          retention-days: 14
+
   # The one line a pull request shows for its merge: green only when every job above
   # passed. A job that failed, was cancelled or was skipped makes it red. Branch protection
   # is not available on this repository's plan, so nothing enforces it: João merges only
@@ -295,6 +370,7 @@ jobs:
       - checks
       - browser-tests-of-renderer-and-graphics
       - browser-tests-of-control
+      - chaos-suite
     # !cancelled(): it must run, and turn red, even when a job it needs failed or timed out,
     # but not when the whole run was cancelled (a newer push replaced it). Inside ${{ }}
     # because a YAML value cannot start with "!".
