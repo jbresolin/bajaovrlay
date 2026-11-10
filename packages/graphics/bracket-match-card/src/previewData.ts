@@ -1,9 +1,10 @@
 /**
  * Chooses what preview.html shows: the JSON in `?data=` when there is one, or one of the
- * sample matches "a seguir": `?match=logos|no-logos|one-logo|started|longest-names|empty`
- * (the second semifinal with both teams' logos, with none, with Corisco's only, at 1 × 0,
- * two of the longest team names of the event, and an empty slot), `logos` when none is
- * named. Whether the data is valid is left to the graphic's own load(), so the preview
+ * sample matches "a seguir":
+ * `?match=logos|no-logos|one-logo|broken-logo|started|longest-names|empty` (the second
+ * semifinal with both teams' logos, with none, with Corisco's only, with Corisco's logo at
+ * an address that fails to load, at 1 × 0, two of the longest team names of the event, and
+ * an empty slot), `logos` when none is named. Whether the data is valid is left to the graphic's own load(), so the preview
  * shows exactly the answer a renderer would get.
  *
  * The teams are real teams of the 30ª Competição (docs/design/sample-data.json): Corisco
@@ -55,6 +56,12 @@ function buildSampleMatch(matchName: string): MatchCardData {
       return buildSemifinalWithoutLogos();
     case 'one-logo':
       return { ...buildSemifinalWithoutLogos(), carALogoUrl: coriscoLogoUrl };
+    case 'broken-logo':
+      // Nothing is served at this address: the card must show Corisco's car chip.
+      return {
+        ...buildSemifinalWithLogos(),
+        carALogoUrl: 'preview-images/logo-que-nao-existe.webp',
+      };
     case 'started':
       return { ...buildSemifinalWithLogos(), carAWins: 1, carBWins: 0 };
     case 'longest-names':

@@ -89,10 +89,22 @@ export default class BracketMatchCardGraphic extends LitElement implements OGraf
   private runningPanelTimeline: MatchCardTimeline | undefined = undefined;
   /** The cycle of the names too long for their box; made at load, once Lit has rendered. */
   private scrollingTextClock: ScrollingTextClock | undefined = undefined;
+  /**
+   * The logo addresses that failed to load: their side shows the car chip. Kept for the
+   * element's life, so a broken address sent again by an update is not retried; a new
+   * address (the team's logo replaced in Cadastros) is.
+   */
+  private readonly failedLogoUrls = new Set<string>();
 
   override render() {
     const look = this.data === undefined ? undefined : readMatchCardLook(this.data);
-    return renderMatchCardTemplate(look);
+    return renderMatchCardTemplate(look, {
+      failedLogoUrls: this.failedLogoUrls,
+      onLogoFailed: (logoUrl) => {
+        this.failedLogoUrls.add(logoUrl);
+        this.requestUpdate();
+      },
+    });
   }
 
   /**
@@ -126,6 +138,8 @@ export default class BracketMatchCardGraphic extends LitElement implements OGraf
     placePanelOffAir({ panel });
     await waitForThemeFontsToBeReady(this);
     await waitForImagesToSettle(this.renderRoot);
+    // A logo that failed has asked for a redraw with its car chip: draw it before play.
+    await this.updateComplete;
 
     // A dispose that came while load was waiting must win; going on would bring a
     // disposed graphic back to life.

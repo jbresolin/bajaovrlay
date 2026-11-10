@@ -10,7 +10,8 @@
  * The panel is what the animations move, and Lit keeps it across redraws. With no match
  * to show (an empty "a seguir") the panel is drawn empty and hidden (matchCardStyles.ts).
  * A logo is an <img> only, which runs no script even for an SVG
- * (packages/graphics/README.md).
+ * (packages/graphics/README.md). A logo that fails to load is never left as a broken
+ * image: the card is told (`LogoFailures`) and draws the car chip in its place.
  */
 import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { renderTeamLogoCell } from '@bajaovrlay/graphics-kit/teamLogoCell';
@@ -22,24 +23,40 @@ import { ptBR } from './ptBR.js';
 /** Which side of the card a team is drawn on: car A on the left, car B mirrored. */
 type CardSide = 'a' | 'b';
 
-/** The team's logo cell, or its large car chip when it has no logo. */
-function renderLogoOrChip(car: MatchCardCarLook, side: CardSide): TemplateResult {
-  if (car.logo === undefined) {
+/** The logos that failed to load, and how to report one more; kept by the card element. */
+export type LogoFailures = {
+  failedLogoUrls: ReadonlySet<string>;
+  onLogoFailed: (logoUrl: string) => void;
+};
+
+/** The team's logo cell, or its large car chip when it has no logo or its logo failed. */
+function renderLogoOrChip(
+  car: MatchCardCarLook,
+  side: CardSide,
+  logoFailures: LogoFailures,
+): TemplateResult {
+  const logo = car.logo;
+  if (logo === undefined || logoFailures.failedLogoUrls.has(logo.url)) {
     return html`<span class="car-chip-large" data-testid=${`match-card-chip-${side}`}
       >${car.carNumber}</span
     >`;
   }
   return renderTeamLogoCell({
-    logoUrl: car.logo.url,
+    logoUrl: logo.url,
     alternativeText: ptBR.logoAlternativeText(car.teamName),
-    isOnLightPlate: car.logo.isOnLightPlate,
+    isOnLightPlate: logo.isOnLightPlate,
     cellTestId: `match-card-logo-cell-${side}`,
     imageTestId: `match-card-logo-${side}`,
+    onLogoFailed: () => logoFailures.onLogoFailed(logo.url),
   });
 }
 
 /** One side: the logo or chip, then the team's name over its details line. */
-function renderSide(car: MatchCardCarLook, side: CardSide): TemplateResult {
+function renderSide(
+  car: MatchCardCarLook,
+  side: CardSide,
+  logoFailures: LogoFailures,
+): TemplateResult {
   const details =
     car.detailsLine === undefined
       ? nothing
@@ -47,7 +64,7 @@ function renderSide(car: MatchCardCarLook, side: CardSide): TemplateResult {
           >${renderScrollingText(car.detailsLine)}</span
         >`;
   return html`<span class="side" data-side=${side} data-testid=${`match-card-side-${side}`}
-    >${renderLogoOrChip(car, side)}<span class="identity"
+    >${renderLogoOrChip(car, side, logoFailures)}<span class="identity"
       ><span class="team-name scrolling-text-box" data-testid=${`match-card-team-${side}`}
         >${renderScrollingText(car.teamName)}</span
       >${details}</span
@@ -87,10 +104,14 @@ function renderHeadLine(match: MatchCardMatchLook): TemplateResult {
 }
 
 /** The card's content: the head line over the two sides and what goes between them. */
-function renderMatch(match: MatchCardMatchLook): TemplateResult {
+function renderMatch(match: MatchCardMatchLook, logoFailures: LogoFailures): TemplateResult {
   const [carA, carB] = match.cars;
   return html`${renderHeadLine(match)}<span class="sides"
-      >${renderSide(carA, 'a')}${renderMiddle(match)}${renderSide(carB, 'b')}</span
+      >${renderSide(carA, 'a', logoFailures)}${renderMiddle(match)}${renderSide(
+        carB,
+        'b',
+        logoFailures,
+      )}</span
     >`;
 }
 
@@ -98,14 +119,17 @@ function renderMatch(match: MatchCardMatchLook): TemplateResult {
  * The card's markup: before load (no look yet) an empty panel, invisible until played;
  * after that the panel with the match, or empty and hidden when there is none to show.
  */
-export function renderMatchCardTemplate(look: MatchCardLook | undefined): TemplateResult {
+export function renderMatchCardTemplate(
+  look: MatchCardLook | undefined,
+  logoFailures: LogoFailures,
+): TemplateResult {
   const match = look?.match;
   return html`<div
     class="match-card"
     data-testid="match-card-panel"
     data-has-match=${match === undefined ? 'false' : 'true'}
   >
-    ${match === undefined ? nothing : renderMatch(match)}
+    ${match === undefined ? nothing : renderMatch(match, logoFailures)}
   </div>`;
 }
 

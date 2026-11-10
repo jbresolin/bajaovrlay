@@ -8,7 +8,8 @@
  *
  * What these tests prove:
  *   - Load draws the match off air; play brings it in, stop takes it out, each 200; a team
- *     without a logo shows its car-number chip.
+ *     without a logo shows its car-number chip, and so does a team whose logo fails to load
+ *     (never a broken image on air).
  *   - Empty data (an empty "a seguir") loads and plays: the card shows nothing.
  *   - An update on air redraws another match in place; one that takes the match off the
  *     air leaves the card on air showing nothing.
@@ -58,6 +59,34 @@ describe('load, play and stop', () => {
     expect(
       findPartOfMatchCard(matchCard, 'match-card-chip-a')?.textContent,
       'a team without a logo shows its car number in its place',
+    ).toBe('32');
+  });
+
+  it('shows the car-number chip in place of a logo that fails to load', async () => {
+    // Arrange: the first semifinal with a logo for Corisco whose address turns out broken
+    // (removed from the media store after the team was saved, say).
+    const matchCard = createMatchCardOnThePage();
+    const pendingLoad = loadMatchCardWithData(matchCard, {
+      ...createSemifinal1Data(),
+      carALogoUrl: '/media/logo-apagado-da-corisco.webp',
+    });
+    await matchCard.updateComplete;
+
+    // Act: the browser reports the logo as broken, and load finishes.
+    findPartOfMatchCard(matchCard, 'match-card-logo-a')?.dispatchEvent(new Event('error'));
+    const loadAnswer = await pendingLoad;
+
+    // Assert: loaded, the logo gone and Corisco's car number in its place.
+    expect(loadAnswer, 'a broken logo must never keep the card from loading').toEqual({
+      statusCode: 200,
+    });
+    expect(
+      findPartOfMatchCard(matchCard, 'match-card-logo-a'),
+      'no broken image may stay on the card',
+    ).toBeUndefined();
+    expect(
+      findPartOfMatchCard(matchCard, 'match-card-chip-a')?.textContent,
+      'the car-number chip stands in for the broken logo',
     ).toBe('32');
   });
 

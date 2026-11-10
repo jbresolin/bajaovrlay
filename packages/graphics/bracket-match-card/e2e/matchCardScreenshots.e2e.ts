@@ -12,6 +12,8 @@
  *   - The second semifinal "a seguir" with both teams' logos, with none (each side shows
  *     its car-number chip), with one; and once it has started (1 × 0): each like its
  *     baseline.
+ *   - A team logo that fails to load: that side shows its car-number chip, never a broken
+ *     image, like its baseline.
  *   - Two of the longest team names of the event fit their side: each name and details
  *     line stays inside its box (it scrolls on air, at rest in the shot), and the card
  *     keeps its width, the lower third's widest, measured.
@@ -76,6 +78,29 @@ for (const stage of ['grey', 'black'] as const) {
         });
       });
     }
+
+    test('shows the car-number chip in place of a logo that fails to load', async ({ page }) => {
+      // Arrange: the preview on air, Corisco's logo at an address that serves nothing.
+      await openPreviewOnAir(page, `preview.html?stage=${stage}&match=broken-logo`);
+
+      // Act: nothing more; the card is on air once its images have settled.
+
+      // Assert: Corisco's chip and no broken image on the left, Cactus's logo on the right,
+      // and the look against the baseline.
+      await expect(
+        page.getByTestId('match-card-chip-a'),
+        'the car-number chip must stand in for the broken logo',
+      ).toHaveText('32');
+      await expect(
+        page.getByTestId('match-card-logo-a'),
+        'no broken image may stay on the card',
+      ).toHaveCount(0);
+      await expect(page.getByTestId('match-card-logo-b'), "Cactus's logo stays").toBeVisible();
+      await expect(page, 'the broken logo must look like its baseline').toHaveScreenshot(
+        `match-card-logo-quebrado-${stage}.png`,
+        { maxDiffPixelRatio: 0.01 },
+      );
+    });
 
     test("keeps the longest names inside their sides at the lower third's width", async ({
       page,
