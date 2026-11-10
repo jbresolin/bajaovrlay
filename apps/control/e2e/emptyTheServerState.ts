@@ -128,10 +128,11 @@ async function putTheEventInboxBackToItsDefaults(): Promise<void> {
 /**
  * Sends one command to the real server over a WebSocket of its own, exactly as the
  * control page does, and resolves once the server has answered ok. Rejects when the
- * server refuses the command or does not answer within five seconds.
+ * server refuses the command or does not answer within five seconds. Exported for a test
+ * whose setup is not what it shows (BAJAOVRLAY-65 makes its match bug item with it).
  */
-function sendCommandToRealServer(
-  command: ResetCommand,
+export function sendCommandToRealServer(
+  command: ResetCommand | ({ type: string } & Record<string, unknown>),
   refusalCodesThatMeanItIsDone: string[] = [],
 ): Promise<void> {
   const requestId = `pedido-${crypto.randomUUID()}`;
