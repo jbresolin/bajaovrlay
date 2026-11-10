@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1920, initial-scale=1" />
+    <!-- The title and every label come from src/ptBR.ts, set by src/previewPage.ts. -->
+    <title></title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        font-family: system-ui, sans-serif;
+      }
+
+      /* A stand-in for the stream video behind the graphic: fixed, so screenshots are stable. */
+      .preview-stage {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        background: linear-gradient(135deg, #2f4a3a 0%, #5d6b4f 45%, #8a7a5a 100%);
+      }
+
+      /* ?stage=grey and ?stage=black: the design's screenshot backgrounds (mid-grey, near-black). */
+      body[data-stage='grey'] .preview-stage {
+        background: #7f7f7f;
+      }
+
+      body[data-stage='black'] .preview-stage {
+        background: #0a0a0a;
+      }
+
+      .preview-controls {
+        position: fixed;
+        left: 50%;
+        top: 360px;
+        transform: translateX(-50%);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        max-width: 760px;
+        padding: 12px;
+        border-radius: 8px;
+        background: rgb(255 255 255 / 92%);
+      }
+
+      .preview-controls button {
+        padding: 8px 12px;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .preview-last-answer {
+        flex-basis: 100%;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body data-preview-state="loading">
+    <main class="preview-stage" id="preview-stage"></main>
+    <!-- Centred near the middle, so the buttons never cover the card. -->
+    <section class="preview-controls" id="preview-controls">
+      <output class="preview-last-answer" id="preview-last-answer"></output>
+    </section>
+    <script type="module" src="./src/previewPage.ts"></script>
+  </body>
+</html>

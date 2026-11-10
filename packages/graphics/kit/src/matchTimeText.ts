@@ -1,8 +1,8 @@
 /**
  * A car's time in a timed match as the Super Prime's scoring sheet writes it: seconds with
  * a comma and three decimals ("41,870"), minutes before them past a minute ("1:03,215").
- * Written here rather than shared: the bug is the one graphic that writes a match's time,
- * and the graphics import nothing zod-bearing from @bajaovrlay/shared.
+ * The match bug's and the "a seguir" card's (BAJAOVRLAY-65); kept in the kit rather than
+ * shared, since the graphics import nothing zod-bearing from @bajaovrlay/shared.
  */
 
 /** Writes a time in milliseconds as "41,870" or "1:03,215"; never negative. */

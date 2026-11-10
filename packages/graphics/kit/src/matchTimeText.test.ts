@@ -1,17 +1,17 @@
 /**
- * A car's time in a timed run, as the bug writes it (packages/graphics/bracket-match-bug)
+ * A car's time in a timed Super Prime match (packages/graphics/kit)
  *
  * What this module is for:
- *   A timed Super Prime match carries each car's time in milliseconds. The bug writes it
- *   as the scoring sheet does: seconds with a comma and three decimals ("41,870"), and
- *   minutes before them past a minute ("1:03,215").
+ *   A timed Super Prime match carries each car's time in milliseconds. The match bug and
+ *   the "a seguir" card (BAJAOVRLAY-65) write it as the scoring sheet does: seconds with a
+ *   comma and three decimals ("41,870"), and minutes before them past a minute ("1:03,215").
  *
  * What these tests prove:
  *   - One row per case: a usual run, a run over a minute, a whole second, a time under
  *     ten seconds, and the exact minute.
  *
  * What these tests deliberately do not cover:
- *   - Where the text sits: matchBugModel.test.ts and the screenshots.
+ *   - Where the text sits: each graphic's model test and screenshots.
  */
 import { describe, expect, it } from 'vitest';
 

@@ -10,7 +10,7 @@ optional: an empty "agora" draws nothing, and an update that takes the match off
 bug on air showing nothing, never a stale match.
 Start reading at `src/bracket-match-bug.ts` (the team card's lifecycle); it wires
 `matchBugModel.ts` (data and what it shows), `matchBugView.ts`, `matchBugStyles.ts`,
-`matchBugAnimations.ts` (the logo bug's fade), `matchTimeText.ts` and `ptBR.ts`.
+`matchBugAnimations.ts` (the logo bug's fade), the kit's `matchTimeText` and `ptBR.ts`.
 Preview: `pnpm --filter @bajaovrlay/bracket-match-bug dev`, then http://localhost:5226/preview.html
 (add `?match=before|during|after|times|third-place|empty`, `?corner=…`, `?stage=grey|black` or
 `?data=<JSON>`). Unit tests: `pnpm --filter @bajaovrlay/bracket-match-bug test`; Playwright with
