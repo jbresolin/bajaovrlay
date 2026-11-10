@@ -77,9 +77,9 @@ function MatchRowOfTheList(props: {
  * source's order, each with its progress (encerrada, em andamento, a definir), the
  * suggestion it carries and the slot it is in, and "Agora" and "A seguir" to put it there;
  * any match goes in either slot, one listed after a match not yet run included (the final
- * run after a third place listed later). The two slots can be emptied at the foot. The
- * dialog stays open after a press, so both slots can be set in one go; the badges follow
- * the server's slices.
+ * run before the third place listed ahead of it). The two slots can be emptied at the
+ * foot. The dialog stays open after a press, so both slots can be set in one go; the
+ * badges follow the server's slices.
  */
 export function ChooseBracketMatchDialog(props: {
   source: MatchFocusOfASource;

@@ -11,12 +11,15 @@
  *
  * What these tests prove:
  *   - One row per situation of the day: nothing decided yet, byes ahead of the races, a
- *     winner arriving, the third place listed after the final, a match skipped on track,
- *     the last match left, the last match decided, and a match the source stopped listing.
+ *     winner arriving, the third place listed before the final (contract C), a best of 3
+ *     at 1 × 1, a match skipped on track, the last match left, the last match decided,
+ *     and a match the source stopped listing. Every row's rounds pass BracketsShapeSchema.
  *
  * What these tests deliberately do not cover:
  *   - The focus itself, which never moves by itself when a suggestion changes: the
  *     server's command tests (modules/bracketMatchFocus).
+ *   - What "Usar sugestão" proposes once the operator has chosen "a seguir" by hand:
+ *     bracketMatchProposal.test.ts.
  *   - The order and the progress of each match in the list: bracketMatchPlayOrder.test.ts.
  */
 import { describe, expect, it } from 'vitest';
@@ -24,10 +27,12 @@ import { describe, expect, it } from 'vitest';
 import type { BracketRound } from '../dataShapes/index.js';
 import { suggestBracketMatches } from './bracketMatchSuggestions.js';
 import {
+  buildBestOfThreeUnderWay,
   buildBye,
   buildDecidedMatch,
   buildQuarterFinals,
   buildUndecidedMatch,
+  parseRoundsAsASourceSendsThem,
   superPrimeCars,
 } from './superPrimeBrackets.testSupport.js';
 
@@ -110,16 +115,32 @@ describe('suggestBracketMatches', () => {
       expected: { currentMatchId: 'qf-2', upNextMatchId: 'qf-3' },
     },
     {
-      // Contract C says the third place comes no later than the final, but the play order
-      // is the source's: listed after the final, it is suggested after the final.
-      name: 'follows the source when the third place is listed after the final',
+      // Contract C: a source lists the third place no later than the final, so the third
+      // place is suggested first. Running the final first is the operator's choice by hand
+      // (setBracketMatchFocus); the suggestion follows the source.
+      name: 'suggests the third place before the final when it is listed before the final',
       rounds: [
         buildQuarterFinalsAllDecided(),
         buildSemifinals(cars.corisco.carNumber, cars.cactus.carNumber),
-        buildFinal(false),
         buildThirdPlace(false),
+        buildFinal(false),
       ],
-      expected: { currentMatchId: 'final', upNextMatchId: 'terceiro' },
+      expected: { currentMatchId: 'terceiro', upNextMatchId: 'final' },
+    },
+    {
+      // A best of 3 at 1 × 1 has wins but no winner: it is still being raced, so it stays
+      // the suggested "agora" until the deciding race gives it a winner.
+      name: 'keeps suggesting a best of 3 at 1 × 1, which has no winner yet',
+      rounds: [
+        {
+          name: 'Quartas de final',
+          matches: [
+            buildBestOfThreeUnderWay('qf-1', cars.corisco, 1, cars.buffalo, 1),
+            ...buildQuarterFinals().matches.slice(1),
+          ],
+        },
+      ],
+      expected: { currentMatchId: 'qf-1', upNextMatchId: 'qf-2' },
     },
     {
       // On track the operator ran qf-3 before qf-2. qf-2 still has no winner, so it is
@@ -167,10 +188,12 @@ describe('suggestBracketMatches', () => {
   ];
 
   it.each(suggestionScenarios)('$name', ({ rounds, expected }) => {
-    // Arrange: the rounds the source sends at that moment of the day (built above).
+    // Arrange: the rounds the source sends at that moment of the day, checked by the
+    // brackets shape so no row can rest on data a source could never send.
+    const roundsAsSent = parseRoundsAsASourceSendsThem(rounds);
 
     // Act: ask which matches to suggest.
-    const suggestion = suggestBracketMatches(rounds);
+    const suggestion = suggestBracketMatches(roundsAsSent);
 
     // Assert: "agora" and "a seguir" are the expected matches, or nothing.
     expect(suggestion, 'the suggested "agora" and "a seguir" must follow the play order').toEqual(

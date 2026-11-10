@@ -1,7 +1,13 @@
 // Tests only: a Super Prime of eight cars as a source sends it, round by round, built so
 // each test can decide which matches have a winner. The teams are real Super Prime
 // short names (the shared sample's), so the data reads like the day.
-import type { BracketCar, BracketMatch, BracketRound, BracketsShape } from '../dataShapes/index.js';
+import {
+  type BracketCar,
+  type BracketMatch,
+  type BracketRound,
+  type BracketsShape,
+  BracketsShapeSchema,
+} from '../dataShapes/index.js';
 
 /** The eight cars of the quarter-finals, by their car number. */
 export const superPrimeCars = {
@@ -76,4 +82,13 @@ export function buildQuarterFinals(winners: Record<string, BracketCar> = {}): Br
 /** The brackets of one session, as the shape carries them. */
 export function buildSuperPrimeBrackets(rounds: BracketRound[]): BracketsShape {
   return { sessionId: 'super-prime-30a-competicao', updatedAtMs: 1_793_552_400_000, rounds };
+}
+
+/**
+ * The rounds checked by BracketsShapeSchema, as the server checks a source's poll: a test
+ * built on data no source can send (a match id twice, a round of the wrong size) throws
+ * here instead of passing on impossible data.
+ */
+export function parseRoundsAsASourceSendsThem(rounds: BracketRound[]): BracketRound[] {
+  return BracketsShapeSchema.parse(buildSuperPrimeBrackets(rounds)).rounds;
 }
