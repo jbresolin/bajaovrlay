@@ -1531,3 +1531,4 @@ and §19 are the authority; PR lines record what an agent chose and João has no
 - 2026-11-09 — PR #54 — Gate 2: a page token YouTube refuses (HTTP 400) is dropped and the next poll reads the chat from the start, instead of asking for the same page again.
 - 2026-11-09 — PR #54 — Gate 2 follow-up: a YouTube emoji code holds at least one letter, so digits between colons ("15:30:45", "1:2:3") stay as typed.
 - 2026-11-09 — PR #54 — Gate 2 follow-up: the control page counts a Super Chat as not approved by the server's rule (any status but approved), so it never offers "No ar" on one the server would refuse.
+- 2026-11-10 — PR #62 — The control page draws its text in a bundled Inter (variable, Latin subset, served by the app) named first in its font stack, with the emoji faces last, so no font installed on a machine changes its layout.
