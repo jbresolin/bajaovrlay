@@ -14,9 +14,9 @@
  *   - NTP out of reach: the server starts all the same, "Verificar servidor" says NTP has
  *     not answered, and a race clock on air runs on with real time.
  *   - Real time found 30 s ahead, with a race clock on air: once the step is confirmed (a
- *     second answer, 16 s after the first), the server holds it: the clock on air keeps
- *     counting without a jump, never blanks nor replays its entrance, and the header warns
- *     "Relógio do servidor 30 s fora da hora certa".
+ *     second answer, 16 s after the first), the server holds it: the clock on air, read
+ *     every second through it all, keeps counting without a jump, never blanks nor replays
+ *     its entrance, and the header warns "Relógio do servidor 30 s fora da hora certa".
  *   - "Acertar relógio agora" with a countdown, a race clock and a lower third on air: the
  *     confirm says the race clock and the countdowns jump, and how far; once set, the
  *     countdown has 30 s less to go and the race clock 30 s more, while the lower third is
@@ -28,14 +28,15 @@
  *   - A step with nothing counting time on air, which the server takes by itself:
  *     serverClockDiscipline's tests.
  */
-import { expect, type Page, test } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
 import { type FakeNtpForTheServer, openFakeNtpForTheServer } from './faults/fakeNtpForTheServer';
-import { type ChaosServer, startChaosServer } from './faults/serverProcess';
 import { chaosServerPort } from './steps/chaosPorts';
+import { expect, test } from './steps/chaosTest';
 import {
   readClockTextAsSeconds,
   readRaceClockSecondsOnTheOutput,
+  startReadingTheRaceClockEverySecond,
   waitUntilTheRaceClockShowsATime,
 } from './steps/clockOnTheOutput';
 import {
@@ -106,14 +107,14 @@ async function waitForNtpAnswersThatSawTheOffset(
 test.describe('the server clock when NTP misbehaves', () => {
   test('starts with NTP out of reach, says so, and the clock on air runs on', async ({
     context,
+    startChaosServer,
   }) => {
-    let server: ChaosServer | undefined;
     let fakeNtp: FakeNtpForTheServer | undefined;
     try {
       // Arrange: an NTP server that answers nothing; the server pointed at it.
       fakeNtp = await openFakeNtpForTheServer();
       fakeNtp.stopAnswering();
-      server = await startChaosServer('ntpOutOfReach', chaosServerPort, {
+      const server = await startChaosServer('ntpOutOfReach', chaosServerPort, {
         BAJAOVRLAY_NTP_SERVERS: fakeNtp.ntpServersSetting,
       });
       const output = await openTheProgramOutputAt(context, server.address);
@@ -143,20 +144,19 @@ test.describe('the server clock when NTP misbehaves', () => {
         'the race clock must count real seconds without NTP',
       ).toBeLessThanOrEqual(clockToleranceInSeconds);
     } finally {
-      await server?.stop();
       fakeNtp?.close();
     }
   });
 
   test('holds a confirmed step while a clock is on air, and the header warns', async ({
     context,
+    startChaosServer,
   }) => {
-    let server: ChaosServer | undefined;
     let fakeNtp: FakeNtpForTheServer | undefined;
     try {
       // Arrange: NTP answering this machine's time; the server on it; a race clock on air.
       fakeNtp = await openFakeNtpForTheServer();
-      server = await startChaosServer('stepHeld', chaosServerPort, {
+      const server = await startChaosServer('stepHeld', chaosServerPort, {
         BAJAOVRLAY_NTP_SERVERS: fakeNtp.ntpServersSetting,
       });
       const output = await openTheProgramOutputAt(context, server.address);
@@ -167,21 +167,32 @@ test.describe('the server clock when NTP misbehaves', () => {
       const clockSecondsBefore = await readRaceClockSecondsOnTheOutput(output.page);
       const readingBeforeAtMs = Date.now();
 
-      // Act: real time turns out 30 s ahead; the server sees it, and confirms it.
+      // Act: real time turns out 30 s ahead; the server sees it, and confirms it, while the
+      // clock on air is read every second.
+      const clockReadings = startReadingTheRaceClockEverySecond(output.page);
       fakeNtp.answerTimeMovedBy(realTimeAheadByMs);
       await waitForNtpAnswersThatSawTheOffset(server.port, 2, readingBeforeAtMs);
-
-      // Assert: the header warns; the clock on air did not jump.
       await expect(
         consolePage.getByText(/^Relógio do servidor \d+ s fora da hora certa$/),
         'the header must warn that the server clock is off real time',
       ).toHaveText('Relógio do servidor 30 s fora da hora certa');
-      const clockSecondsAfter = await readRaceClockSecondsOnTheOutput(output.page);
-      const secondsThatPassed = (Date.now() - readingBeforeAtMs) / 1000;
+      const readingsThroughTheStep = await clockReadings.stop();
+
+      // Assert: the header warned (above); at every reading, a second apart, the clock on
+      // air showed its start plus the real time that had passed: it never jumped.
       expect(
-        Math.abs(clockSecondsAfter - clockSecondsBefore - secondsThatPassed),
-        `the clock on air must not jump while the step is held (it went from ${String(clockSecondsBefore)} to ${String(clockSecondsAfter)} s in ${secondsThatPassed.toFixed(1)} s)`,
-      ).toBeLessThanOrEqual(clockToleranceInSeconds);
+        readingsThroughTheStep.length,
+        'the clock must have been read through the whole step',
+      ).toBeGreaterThan(20);
+      const readingsThatJumped = readingsThroughTheStep.filter((reading) => {
+        const secondsThatPassed = (reading.readAtMs - readingBeforeAtMs) / 1000;
+        const howFarOff = reading.seconds - clockSecondsBefore - secondsThatPassed;
+        return Math.abs(howFarOff) > clockToleranceInSeconds;
+      });
+      expect(
+        readingsThatJumped,
+        `the clock on air must not jump while the step is held (it showed ${String(clockSecondsBefore)} s at the start)`,
+      ).toEqual([]);
       await expectTheInstanceStayedOnAirUntouched(
         output,
         'clock',
@@ -189,22 +200,21 @@ test.describe('the server clock when NTP misbehaves', () => {
         'real time was found 30 s ahead',
       );
     } finally {
-      await server?.stop();
       fakeNtp?.close();
     }
   });
 
   test('"Acertar relógio agora" says what jumps, and only the clock and the countdown jump', async ({
     context,
+    startChaosServer,
   }) => {
-    let server: ChaosServer | undefined;
     let fakeNtp: FakeNtpForTheServer | undefined;
     try {
       // Arrange: NTP on this machine's time; a race clock, a countdown to a start ten
       // minutes away and a lower third on air; then real time turns out 30 s ahead, and
       // the header says so.
       fakeNtp = await openFakeNtpForTheServer();
-      server = await startChaosServer('setClockNow', chaosServerPort, {
+      const server = await startChaosServer('setClockNow', chaosServerPort, {
         BAJAOVRLAY_NTP_SERVERS: fakeNtp.ntpServersSetting,
       });
       const lowerThirdItemId = await makeLowerThirdButton(
@@ -280,7 +290,6 @@ test.describe('the server clock when NTP misbehaves', () => {
         );
       }
     } finally {
-      await server?.stop();
       fakeNtp?.close();
     }
   });

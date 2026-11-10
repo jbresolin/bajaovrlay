@@ -18,6 +18,11 @@
  *     flag): it is stored, since there is nothing on air to blank.
  *   - An empty list after an empty list is stored as usual.
  *   - A list of fewer cars (cars retired) is stored: only "none at all" is a failure.
+ *   - After a change of the source's config (the Baja app source pointed at the next
+ *     prova) or a restarted simulated race, the next good poll counts as a first poll: an
+ *     empty list is stored, since the old race's cars belong to a race that is over (gate 2
+ *     of PR #61). Only that one poll: the poll after it applies the rule again. A rename
+ *     alone changes no race, and the rule still applies after it.
  *
  * What these tests deliberately do not cover:
  *   - The incidents and Super Chats lists: they are empty most of the race by nature,
@@ -176,5 +181,100 @@ describe('recordDataSourcePoll, when a list of cars comes back empty', () => {
       'the polled list must be stored as the source data',
     ).toEqual([polledShapes]);
     expect(slicesAfter?.dataSources[0]?.status.isStale, 'the source must stay healthy').toBe(false);
+  });
+});
+
+/**
+ * Sends these commands one after the other, as the store applies them, and answers the
+ * slices after the last. Fails, naming it, when one is refused.
+ */
+function applyCommandsInTurn(
+  slicesAtTheStart: ReturnType<typeof buildRaceDaySlicesWithDataSources>,
+  commands: Parameters<typeof reduceDataSourceCommand>[1][],
+): ReturnType<typeof buildRaceDaySlicesWithDataSources> {
+  let slices = slicesAtTheStart;
+  for (const command of commands) {
+    const outcome = reduceDataSourceCommand(slices, command, contextOfTheDataSourceCommand);
+    if (outcome.status !== 'applied') {
+      throw new Error(`${command.type} was refused`);
+    }
+    slices = outcome.slices;
+  }
+  return slices;
+}
+
+const emptyPositionsPoll = buildGoodPollOf({ positions: buildPositionsOfCars(0) });
+
+const changesBeforeTheEmptyList = [
+  // The ruling's first case: the race source pointed at another prova, whose race lists
+  // nobody yet. Any change of the config is a new feed.
+  {
+    name: 'stores an empty list as the first poll after the config changed',
+    commandsBefore: [
+      {
+        type: 'updateDataSource' as const,
+        sourceId: 'simulador-enduro',
+        config: { seed: 1405 },
+      },
+    ],
+    isTheEmptyListStored: true,
+  },
+  // The ruling's second case: "Reiniciar corrida" starts a race with nobody on track.
+  {
+    name: 'stores an empty list as the first poll after the simulated race restarted',
+    commandsBefore: [{ type: 'restartSimulatedRace' as const, sourceId: 'simulador-enduro' }],
+    isTheEmptyListStored: true,
+  },
+  // A new name changes no race: the empty list is still suspect.
+  {
+    name: 'still keeps the last data on an empty list after a rename alone',
+    commandsBefore: [
+      {
+        type: 'updateDataSource' as const,
+        sourceId: 'simulador-enduro',
+        label: 'Simulador — Enduro 26BR',
+      },
+    ],
+    isTheEmptyListStored: false,
+  },
+  // One first poll only: a good poll after the change uses it up, and an empty list after
+  // that is suspect again.
+  {
+    name: 'keeps the last data on an empty list once a good poll followed the change',
+    commandsBefore: [
+      { type: 'restartSimulatedRace' as const, sourceId: 'simulador-enduro' },
+      buildGoodPollOf({ positions: buildPositionsOfCars(2) }),
+    ],
+    isTheEmptyListStored: false,
+  },
+];
+
+describe('recordDataSourcePoll, when the feed changed before the empty list', () => {
+  it.each(changesBeforeTheEmptyList)('$name', ({ commandsBefore, isTheEmptyListStored }) => {
+    // Arrange: a healthy source holding 3 cars, then this row's commands.
+    const slicesBefore = applyCommandsInTurn(
+      buildRaceDaySlicesWithDataSources({
+        dataSources: [buildHealthyEnduroSimulator()],
+        dataSnapshots: [buildStoredSnapshotOf({ positions: buildPositionsOfCars(3) })],
+      }),
+      commandsBefore,
+    );
+
+    // Act: a poll answers the positions with no car.
+    const slicesAfter = applyCommandsInTurn(slicesBefore, [emptyPositionsPoll]);
+
+    // Assert: the empty list is the data, or the last data stayed, as the row expects;
+    // and either way no first poll is left waiting.
+    const storedEntryCount = slicesAfter.dataSnapshots[0]?.shapes.positions?.entries.length;
+    expect(
+      storedEntryCount === 0,
+      isTheEmptyListStored
+        ? 'after a change of feed, the empty list must be stored as the new race'
+        : 'without a change of feed, the last good cars must stay',
+    ).toBe(isTheEmptyListStored);
+    expect(
+      slicesAfter.dataSources[0]?.status.isNextPollAFirstPoll,
+      'a poll after the change must use up the first poll',
+    ).toBeUndefined();
   });
 });

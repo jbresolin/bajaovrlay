@@ -17,19 +17,20 @@
  *   their order; the console's header chip counts the source as late, the tower's Camadas
  *   row says "fonte atrasada", and "Verificar servidor" names the late source. After it
  *   comes back: the source is ok, the chip and the row say so, and from the take to the end
- *   the tower's layer showed the same graphic at every frame and played its entrance once.
+ *   the tower's layer showed the same graphic at every frame, played its entrance once,
+ *   and never showed fewer than its 3 rows, not even for a frame.
  *
  * What these tests deliberately do not cover:
  *   - A red "Erro" after a minute of failing: dataSourceHealth.test.ts proves the minute.
  *   - The simulator, the other source kind on race day: simulatorFailure.chaos.ts.
  *   - The exact sentence of every network error: fetchHttpJsonRequest's tests.
  */
-import { expect, type Page, test } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
 import { type BajaAppTestServer, startBajaAppTestServer } from '../bajaAppTestServer';
 import { startConnectionProxy } from './faults/connectionProxy';
-import { type ChaosServer, startChaosServer } from './faults/serverProcess';
 import { chaosServerPort, firstConsoleProxyPort } from './steps/chaosPorts';
+import { expect, test } from './steps/chaosTest';
 import {
   checkTheServerFromTheMenu,
   findLayerRowInCamadas,
@@ -44,7 +45,10 @@ import {
   waitUntilTheSourceIsHealthy,
   waitUntilTheSourceIsLateBecause,
 } from './steps/showOnTheChaosServer';
-import { expectTheInstanceStayedOnAirUntouched } from './steps/whatTheAirShowed';
+import {
+  expectTheInstanceStayedOnAirUntouched,
+  expectTheTowerNeverLostARow,
+} from './steps/whatTheAirShowed';
 
 /** The cars of the API doc's race, in race order, as the tower shows them. */
 const carsOfTheRaceInOrder = ['11', '22', '33'];
@@ -104,15 +108,15 @@ test.describe('the Baja app race source breaks while the tower is on air', () =>
   for (const wayItBreaks of waysTheApiBreaks) {
     test(`keeps the tower and says the source is late when ${wayItBreaks.name}, and is ok again when it comes back`, async ({
       context,
+      startChaosServer,
     }) => {
-      let server: ChaosServer | undefined;
       let api: BajaAppTestServer | undefined;
       const consoleProxy = await startConnectionProxy(firstConsoleProxyPort, chaosServerPort);
       try {
         // Arrange: a server, the stand-in API, the race source on it read every 0,5 s, the
         // output as OBS has it, the operator's console, and a tower reading it taken (the
         // output open first, so it sees the take's entrance).
-        server = await startChaosServer('bajaAppSourceFailures', chaosServerPort);
+        const server = await startChaosServer('bajaAppSourceFailures', chaosServerPort);
         api = await startBajaAppTestServer();
         const sourceId = await makeBajaAppRaceSource(server.port, api.apiAddress);
         const output = await openTheProgramOutputAt(context, server.address);
@@ -175,10 +179,14 @@ test.describe('the Baja app race source breaks while the tower is on air', () =>
           towerOnAir?.id ?? 'no tower on air',
           `${wayItBreaks.name} and came back`,
         );
+        await expectTheTowerNeverLostARow(
+          output,
+          carsOfTheRaceInOrder.length,
+          `${wayItBreaks.name} and came back`,
+        );
       } finally {
         await consoleProxy.stop();
         await api?.stop();
-        await server?.stop();
       }
     });
   }

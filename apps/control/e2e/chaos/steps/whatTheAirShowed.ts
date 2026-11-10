@@ -7,11 +7,14 @@ import { expect } from '@playwright/test';
 import type { RendererLogLine } from '../../../../renderer/e2e/rendererLogLines';
 import { readWhatLayerShowed } from '../../../../renderer/e2e/whatEachLayerShowed';
 import type { ProgramOutput } from './pagesOfTheShow';
+import { readTowerRowCountsSinceItShowed } from './towerRowsAtEveryFrame';
 
 /**
  * How many times the renderer played this instance with its entrance: a `playAction`
  * without skipAnimation. Once is the take; a rebuild after a reconnect plays it again with
  * skipAnimation (straight to where it was), which is not an entrance and is not counted.
+ * For a graphic of one step only: a step change ("Próximo") is a `playAction` too, which
+ * countLifecycleCallsOfInstance tells apart.
  */
 export function countEntrancesOfInstance(logLines: RendererLogLine[], instanceId: string): number {
   const entrances = logLines.filter(
@@ -22,6 +25,24 @@ export function countEntrancesOfInstance(logLines: RendererLogLine[], instanceId
       line.skipAnimation !== true,
   );
   return entrances.length;
+}
+
+/**
+ * How many calls of this OGraf action the renderer made on this instance, animated or
+ * not: one `load` per time it was built, one `playAction` for the take and one per step.
+ */
+export function countLifecycleCallsOfInstance(
+  logLines: RendererLogLine[],
+  instanceId: string,
+  action: 'load' | 'playAction',
+): number {
+  const calls = logLines.filter(
+    (line) =>
+      line.message === 'graphic lifecycle call' &&
+      line.action === action &&
+      line.instanceId === instanceId,
+  );
+  return calls.length;
 }
 
 /**
@@ -86,4 +107,46 @@ export async function expectTheInstanceStayedOnAirUntouched(
     countEntrancesOfInstance(output.logLines, instanceId),
     `the graphic on "${layerId}" must play its entrance once, never again because ${whatBroke}`,
   ).toBe(1);
+}
+
+/**
+ * Checks the tower's rows: from the first frame it showed `startingRowCount` rows to now,
+ * it never showed fewer, not even for a frame. `whatBroke` names the failure in the message.
+ */
+export async function expectTheTowerNeverLostARow(
+  output: ProgramOutput,
+  startingRowCount: number,
+  whatBroke: string,
+): Promise<void> {
+  const rowCounts = await readTowerRowCountsSinceItShowed(output.page, startingRowCount);
+  expect(
+    rowCounts.length,
+    `the tower must have shown its ${String(startingRowCount)} rows on the output`,
+  ).toBeGreaterThan(0);
+  expect(
+    Math.min(...rowCounts),
+    `the tower must never show fewer than ${String(startingRowCount)} rows while ${whatBroke}; its counts were ${rowCounts.join(' → ')}`,
+  ).toBeGreaterThanOrEqual(startingRowCount);
+}
+
+/**
+ * Checks that from the first frame this layer showed a graphic to now, it never showed
+ * nothing, whichever graphic it was: a take replacing another must never leave a gap.
+ */
+export async function expectTheLayerNeverWentBlank(
+  output: ProgramOutput,
+  layerId: string,
+  whatWasGoingOn: string,
+): Promise<void> {
+  const changes = await readWhatLayerShowed(output.page, layerId, {});
+  const firstFrameWithAGraphic = changes.findIndex((change) => change !== 'nothing');
+  const changesSinceItShowedAGraphic = changes.slice(firstFrameWithAGraphic);
+  expect(
+    firstFrameWithAGraphic,
+    `the "${layerId}" layer must have shown a graphic on the output`,
+  ).toBeGreaterThanOrEqual(0);
+  expect(
+    changesSinceItShowedAGraphic.includes('nothing'),
+    `the "${layerId}" layer must never show nothing while ${whatWasGoingOn}`,
+  ).toBe(false);
 }

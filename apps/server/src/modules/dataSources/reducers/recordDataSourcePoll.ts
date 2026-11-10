@@ -12,7 +12,11 @@ import type {
   ReducerOutcome,
   SlicesChangedByCommands,
 } from '../../../core/store/reducers/reducerTypes.js';
-import { isSourceHealthy, removeFailingSinceFromStatus } from '../dataSourceHealth.js';
+import {
+  isSourceHealthy,
+  removeFailingSinceFromStatus,
+  removeFirstPollMarkFromStatus,
+} from '../dataSourceHealth.js';
 import { findDataSource, replaceDataSource } from '../dataSourceListing.js';
 import { findWhyThePollEmptiedAList } from '../emptiedListOfAPoll.js';
 import { validatePolledShapes } from '../polledShapesValidation.js';
@@ -27,7 +31,8 @@ import { validatePolledShapes } from '../polledShapesValidation.js';
  *   once the line is in the file (recordRecordingProgress, gate 2 on PR #16).
  * - A failed poll, or a good one with a bad shape or no shape at all (a poll never
  *   half-succeeds), or one whose positions or standings list came back empty after having
- *   cars (findWhyThePollEmptiedAList, BAJAOVRLAY-32): the last good snapshot and lastOkAtMs stay (rule 4), the source is
+ *   cars (findWhyThePollEmptiedAList, BAJAOVRLAY-32; not on the first poll after a change
+ *   of feed, status.isNextPollAFirstPoll, which a good poll uses up): the last good snapshot and lastOkAtMs stay (rule 4), the source is
  *   stale, the error is kept (a pt-BR fallback when the adapter gave none) and the
  *   failure counted. The first failure sets failingSinceMs to its moment and later ones
  *   keep it, so the page's minute to red "Erro" counts from when the failing started
@@ -69,9 +74,13 @@ export function reduceRecordDataSourcePoll(
       pollResult.receivedAtMs,
     );
   }
+  // The first poll after a change of feed compares with nothing: the stored data belongs
+  // to the race before the change.
   const storedSnapshot = slices.dataSnapshots.find((snapshot) => snapshot.sourceId === source.id);
+  const shapesToCompareWith =
+    source.status.isNextPollAFirstPoll === true ? undefined : storedSnapshot?.shapes;
   const whyThePollEmptiedAList = findWhyThePollEmptiedAList(
-    storedSnapshot?.shapes,
+    shapesToCompareWith,
     shapesValidation.shapes,
   );
   if (whyThePollEmptiedAList !== null) {
@@ -113,9 +122,11 @@ function recordGoodPoll(
   receivedAtMs: number,
 ): ReducerOutcome {
   const storedSnapshot = slices.dataSnapshots.find((snapshot) => snapshot.sourceId === source.id);
+  // A first poll after a change of feed is never a repeat: it must clear the mark.
   const isRepeatOnAHealthySource =
     storedSnapshot !== undefined &&
     isSourceHealthy(source.status) &&
+    source.status.isNextPollAFirstPoll !== true &&
     areJsonValuesEqual(storedSnapshot.shapes, shapes);
   if (isRepeatOnAHealthySource) {
     const storedSource = findDataSource(slices.dataSources, source.id);
@@ -138,7 +149,7 @@ function recordGoodPoll(
           snapshot.sourceId === source.id ? newSnapshot : snapshot,
         );
   const healthyStatus = removeFailingSinceFromStatus({
-    ...source.status,
+    ...removeFirstPollMarkFromStatus(source.status),
     lastAttemptAtMs: receivedAtMs,
     lastOkAtMs: receivedAtMs,
     lastError: null,

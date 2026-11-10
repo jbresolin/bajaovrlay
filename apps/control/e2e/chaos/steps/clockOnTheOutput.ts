@@ -40,3 +40,32 @@ export async function waitUntilTheRaceClockShowsATime(outputPage: Page): Promise
     'the race clock must be on air, showing a time',
   ).toHaveText(/^\s*\d+:\d\d(:\d\d)?\s*$/);
 }
+
+/** One reading of the race clock: when it was read, and the whole seconds it showed. */
+export type ClockReading = { readAtMs: number; seconds: number };
+
+/**
+ * Reads the race clock on the output once a second until `stop` is called, which answers
+ * every reading, oldest first. For a scenario that must watch the clock through a fault,
+ * not only before and after it (gate 2 of PR #61).
+ */
+export function startReadingTheRaceClockEverySecond(outputPage: Page): {
+  stop: () => Promise<ClockReading[]>;
+} {
+  const readings: ClockReading[] = [];
+  let isStopped = false;
+  const readingLoop = (async () => {
+    while (!isStopped) {
+      const seconds = await readRaceClockSecondsOnTheOutput(outputPage);
+      readings.push({ readAtMs: Date.now(), seconds });
+      await outputPage.waitForTimeout(1_000);
+    }
+  })();
+  return {
+    stop: async () => {
+      isStopped = true;
+      await readingLoop;
+      return readings;
+    },
+  };
+}

@@ -27,12 +27,12 @@
  *   - OBS frozen rather than closed (it takes the connection and never answers): obs's
  *     Vitest tests.
  */
-import { expect, type Page, test } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
 import { obsPasswordOfTheStreamPc } from '../../../server/src/modules/obs/fakeObsPasswords.testSupport';
 import { openFakeObs } from '../../../server/src/modules/obs/openFakeObs.testSupport';
-import { type ChaosServer, startChaosServer } from './faults/serverProcess';
 import { chaosServerPort } from './steps/chaosPorts';
+import { expect, test } from './steps/chaosTest';
 import {
   findLayerRowInCamadas,
   fireTheFirstButtonWithKeyOne,
@@ -61,8 +61,8 @@ function findObsTally(consolePage: Page) {
 test.describe('OBS goes away mid-show', () => {
   test('the tally says so, takes do not wait, a macro with a scene step stops there; back, both work', async ({
     context,
+    startChaosServer,
   }) => {
-    let server: ChaosServer | undefined;
     const fakeObs = await openFakeObs({
       password: obsPasswordOfTheStreamPc,
       sceneNames: ['Câmera da pista', 'Box', 'Pódio'],
@@ -73,7 +73,7 @@ test.describe('OBS goes away mid-show', () => {
     try {
       // Arrange: the server connected to OBS; a "Tarja" button (key 1); a macro "Ir para o
       // box": the scene "Box", then the team chief's lower third; the output; the console.
-      server = await startChaosServer('obsGoesAway', chaosServerPort, {
+      const server = await startChaosServer('obsGoesAway', chaosServerPort, {
         BAJAOVRLAY_OBS_URL: fakeObs.address,
         BAJAOVRLAY_OBS_PASSWORD: obsPasswordOfTheStreamPc,
       });
@@ -149,7 +149,6 @@ test.describe('OBS goes away mid-show', () => {
         "two takes on the lower third: the operator's, then the macro's, once each",
       ).toBe(2);
     } finally {
-      await server?.stop();
       await fakeObs.closeForGood();
     }
   });
@@ -158,114 +157,115 @@ test.describe('OBS goes away mid-show', () => {
 test.describe('the Super Chat feed fails with Super Chats waiting', () => {
   test('keeps them waiting for approval, reads late, and puts nothing on air', async ({
     context,
+    startChaosServer,
   }) => {
-    let server: ChaosServer | undefined;
-    try {
-      // Arrange: the simulator at 60× with its Super Chats on (about one every 5 s), read
-      // every 0,5 s, its race started; the output; the console; wait for two Super Chats.
-      // The seeded "fastest lap" rule puts every fastest lap on air by itself; it is set to
-      // ignore, so whatever plays on air here could only come from the failure.
-      server = await startChaosServer('superChatFeedFails', chaosServerPort);
-      await sendCommandOrFail(server.port, {
-        type: 'updateEventRule',
-        kind: 'fastestLap',
-        mode: 'ignore',
-        durationMs: 8_000,
-        maxAgeMs: 120_000,
-        itemId: null,
-      });
-      await sendCommandOrFail(server.port, {
-        type: 'updateDataSource',
-        sourceId: seededSimulatorId,
-        pollIntervalMs: 500,
-        config: { speed: 60, areSuperChatsSimulated: true },
-      });
-      await sendCommandOrFail(server.port, {
-        type: 'setDataSourceEnabled',
-        sourceId: seededSimulatorId,
-        isEnabled: true,
-      });
-      await sendCommandOrFail(server.port, {
-        type: 'restartSimulatedRace',
-        sourceId: seededSimulatorId,
-      });
-      const output = await openTheProgramOutputAt(context, server.address);
-      const consolePage = await openTheConsoleAt(context, server.address);
-      const readWaitingSuperChatIds = async () =>
-        (await readStateOfTheChaosServer(chaosServerPort)).events
-          .filter((event) => event.kind === 'superChat' && event.status === 'pending')
-          .map((event) => event.eventId);
-      await expect
-        .poll(async () => (await readWaitingSuperChatIds()).length, {
-          message: 'two Super Chats must be waiting for approval',
-          timeout: 30_000,
-        })
-        .toBeGreaterThanOrEqual(2);
+    // Arrange: the simulator at 60× with its Super Chats on (about one every 5 s), read
+    // every 0,5 s, its race started; the output; the console; wait for two Super Chats.
+    // The seeded "fastest lap" rule puts every fastest lap on air by itself; it is set to
+    // ignore, so whatever plays on air here could only come from the failure.
+    const server = await startChaosServer('superChatFeedFails', chaosServerPort);
+    await sendCommandOrFail(server.port, {
+      type: 'updateEventRule',
+      kind: 'fastestLap',
+      mode: 'ignore',
+      durationMs: 8_000,
+      maxAgeMs: 120_000,
+      itemId: null,
+    });
+    await sendCommandOrFail(server.port, {
+      type: 'updateDataSource',
+      sourceId: seededSimulatorId,
+      pollIntervalMs: 500,
+      config: { speed: 60, areSuperChatsSimulated: true },
+    });
+    await sendCommandOrFail(server.port, {
+      type: 'setDataSourceEnabled',
+      sourceId: seededSimulatorId,
+      isEnabled: true,
+    });
+    await sendCommandOrFail(server.port, {
+      type: 'restartSimulatedRace',
+      sourceId: seededSimulatorId,
+    });
+    const output = await openTheProgramOutputAt(context, server.address);
+    const consolePage = await openTheConsoleAt(context, server.address);
+    const readWaitingSuperChatIds = async () =>
+      (await readStateOfTheChaosServer(chaosServerPort)).events
+        .filter((event) => event.kind === 'superChat' && event.status === 'pending')
+        .map((event) => event.eventId);
+    await expect
+      .poll(async () => (await readWaitingSuperChatIds()).length, {
+        message: 'two Super Chats must be waiting for approval',
+        timeout: 30_000,
+      })
+      .toBeGreaterThanOrEqual(2);
 
-      // Act: the feed fails.
-      await sendCommandOrFail(server.port, {
-        type: 'updateDataSource',
-        sourceId: seededSimulatorId,
-        pollIntervalMs: 500,
-        config: { speed: 60, areSuperChatsSimulated: true, isFailing: true },
-      });
-      await waitUntilTheSourceIsLateBecause(
-        server.port,
-        seededSimulatorLabel,
-        /^Falha simulada\.$/,
-      );
-      const waitingWhenItFailed = await readWaitingSuperChatIds();
+    // Act: the feed fails.
+    await sendCommandOrFail(server.port, {
+      type: 'updateDataSource',
+      sourceId: seededSimulatorId,
+      pollIntervalMs: 500,
+      config: { speed: 60, areSuperChatsSimulated: true, isFailing: true },
+    });
+    await waitUntilTheSourceIsLateBecause(server.port, seededSimulatorLabel, /^Falha simulada\.$/);
+    const waitingWhenItFailed = await readWaitingSuperChatIds();
 
-      // Assert: a few failed polls later the same Super Chats still wait, the console's
-      // inbox still lists them, the chip says late, and no layer of the output played.
-      await expect
-        .poll(
-          async () =>
-            (await readStateOfTheChaosServer(chaosServerPort)).dataSources.find(
-              (source) => source.id === seededSimulatorId,
-            )?.status.consecutiveFailures ?? 0,
-          { message: 'the feed must fail several polls in a row' },
-        )
-        .toBeGreaterThanOrEqual(4);
-      expect(
-        await readWaitingSuperChatIds(),
-        'every Super Chat waiting when the feed failed must still be waiting',
-      ).toEqual(waitingWhenItFailed);
-      // The tab counts every event waiting: the Super Chats, and any penalty of the race.
-      await expect(
-        consolePage.getByRole('tab', { name: /^Eventos \d+ eventos? esperando$/ }),
-        'the console must still show events waiting on its "Eventos" tab',
-      ).toBeVisible();
-      await expect(
-        consolePage.getByRole('status', { name: /^Saúde das fontes de dados/ }),
-        'the header chip must count the feed as late',
-      ).toHaveText('Fontes: 1 atrasada');
-      const entrancesOnTheOutput = output.logLines.filter(
-        (line) => line.message === 'graphic lifecycle call' && line.action === 'playAction',
-      );
-      expect(entrancesOnTheOutput, 'nothing may have gone on air by itself').toEqual([]);
-      await expect(
-        findLayerRowInCamadas(consolePage, 'Aviso'),
-        'the notice layer must stay empty',
-      ).toContainText('vazia');
+    // Assert: a few failed polls later the same Super Chats still wait, the console's
+    // inbox still lists them, the chip says late, and no layer of the output played.
+    await expect
+      .poll(
+        async () =>
+          (await readStateOfTheChaosServer(chaosServerPort)).dataSources.find(
+            (source) => source.id === seededSimulatorId,
+          )?.status.consecutiveFailures ?? 0,
+        { message: 'the feed must fail several polls in a row' },
+      )
+      .toBeGreaterThanOrEqual(4);
+    expect(
+      await readWaitingSuperChatIds(),
+      'every Super Chat waiting when the feed failed must still be waiting',
+    ).toEqual(waitingWhenItFailed);
+    // The tab counts every event waiting: the Super Chats, and any penalty of the race, so
+    // its count is at least the Super Chats still waiting.
+    const eventsTab = consolePage.getByRole('tab', { name: /^Eventos \d+ eventos? esperando$/ });
+    await expect(
+      eventsTab,
+      'the console must still show events waiting on its "Eventos" tab',
+    ).toBeVisible();
+    const eventsTabName =
+      (await eventsTab.getAttribute('aria-label')) ?? (await eventsTab.textContent()) ?? '';
+    const countOnTheTab = Number(/Eventos\s*(\d+)/.exec(eventsTabName)?.[1] ?? 'NaN');
+    expect(
+      countOnTheTab,
+      `the "Eventos" tab must count at least the ${String(waitingWhenItFailed.length)} Super Chats waiting (it reads "${eventsTabName}")`,
+    ).toBeGreaterThanOrEqual(waitingWhenItFailed.length);
+    await expect(
+      consolePage.getByRole('status', { name: /^Saúde das fontes de dados/ }),
+      'the header chip must count the feed as late',
+    ).toHaveText('Fontes: 1 atrasada');
+    const entrancesOnTheOutput = output.logLines.filter(
+      (line) => line.message === 'graphic lifecycle call' && line.action === 'playAction',
+    );
+    expect(entrancesOnTheOutput, 'nothing may have gone on air by itself').toEqual([]);
+    await expect(
+      findLayerRowInCamadas(consolePage, 'Aviso'),
+      'the notice layer must stay empty',
+    ).toContainText('vazia');
 
-      // Act: the feed is back.
-      await sendCommandOrFail(server.port, {
-        type: 'updateDataSource',
-        sourceId: seededSimulatorId,
-        pollIntervalMs: 500,
-        config: { speed: 60, areSuperChatsSimulated: true, isFailing: false },
-      });
+    // Act: the feed is back.
+    await sendCommandOrFail(server.port, {
+      type: 'updateDataSource',
+      sourceId: seededSimulatorId,
+      pollIntervalMs: 500,
+      config: { speed: 60, areSuperChatsSimulated: true, isFailing: false },
+    });
 
-      // Assert: the source is healthy again, and the Super Chats are still waiting.
-      await waitUntilTheSourceIsHealthy(server.port, seededSimulatorLabel);
-      const waitingNow = await readWaitingSuperChatIds();
-      expect(
-        waitingWhenItFailed.every((eventId) => waitingNow.includes(eventId)),
-        'the Super Chats waiting before the failure must still be waiting once the feed is back',
-      ).toBe(true);
-    } finally {
-      await server?.stop();
-    }
+    // Assert: the source is healthy again, and the Super Chats are still waiting.
+    await waitUntilTheSourceIsHealthy(server.port, seededSimulatorLabel);
+    const waitingNow = await readWaitingSuperChatIds();
+    expect(
+      waitingWhenItFailed.every((eventId) => waitingNow.includes(eventId)),
+      'the Super Chats waiting before the failure must still be waiting once the feed is back',
+    ).toBe(true);
   });
 });

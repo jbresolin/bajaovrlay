@@ -37,3 +37,13 @@ export function removeFailingSinceFromStatus(status: DataSourceStatus): DataSour
   delete statusThatIsNotFailing.failingSinceMs;
   return statusThatIsNotFailing;
 }
+
+/**
+ * The same status without isNextPollAFirstPoll, once a good poll has used it up (gate 2
+ * of PR #61). Removed rather than set to false, as failingSinceMs is.
+ */
+export function removeFirstPollMarkFromStatus(status: DataSourceStatus): DataSourceStatus {
+  const statusAfterItsFirstPoll = { ...status };
+  delete statusAfterItsFirstPoll.isNextPollAFirstPoll;
+  return statusAfterItsFirstPoll;
+}

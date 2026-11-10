@@ -9,7 +9,10 @@ every browser test). It is part of `pnpm verify` and a CI job of its own.
 Every scenario starts its own BUILT server on a new data folder (`faults/serverProcess.ts`, ports in
 `steps/chaosPorts.ts`: 5230 and up), so it can kill it and start it again; the console and the output are the pages
 that server serves, as on the stream PC. The fault switches live in test support only, never in the server or the
-pages: `faults/` holds them, `steps/` the steps the scenarios share. Start reading at `bajaAppSourceFailures.chaos.ts`.
+pages: `faults/` holds them, `steps/` the steps the scenarios share. Every scenario imports `test` from
+`steps/chaosTest.ts`, whose `startChaosServer` fixture kills its servers when it ends and attaches what they wrote to
+the report. The output is watched at every frame: each layer, and the tower's row count. Start reading at
+`bajaAppSourceFailures.chaos.ts`.
 
 ## The scenarios
 
@@ -37,7 +40,7 @@ Two operators:
 - `twoOperators.chaos.ts` — "Próximo" on two consoles at once: one step; the late console says the step had moved.
 - the same — a name fixed in the editor while the other operator takes the item: old name on air, "item mudou" on both.
 - the same — Produtor takes while Dados edits, on a server with the login: both applied, each named in the log.
-- the same — QUARANTINED, BAJAOVRLAY-69: both take on one layer at once; one must win and the other be told why.
+- `twoTakesOnOneLayer.chaos.ts` — QUARANTINED, BAJAOVRLAY-69: both take on one layer at once; one must win and the other be told why.
 
 Clock (`faults/fakeNtpForTheServer.ts`):
 

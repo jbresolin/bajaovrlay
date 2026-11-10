@@ -3,7 +3,9 @@
 // the program output at "/render/", as OBS loads it, watched from its first frame: every
 // change of what each layer holds (apps/renderer/e2e/whatEachLayerShowed.ts) and every line
 // the renderer logs (apps/renderer/e2e/rendererLogLines.ts), so a scenario can prove that
-// nothing went blank and nothing played its entrance twice. Functions only.
+// nothing went blank and nothing played its entrance twice; and the positions tower's rows
+// (towerRowsAtEveryFrame.ts), so a tower that kept its layer but lost its rows is caught too.
+// Functions only.
 import { type BrowserContext, expect, type Locator, type Page } from '@playwright/test';
 
 import {
@@ -11,6 +13,7 @@ import {
   type RendererLogLine,
 } from '../../../../renderer/e2e/rendererLogLines';
 import { watchWhatEachLayerShows } from '../../../../renderer/e2e/whatEachLayerShowed';
+import { watchTheTowerRowsAtEveryFrame } from './towerRowsAtEveryFrame';
 
 /** The program output as OBS has it, and every line its renderer has logged so far. */
 export type ProgramOutput = { page: Page; logLines: RendererLogLine[] };
@@ -42,7 +45,8 @@ export async function openTheConsoleAt(context: BrowserContext, address: string)
 
 /**
  * Opens the program output at this address in a new page, as OBS loads it, watching what
- * each layer holds at every frame and keeping every renderer log line from the start.
+ * each layer holds and how many rows the tower shows at every frame, and keeping every
+ * renderer log line from the start.
  */
 export async function openTheProgramOutputAt(
   context: BrowserContext,
@@ -50,6 +54,7 @@ export async function openTheProgramOutputAt(
 ): Promise<ProgramOutput> {
   const page = await context.newPage();
   await watchWhatEachLayerShows(page);
+  await watchTheTowerRowsAtEveryFrame(page);
   const logLines = collectRendererLogLines(page);
   await page.goto(`${address}/render/`);
   await expect(

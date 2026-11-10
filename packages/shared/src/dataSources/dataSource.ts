@@ -41,6 +41,13 @@ export const DataSourceStatusSchema = z.object({
    * poll left them (BAJAOVRLAY-35). Missing for every other kind, and until the first poll.
    */
   youTubeQuota: YouTubeQuotaUsageSchema.optional(),
+  /**
+   * True from a change of the source's config, or a restarted simulated race, until its
+   * next good poll: that poll is taken as a first poll, so a list of cars that comes back
+   * empty is stored (a new race may list nobody yet) instead of refused as a blanked list
+   * (BAJAOVRLAY-32, gate 2 of PR #61). Missing otherwise.
+   */
+  isNextPollAFirstPoll: z.literal(true).optional(),
 });
 
 /** A source status that has passed DataSourceStatusSchema. */

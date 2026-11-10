@@ -27,10 +27,9 @@
  *   - A data source's last data kept and marked late at boot: startServerRestart.test.ts.
  *   - A stop with SIGTERM: a gentler death than this one; the boot rules are the same.
  */
-import { expect, test } from '@playwright/test';
 
-import { type ChaosServer, startChaosServer } from './faults/serverProcess';
 import { chaosServerPort } from './steps/chaosPorts';
+import { expect, test } from './steps/chaosTest';
 import {
   findRaceClockTimeOnTheOutput,
   readRaceClockSecondsOnTheOutput,
@@ -60,106 +59,115 @@ const clockToleranceInSeconds = 1;
 test.describe('the server is killed mid-show and starts again', () => {
   test('brings program back as it was, keeps the clock running, drops the preview, does not resume the macro, and the output never flashes', async ({
     context,
+    startChaosServer,
   }) => {
-    let server: ChaosServer | undefined;
-    try {
-      // Arrange: the output and the console open; a running race clock taken; a lower
-      // third taken by a macro now waiting to clear it; another lower third in preview.
-      server = await startChaosServer('serverRestart', chaosServerPort);
-      const interviewItemId = await makeLowerThirdButton(
-        server.port,
-        'Tarja — capitã da UFPR',
-        'Ana Souza',
+    // Arrange: the output and the console open; a running race clock taken; a lower
+    // third taken by a macro now waiting to clear it; another lower third in preview.
+    const server = await startChaosServer('serverRestart', chaosServerPort);
+    const interviewItemId = await makeLowerThirdButton(
+      server.port,
+      'Tarja — capitã da UFPR',
+      'Ana Souza',
+    );
+    const chiefItemId = await makeLowerThirdButton(
+      server.port,
+      'Tarja — chefe da UFSC',
+      'Bruno Lima',
+    );
+    const macroId = await makeMacro(server.port, 'Entrevista no box', [
+      { kind: 'takeItem', itemId: interviewItemId },
+      { kind: 'wait', ms: waitOfTheMacroInMilliseconds },
+      { kind: 'clearLayer', layerId: 'lower-third' },
+    ]);
+    const output = await openTheProgramOutputAt(context, server.address);
+    const consolePage = await openTheConsoleAt(context, server.address);
+    await takeRunningEnduroClock(server.port);
+    await sendCommandOrFail(server.port, { type: 'runMacro', macroId });
+    const macroStartedAtMs = Date.now();
+    await sendCommandOrFail(server.port, { type: 'previewItem', itemId: chiefItemId });
+    await expect(
+      output.page.locator('[data-layer-id="lower-third"] > baja-graphic-lower-third'),
+      'the macro must have put the lower third on air',
+    ).toContainText('Ana Souza');
+    await expect(
+      findRaceClockTimeOnTheOutput(output.page),
+      'the race clock must be on the output, counting from 1:05:00',
+    ).toHaveText(/^\s*1:05:\d\d\s*$/);
+    const stateBefore = await readStateOfTheChaosServer(server.port);
+    const programBefore = stateBefore.instances.filter((instance) => instance.target === 'program');
+    const clockSecondsBefore = await readRaceClockSecondsOnTheOutput(output.page);
+    const clockReadAtMs = Date.now();
+    // The scenario is a death inside the wait: the run must still be listed, and the wait
+    // not over, the moment before the kill. Otherwise it would prove nothing of the rule.
+    const stateJustBeforeTheKill = await readStateOfTheChaosServer(server.port);
+    const millisecondsSinceTheMacroStarted = Date.now() - macroStartedAtMs;
+    expect(
+      stateJustBeforeTheKill.macroRuns.map((run) => run.macroId),
+      'the macro must still be running when the server is killed',
+    ).toEqual([macroId]);
+    expect(
+      millisecondsSinceTheMacroStarted,
+      "the kill must come inside the macro's 4 s wait, before its clear is due",
+    ).toBeLessThan(waitOfTheMacroInMilliseconds);
+
+    // Act: the server is killed in the macro's wait, and started again on its folder.
+    await server.kill();
+    await server.startAgain();
+
+    // Assert: program as it was, the preview dropped, no macro run.
+    const stateAfter = await readStateOfTheChaosServer(server.port);
+    const programAfter = stateAfter.instances.filter((instance) => instance.target === 'program');
+    expect(
+      programAfter.map((instance) => `${instance.layerId}: ${instance.id}`).sort(),
+      'program must come back with the same instances on the same layers',
+    ).toEqual(programBefore.map((instance) => `${instance.layerId}: ${instance.id}`).sort());
+    expect(
+      stateAfter.instances.filter((instance) => instance.target === 'preview'),
+      'previews are dropped at boot (decisions.md, PR #12)',
+    ).toEqual([]);
+    expect(stateAfter.macroRuns, 'a macro cut by the death is not resumed').toEqual([]);
+
+    // Assert: the console is back by itself and shows program, with Prévia empty.
+    await waitUntilTheConsoleIsConnected(consolePage);
+    await expect(
+      findLayerRowInCamadas(consolePage, 'Tarja'),
+      'the console must show the lower third still on air',
+    ).toContainText('Tarja — capitã da UFPR');
+    await expect(
+      findLayerRowInCamadas(consolePage, 'Relógio'),
+      'the console must show the clock still on air',
+    ).toContainText('Relógio do enduro');
+
+    // Assert: the clock on the output kept counting through the outage.
+    await expect
+      .poll(
+        () => output.logLines.filter((line) => line.message === 'connected to the server').length,
+        { message: 'the output must reconnect to the server started again' },
+      )
+      .toBe(2);
+    const clockSecondsAfter = await readRaceClockSecondsOnTheOutput(output.page);
+    const secondsThatPassed = (Date.now() - clockReadAtMs) / 1000;
+    expect(
+      Math.abs(clockSecondsAfter - clockSecondsBefore - secondsThatPassed),
+      `the clock must have counted the ${secondsThatPassed.toFixed(1)} s that passed (it went from ${String(clockSecondsBefore)} to ${String(clockSecondsAfter)} s)`,
+    ).toBeLessThanOrEqual(clockToleranceInSeconds + 0.5);
+
+    // Assert: past the moment the macro's clear was due, the lower third is still on
+    // air. A fixed wait, proving something does not happen: the rest of the wait and a
+    // second more.
+    const timeLeftOfTheWaitMs = macroStartedAtMs + waitOfTheMacroInMilliseconds - Date.now();
+    await output.page.waitForTimeout(Math.max(timeLeftOfTheWaitMs, 0) + 1_000);
+    await expect(
+      output.page.locator('[data-layer-id="lower-third"] > baja-graphic-lower-third'),
+      'the clear the killed macro would have made must never come',
+    ).toContainText('Ana Souza');
+    for (const instance of programBefore) {
+      await expectTheInstanceStayedOnAirUntouched(
+        output,
+        instance.layerId,
+        instance.id,
+        'the server was killed and started again',
       );
-      const chiefItemId = await makeLowerThirdButton(
-        server.port,
-        'Tarja — chefe da UFSC',
-        'Bruno Lima',
-      );
-      const macroId = await makeMacro(server.port, 'Entrevista no box', [
-        { kind: 'takeItem', itemId: interviewItemId },
-        { kind: 'wait', ms: waitOfTheMacroInMilliseconds },
-        { kind: 'clearLayer', layerId: 'lower-third' },
-      ]);
-      const output = await openTheProgramOutputAt(context, server.address);
-      const consolePage = await openTheConsoleAt(context, server.address);
-      await takeRunningEnduroClock(server.port);
-      await sendCommandOrFail(server.port, { type: 'runMacro', macroId });
-      const macroStartedAtMs = Date.now();
-      await sendCommandOrFail(server.port, { type: 'previewItem', itemId: chiefItemId });
-      await expect(
-        output.page.locator('[data-layer-id="lower-third"] > baja-graphic-lower-third'),
-        'the macro must have put the lower third on air',
-      ).toContainText('Ana Souza');
-      await expect(findRaceClockTimeOnTheOutput(output.page)).toHaveText(/^\s*1:05:\d\d\s*$/);
-      const stateBefore = await readStateOfTheChaosServer(server.port);
-      const programBefore = stateBefore.instances.filter(
-        (instance) => instance.target === 'program',
-      );
-      const clockSecondsBefore = await readRaceClockSecondsOnTheOutput(output.page);
-      const clockReadAtMs = Date.now();
-
-      // Act: the server is killed in the macro's wait, and started again on its folder.
-      await server.kill();
-      await server.startAgain();
-
-      // Assert: program as it was, the preview dropped, no macro run.
-      const stateAfter = await readStateOfTheChaosServer(server.port);
-      const programAfter = stateAfter.instances.filter((instance) => instance.target === 'program');
-      expect(
-        programAfter.map((instance) => `${instance.layerId}: ${instance.id}`).sort(),
-        'program must come back with the same instances on the same layers',
-      ).toEqual(programBefore.map((instance) => `${instance.layerId}: ${instance.id}`).sort());
-      expect(
-        stateAfter.instances.filter((instance) => instance.target === 'preview'),
-        'previews are dropped at boot (decisions.md, PR #12)',
-      ).toEqual([]);
-      expect(stateAfter.macroRuns, 'a macro cut by the death is not resumed').toEqual([]);
-
-      // Assert: the console is back by itself and shows program, with Prévia empty.
-      await waitUntilTheConsoleIsConnected(consolePage);
-      await expect(
-        findLayerRowInCamadas(consolePage, 'Tarja'),
-        'the console must show the lower third still on air',
-      ).toContainText('Tarja — capitã da UFPR');
-      await expect(
-        findLayerRowInCamadas(consolePage, 'Relógio'),
-        'the console must show the clock still on air',
-      ).toContainText('Relógio do enduro');
-
-      // Assert: the clock on the output kept counting through the outage.
-      await expect
-        .poll(
-          () => output.logLines.filter((line) => line.message === 'connected to the server').length,
-          { message: 'the output must reconnect to the server started again' },
-        )
-        .toBe(2);
-      const clockSecondsAfter = await readRaceClockSecondsOnTheOutput(output.page);
-      const secondsThatPassed = (Date.now() - clockReadAtMs) / 1000;
-      expect(
-        Math.abs(clockSecondsAfter - clockSecondsBefore - secondsThatPassed),
-        `the clock must have counted the ${secondsThatPassed.toFixed(1)} s that passed (it went from ${String(clockSecondsBefore)} to ${String(clockSecondsAfter)} s)`,
-      ).toBeLessThanOrEqual(clockToleranceInSeconds + 0.5);
-
-      // Assert: past the moment the macro's clear was due, the lower third is still on
-      // air. A fixed wait, proving something does not happen: the rest of the wait and a
-      // second more.
-      const timeLeftOfTheWaitMs = macroStartedAtMs + waitOfTheMacroInMilliseconds - Date.now();
-      await output.page.waitForTimeout(Math.max(timeLeftOfTheWaitMs, 0) + 1_000);
-      await expect(
-        output.page.locator('[data-layer-id="lower-third"] > baja-graphic-lower-third'),
-        'the clear the killed macro would have made must never come',
-      ).toContainText('Ana Souza');
-      for (const instance of programBefore) {
-        await expectTheInstanceStayedOnAirUntouched(
-          output,
-          instance.layerId,
-          instance.id,
-          'the server was killed and started again',
-        );
-      }
-    } finally {
-      await server?.stop();
     }
   });
 });

@@ -27,11 +27,10 @@
  *     answered a ping within 15 to 30 s (heartbeat.test.ts); the console offline for a
  *     minute is cut, not stalled.
  */
-import { expect, test } from '@playwright/test';
 
 import { startConnectionProxy } from './faults/connectionProxy';
-import { type ChaosServer, startChaosServer } from './faults/serverProcess';
 import { chaosServerPort, firstConsoleProxyPort, outputProxyPort } from './steps/chaosPorts';
+import { expect, test } from './steps/chaosTest';
 import {
   findConnectionBadge,
   findLayerRowInCamadas,
@@ -64,12 +63,12 @@ const aMinuteOfflineInMilliseconds = 60_000;
 test.describe('a WebSocket drop in the middle of a take', () => {
   test('applies a take whose answer was lost once, and the console shows it once back', async ({
     context,
+    startChaosServer,
   }) => {
-    let server: ChaosServer | undefined;
     const consoleProxy = await startConnectionProxy(firstConsoleProxyPort, chaosServerPort);
     try {
       // Arrange: a server with a "Tarja" button; the output; the console through a proxy.
-      server = await startChaosServer('takeAnswerLost', chaosServerPort);
+      const server = await startChaosServer('takeAnswerLost', chaosServerPort);
       await makeLowerThirdButton(server.port, lowerThirdLabel, personName);
       const output = await openTheProgramOutputAt(context, server.address);
       const consolePage = await openTheConsoleAt(context, consoleProxy.address);
@@ -108,18 +107,17 @@ test.describe('a WebSocket drop in the middle of a take', () => {
       ).toBe(1);
     } finally {
       await consoleProxy.stop();
-      await server?.stop();
     }
   });
 
   test('does not apply a take whose command was lost, and the console says it got no answer', async ({
     context,
+    startChaosServer,
   }) => {
-    let server: ChaosServer | undefined;
     const consoleProxy = await startConnectionProxy(firstConsoleProxyPort, chaosServerPort);
     try {
       // Arrange: a server with a "Tarja" button; the output; the console through a proxy.
-      server = await startChaosServer('takeCommandLost', chaosServerPort);
+      const server = await startChaosServer('takeCommandLost', chaosServerPort);
       await makeLowerThirdButton(server.port, lowerThirdLabel, personName);
       const output = await openTheProgramOutputAt(context, server.address);
       const consolePage = await openTheConsoleAt(context, consoleProxy.address);
@@ -156,7 +154,6 @@ test.describe('a WebSocket drop in the middle of a take', () => {
       ).toBe(0);
     } finally {
       await consoleProxy.stop();
-      await server?.stop();
     }
   });
 });
@@ -164,12 +161,12 @@ test.describe('a WebSocket drop in the middle of a take', () => {
 test.describe("the output's WebSocket drops with graphics on air", () => {
   test('keeps the lower third on air at every frame, and does not replay its entrance once back', async ({
     context,
+    startChaosServer,
   }) => {
-    let server: ChaosServer | undefined;
     const outputProxy = await startConnectionProxy(outputProxyPort, chaosServerPort);
     try {
       // Arrange: a server; the output through a proxy; a lower third taken and on air.
-      server = await startChaosServer('outputDrop', chaosServerPort);
+      const server = await startChaosServer('outputDrop', chaosServerPort);
       const itemId = await makeLowerThirdButton(server.port, lowerThirdLabel, personName);
       const output = await openTheProgramOutputAt(context, outputProxy.address);
       await sendCommandOrFail(server.port, { type: 'takeItem', itemId });
@@ -206,7 +203,6 @@ test.describe("the output's WebSocket drops with graphics on air", () => {
       );
     } finally {
       await outputProxy.stop();
-      await server?.stop();
     }
   });
 });
@@ -214,13 +210,13 @@ test.describe("the output's WebSocket drops with graphics on air", () => {
 test.describe('a console offline for a minute', () => {
   test('says it is reconnecting, and shows what the other operator put on air once back', async ({
     context,
+    startChaosServer,
   }) => {
-    let server: ChaosServer | undefined;
     const firstConsoleProxy = await startConnectionProxy(firstConsoleProxyPort, chaosServerPort);
     try {
       // Arrange: a server with a "Tarja" button; the first console through a proxy, the
       // second straight on the server.
-      server = await startChaosServer('consoleOffline', chaosServerPort);
+      const server = await startChaosServer('consoleOffline', chaosServerPort);
       await makeLowerThirdButton(server.port, lowerThirdLabel, personName);
       const firstConsole = await openTheConsoleAt(context, firstConsoleProxy.address);
       const secondConsole = await openTheConsoleAt(context, server.address);
@@ -253,7 +249,6 @@ test.describe('a console offline for a minute', () => {
       ).toContainText(lowerThirdLabel);
     } finally {
       await firstConsoleProxy.stop();
-      await server?.stop();
     }
   });
 });
