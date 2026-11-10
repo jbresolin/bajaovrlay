@@ -64,7 +64,11 @@ const dataAgreementScenarios = [
     isValid: false,
   },
   // A series of none.
-  { name: 'both refuse a best of 0', data: { ...buildSemifinalAtOneAll(), bestOf: 0 }, isValid: false },
+  {
+    name: 'both refuse a best of 0',
+    data: { ...buildSemifinalAtOneAll(), bestOf: 0 },
+    isValid: false,
+  },
   // Wins are whole races.
   {
     name: 'both refuse half a win',

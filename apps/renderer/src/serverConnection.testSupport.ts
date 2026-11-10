@@ -92,6 +92,7 @@ export function createSlicesWithInstances(instances: Instance[]): Slices {
     instanceBindings: [],
     programHistory: [],
     overrides: [],
+    bracketMatchFocuses: [],
     rundowns: [],
     items: [],
     quickFirePanels: [],

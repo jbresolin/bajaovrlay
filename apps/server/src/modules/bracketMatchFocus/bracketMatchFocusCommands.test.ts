@@ -85,7 +85,7 @@ describe('setBracketMatchFocus', () => {
     const newestRow = readNewestEventLogRow(stateStore);
     expect(
       { command: newestRow?.command, actor: newestRow?.actor, result: newestRow?.result },
-      'the choice must be logged as the Produtor\'s, ok',
+      "the choice must be logged as the Produtor's, ok",
     ).toEqual({ command: 'setBracketMatchFocus', actor: producerActor, result: { status: 'ok' } });
   });
 
@@ -334,7 +334,10 @@ describe('who may move the match focus', () => {
     pollTheSimulatorWithRounds(stateStore, [buildQuarterFinals()]);
 
     // Act: Dados tries both commands, then the Produtor chooses.
-    const choiceByDados = stateStore.applyCommand(buildChoiceOf('current', 'qf-1'), dataOperatorActor);
+    const choiceByDados = stateStore.applyCommand(
+      buildChoiceOf('current', 'qf-1'),
+      dataOperatorActor,
+    );
     const suggestionByDados = stateStore.applyCommand(acceptTheSuggestion, dataOperatorActor);
     const choiceByTheProducer = stateStore.applyCommand(
       buildChoiceOf('current', 'qf-2'),
@@ -350,7 +353,7 @@ describe('who may move the match focus', () => {
       !choiceByDados.ok && choiceByDados.error.code,
       'Dados must be refused as not allowed',
     ).toBe('NOT_ALLOWED');
-    expect(readFocusOfTheSimulator(stateStore)?.currentMatchId, 'the Produtor\'s choice').toBe(
+    expect(readFocusOfTheSimulator(stateStore)?.currentMatchId, "the Produtor's choice").toBe(
       'qf-2',
     );
   });

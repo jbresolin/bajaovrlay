@@ -44,7 +44,10 @@ describe('load, play and stop', () => {
 
     // Assert: 200 at each step, invisible after load, visible on air, both names drawn.
     expect(loadAnswer, 'load must answer 200').toEqual({ statusCode: 200 });
-    expect(playAnswer, 'play must answer 200 at step 0').toEqual({ statusCode: 200, currentStep: 0 });
+    expect(playAnswer, 'play must answer 200 at step 0').toEqual({
+      statusCode: 200,
+      currentStep: 0,
+    });
     expect(stopAnswer, 'stop must answer 200').toEqual({ statusCode: 200 });
     expect([opacityAfterLoad, opacityOnAir], 'off air after load, seen on air').toEqual(['0', '1']);
     expect(readShortNamesShown(matchBug), 'Corisco on the left, Buffalo on the right').toEqual([
@@ -85,9 +88,10 @@ describe('updates on air', () => {
 
     // Assert: accepted, still on air, the new cars drawn.
     expect(updateAnswer, 'the update must answer 200').toEqual({ statusCode: 200 });
-    expect(readShortNamesShown(matchBug), 'Pequi and Acauã must replace the first match').toEqual(
-      ['Pequi', 'Acauã'],
-    );
+    expect(readShortNamesShown(matchBug), 'Pequi and Acauã must replace the first match').toEqual([
+      'Pequi',
+      'Acauã',
+    ]);
     expect(
       findPartOfMatchBug(matchBug, 'match-bug-panel')?.style.opacity,
       'the bug stays on air through the update',

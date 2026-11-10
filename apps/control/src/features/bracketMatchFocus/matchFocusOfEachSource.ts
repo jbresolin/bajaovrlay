@@ -38,9 +38,7 @@ export type MatchRow = {
 
 /** What one slot holds on the page: a match, nothing, or a match that left the source. */
 export type SlotOnThePage =
-  | { kind: 'chosen'; match: MatchRow }
-  | { kind: 'empty' }
-  | { kind: 'gone'; matchId: string };
+  { kind: 'chosen'; match: MatchRow } | { kind: 'empty' } | { kind: 'gone'; matchId: string };
 
 /**
  * What the page proposes: once "agora" has its winner, the winner and the suggested next
@@ -100,7 +98,9 @@ function readSlotOnThePage(
   if (reading.status === 'gone') {
     return { kind: 'gone', matchId: reading.matchId };
   }
-  const row = rows.find((candidate) => candidate.matchId === reading.matchInPlayOrder.match.matchId);
+  const row = rows.find(
+    (candidate) => candidate.matchId === reading.matchInPlayOrder.match.matchId,
+  );
   return row === undefined ? { kind: 'empty' } : { kind: 'chosen', match: row };
 }
 

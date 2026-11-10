@@ -48,11 +48,17 @@ function buildSemifinals(winnerOfTheFirst?: number, winnerOfTheSecond?: number):
   const first =
     winnerOfTheFirst === undefined
       ? buildUndecidedMatch('sf-1', cars.corisco, cars.pequi)
-      : { ...buildUndecidedMatch('sf-1', cars.corisco, cars.pequi), winnerCarNumber: winnerOfTheFirst };
+      : {
+          ...buildUndecidedMatch('sf-1', cars.corisco, cars.pequi),
+          winnerCarNumber: winnerOfTheFirst,
+        };
   const second =
     winnerOfTheSecond === undefined
       ? buildUndecidedMatch('sf-2', cars.cactus, cars.ufsc)
-      : { ...buildUndecidedMatch('sf-2', cars.cactus, cars.ufsc), winnerCarNumber: winnerOfTheSecond };
+      : {
+          ...buildUndecidedMatch('sf-2', cars.cactus, cars.ufsc),
+          winnerCarNumber: winnerOfTheSecond,
+        };
   return { name: 'Semifinal', matches: [first, second] };
 }
 

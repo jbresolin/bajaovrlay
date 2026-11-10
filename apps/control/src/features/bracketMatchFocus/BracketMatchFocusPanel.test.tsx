@@ -117,7 +117,10 @@ describe('"Partidas da chave"', () => {
 
     // Assert: both slots named; no "Usar sugestão" while the match runs.
     const panel = screen.getByRole('region', { name: 'Partidas da chave' });
-    expect(within(panel).getByText('Corisco × Buffalo (Quartas de final)'), '"agora"').toBeVisible();
+    expect(
+      within(panel).getByText('Corisco × Buffalo (Quartas de final)'),
+      '"agora"',
+    ).toBeVisible();
     expect(within(panel).getByText('Pequi × Acauã (Quartas de final)'), '"a seguir"').toBeVisible();
     expect(
       within(panel).queryByRole('button', { name: 'Usar sugestão' }),
@@ -172,7 +175,9 @@ describe('"Partidas da chave"', () => {
 
     // Act: put qf-4 "agora", skipping qf-3.
     fireEvent.click(
-      within(list).getByRole('button', { name: 'Agora: Piratas Cerrado × UFSC (Quartas de final)' }),
+      within(list).getByRole('button', {
+        name: 'Agora: Piratas Cerrado × UFSC (Quartas de final)',
+      }),
     );
 
     // Assert: the list showed each match's progress and the suggestions; the press asked
@@ -234,7 +239,7 @@ describe('"Partidas da chave"', () => {
     ).toBeVisible();
   });
 
-  it('shows the server\'s refusal under the panel', () => {
+  it("shows the server's refusal under the panel", () => {
     // Arrange: nothing chosen, the suggestion offered.
     const { fakeServer } = renderOnControlPageConnectedToFakeServer(
       <BracketMatchFocusPanel />,
@@ -277,7 +282,7 @@ describe('"Partidas da chave"', () => {
     ).toEqual([true, true]);
     expect(
       screen.getByText('O papel Dados não pode mudar o que está no ar. Peça ao Produtor.'),
-      'the role\'s reason must be written, a greyed-out button shows no tooltip',
+      "the role's reason must be written, a greyed-out button shows no tooltip",
     ).toBeVisible();
   });
 });

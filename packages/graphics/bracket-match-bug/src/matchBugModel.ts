@@ -11,13 +11,13 @@
  * series, the results and the winner are drawn when they come.
  */
 import { describeFirstDataProblemInPortuguese } from '@bajaovrlay/graphics-kit/dataProblems';
+import { writeMatchTimeText } from '@bajaovrlay/graphics-kit/matchTimeText';
 import {
   type ScreenCorner,
   ScreenCornerSchema,
 } from '@bajaovrlay/graphics-kit/screenCornerPosition';
 import { z } from 'zod';
 
-import { writeMatchTimeText } from '@bajaovrlay/graphics-kit/matchTimeText';
 import { ptBR } from './ptBR.js';
 
 /** The corner when the item names none: top-left, beside the sponsor bug. */

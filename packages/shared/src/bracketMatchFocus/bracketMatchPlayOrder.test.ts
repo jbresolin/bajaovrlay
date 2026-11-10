@@ -21,7 +21,10 @@
 import { describe, expect, it } from 'vitest';
 
 import type { BracketMatch } from '../dataShapes/index.js';
-import { listBracketMatchesInPlayOrder, readBracketMatchProgress } from './bracketMatchPlayOrder.js';
+import {
+  listBracketMatchesInPlayOrder,
+  readBracketMatchProgress,
+} from './bracketMatchPlayOrder.js';
 import {
   buildBestOfThreeUnderWay,
   buildBye,

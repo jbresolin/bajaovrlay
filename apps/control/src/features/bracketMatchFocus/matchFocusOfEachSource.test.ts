@@ -100,13 +100,8 @@ describe('the list of matches', () => {
 
     // Assert: four rows, each with what the list shows.
     expect(
-      simulator.matches.map((row) => [
-        row.matchId,
-        row.matchText,
-        row.progress,
-        row.suggestedFor,
-      ]),
-      'every match, in the source\'s order, with its progress and suggestion',
+      simulator.matches.map((row) => [row.matchId, row.matchText, row.progress, row.suggestedFor]),
+      "every match, in the source's order, with its progress and suggestion",
     ).toEqual([
       ['qf-1', 'Corisco × Buffalo (Quartas de final)', 'decided', undefined],
       ['qf-2', 'Pequi × Acauã (Quartas de final)', 'running', 'current'],

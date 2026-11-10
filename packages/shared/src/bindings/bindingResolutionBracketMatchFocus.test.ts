@@ -164,7 +164,8 @@ describe('resolveBindingAgainstSources on the match focus', () => {
       path: 'matchNow.carB.logoUrl',
       expected: {
         status: 'valueAbsent',
-        problem: 'a fonte Simulador — Enduro não tem valor em Chaves › Partida agora › Carro B › Logo.',
+        problem:
+          'a fonte Simulador — Enduro não tem valor em Chaves › Partida agora › Carro B › Logo.',
       },
     },
     {
@@ -271,7 +272,10 @@ describe('resolveBindingAgainstSources on the match focus', () => {
 
   it.each(absentScenarios)('$name', ({ focus, expectedProblem }) => {
     // Arrange: the semifinals under way, with this row's focus.
-    const sources = buildSourcesWithTheSuperPrime(buildRoundsWithTheFirstSemifinalAtOneAll(), focus);
+    const sources = buildSourcesWithTheSuperPrime(
+      buildRoundsWithTheFirstSemifinalAtOneAll(),
+      focus,
+    );
 
     // Act: read the short name of the first car "agora".
     const resolution = resolveBindingAgainstSources(

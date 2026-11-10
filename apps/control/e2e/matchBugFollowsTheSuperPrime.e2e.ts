@@ -40,7 +40,11 @@ import {
   seededSimulatorLabel,
   turnSourceOnWithItsSwitch,
 } from './dataSourcesTestSteps';
-import { emptyTheServerState, realServerPort, sendCommandToRealServer } from './emptyTheServerState';
+import {
+  emptyTheServerState,
+  realServerPort,
+  sendCommandToRealServer,
+} from './emptyTheServerState';
 import { openControlPageAndWaitUntilConnected, openOutputInItsOwnPage } from './previewTestSteps';
 
 // The seeded simulator's id, which the bug's bindings name.
@@ -79,7 +83,9 @@ async function readStateFromTheRealServer(): Promise<StateThisTestReads> {
 /** Every match of the simulator's brackets now, round after round. */
 async function readMatchesOfTheSimulator(): Promise<MatchAsTheTestReadsIt[]> {
   const state = await readStateFromTheRealServer();
-  const snapshot = state.dataSnapshots.find((candidate) => candidate.sourceId === simulatorSourceId);
+  const snapshot = state.dataSnapshots.find(
+    (candidate) => candidate.sourceId === simulatorSourceId,
+  );
   return (snapshot?.shapes.brackets?.rounds ?? []).flatMap((round) => round.matches);
 }
 
@@ -138,10 +144,13 @@ async function startTheSimulatorsSuperPrime(page: Page): Promise<void> {
   await turnSourceOnWithItsSwitch(page, seededSimulatorLabel);
   await restartTheSimulatedRaceWithItsButton(page, seededSimulatorLabel);
   await expect
-    .poll(async () => (await readMatchesOfTheSimulator()).some((match) => match.carB !== undefined), {
-      message: 'the simulator’s Super Prime must list a match to race',
-      timeout: waitForTheAirInMilliseconds,
-    })
+    .poll(
+      async () => (await readMatchesOfTheSimulator()).some((match) => match.carB !== undefined),
+      {
+        message: 'the simulator’s Super Prime must list a match to race',
+        timeout: waitForTheAirInMilliseconds,
+      },
+    )
     .toBe(true);
 }
 
@@ -214,10 +223,13 @@ test.describe('the match bug with the simulator’s Super Prime', () => {
     // Assert (step 2): "agora" did not move; the bug shows the winner; the page proposes.
     expect(await readMatchIdNow(), '"agora" must never move by itself').toBe(firstMatchId);
     await expect
-      .poll(async () => (await readDataOnAirOfLayerFromTheRealServer('bracket-match'))?.winnerCarNumber, {
-        message: 'the bug must show the winner of the same match',
-        timeout: waitForTheAirInMilliseconds,
-      })
+      .poll(
+        async () => (await readDataOnAirOfLayerFromTheRealServer('bracket-match'))?.winnerCarNumber,
+        {
+          message: 'the bug must show the winner of the same match',
+          timeout: waitForTheAirInMilliseconds,
+        },
+      )
       .toBe(decidedMatch?.winnerCarNumber);
     await expect(
       panel.getByText(`Partida encerrada: ${winnerName ?? ''} venceu.`),

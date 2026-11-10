@@ -2,13 +2,12 @@
  * State slices (packages/shared)
  *
  * What this module is for:
- *   The server owns all state as named slices, among them `layers`, `graphics`,
- *   `instances`, `previewClearedLayerIds` (layers Prévia shows empty), `rundowns`,
- *   `items`, `quickFirePanels`, `macros`, `macroRuns` and `macroStops` (where a run
- *   stopped short), `obs` (OBS's scenes and connection), `dataSources`, `dataSnapshots`,
- *   `recordings` and `eventLog`. SlicesSchema describes them all; the server checks what
- *   it stores and sends against it, and the control page and renderer check what they
- *   receive.
+ *   The server owns all state as named slices, among them `layers`, `graphics`, `instances`,
+ *   `previewClearedLayerIds` (layers Prévia shows empty), `rundowns`, `items`,
+ *   `quickFirePanels`, `macros`, `macroRuns` and `macroStops` (where a run stopped short),
+ *   `obs` (OBS's scenes and connection), `dataSources`, `dataSnapshots`, `recordings` and
+ *   `eventLog`. SlicesSchema describes them all; the server checks what it stores and sends
+ *   against it, and the control page and renderer check what they receive.
  *
  * What these tests prove:
  *   - A realistic race-day state (five layers, the race clock registered and on air,
@@ -21,8 +20,8 @@
  *   - A failed event-log entry must carry the error a person reads.
  *   - quickFirePanels, macros, macroRuns, macroStops, obs, previewClearedLayerIds,
  *     dataSources, dataSnapshots and recordings are required like every other slice, the
- *     slice names come in the server's order, and a slice
- *     message's name decides what it carries for the new slices too.
+ *     slice names come in the server's order, and a slice message's name decides what it
+ *     carries for the new slices too.
  *   - A "will be cleared" marker is a layer id: a list of texts, none of them empty.
  *
  * What these tests deliberately do not cover:
@@ -290,9 +289,8 @@ describe('SlicesSchema', () => {
 
 describe('SliceNameSchema', () => {
   it('lists every slice in the order the server lists them, the newest ones included', () => {
-    // Arrange: the slice names; markers and bindings after the instances, panels and macros
-    // after the items, then macro stops, OBS and triggers, the data sources and what goes
-    // with them, the inbox, and the entity library and its images before the event log.
+    // Arrange: the slice names: instances, items, macros, OBS, triggers, the data sources
+    // and what goes with them, the inbox, the entity library, then the event log.
     const expectedSliceNames = [
       'outputs',
       'layers',

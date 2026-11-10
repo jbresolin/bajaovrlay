@@ -45,7 +45,10 @@ describe('load, play and stop', () => {
 
     // Assert: 200 at each step, invisible after load, seen on air, both teams and chips.
     expect(loadAnswer, 'load must answer 200').toEqual({ statusCode: 200 });
-    expect(playAnswer, 'play must answer 200 at step 0').toEqual({ statusCode: 200, currentStep: 0 });
+    expect(playAnswer, 'play must answer 200 at step 0').toEqual({
+      statusCode: 200,
+      currentStep: 0,
+    });
     expect(stopAnswer, 'stop must answer 200').toEqual({ statusCode: 200 });
     expect([opacityAfterLoad, opacityOnAir], 'off air after load, seen on air').toEqual(['0', '1']);
     expect(readTeamNamesShown(matchCard), 'Corisco on the left, Piratas on the right').toEqual([

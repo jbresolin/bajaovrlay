@@ -77,7 +77,7 @@ for (const stage of ['grey', 'black'] as const) {
       });
     }
 
-    test('keeps the longest names inside their sides at the lower third\'s width', async ({
+    test("keeps the longest names inside their sides at the lower third's width", async ({
       page,
     }) => {
       // Arrange: the third place between two of the longest team names of the event.
@@ -96,10 +96,10 @@ for (const stage of ['grey', 'black'] as const) {
         left: 96,
         width: 1300,
       });
-      expect(nameA.right, 'car A\'s name must stay inside its side').toBeLessThanOrEqual(
+      expect(nameA.right, "car A's name must stay inside its side").toBeLessThanOrEqual(
         sideA.right,
       );
-      expect(nameB.left, 'car B\'s name must stay inside its side').toBeGreaterThanOrEqual(
+      expect(nameB.left, "car B's name must stay inside its side").toBeGreaterThanOrEqual(
         sideB.left,
       );
       await expect(page, 'the longest names must look like their baseline').toHaveScreenshot(

@@ -21,8 +21,8 @@ import { ptBR } from './ptBR.js';
 export type PreviewDataChoice =
   { isReadable: true; data: unknown } | { isReadable: false; problem: string };
 
-/** The second semifinal "a seguir", both teams with their logos. */
-function buildSemifinalWithLogos(): MatchCardData {
+/** The second semifinal "a seguir" with neither logo: each side shows its car number. */
+function buildSemifinalWithoutLogos(): MatchCardData {
   return {
     roundName: 'Semifinal',
     bestOf: 3,
@@ -31,21 +31,21 @@ function buildSemifinalWithLogos(): MatchCardData {
     carASchoolName: 'UPE',
     carACity: 'Recife',
     carAState: 'PE',
-    carALogoUrl: coriscoLogoUrl,
     carBNumber: 13,
     carBTeamName: 'Equipe Cactus Baja',
     carBSchoolName: 'UFERSA-Mos',
     carBCity: 'Mossoró',
     carBState: 'RN',
-    carBLogoUrl: cactusLogoUrl,
   };
 }
 
-/** The same match with neither logo: each side shows its car number instead. */
-function buildSemifinalWithoutLogos(): MatchCardData {
-  const { carALogoUrl: _logoOfCarA, carBLogoUrl: _logoOfCarB, ...withoutLogos } =
-    buildSemifinalWithLogos();
-  return withoutLogos;
+/** The same match with both teams' logos. */
+function buildSemifinalWithLogos(): MatchCardData {
+  return {
+    ...buildSemifinalWithoutLogos(),
+    carALogoUrl: coriscoLogoUrl,
+    carBLogoUrl: cactusLogoUrl,
+  };
 }
 
 /** Each sample match by the name the address gives it. */

@@ -277,7 +277,10 @@ export default class BracketMatchBugGraphic extends LitElement implements OGrafG
    * Runs a fade, kept so dispose can end it early; one still running is finished at once
    * first, so a fade out that comes during the fade in never tangles with it.
    */
-  private async runPanelTimeline(timeline: MatchBugTimeline, skipAnimation: boolean): Promise<void> {
+  private async runPanelTimeline(
+    timeline: MatchBugTimeline,
+    skipAnimation: boolean,
+  ): Promise<void> {
     if (this.runningPanelTimeline !== undefined) {
       finishTimelineAtOnce(this.runningPanelTimeline);
     }

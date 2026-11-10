@@ -81,8 +81,7 @@ function renderHeadLine(match: MatchCardMatchLook): TemplateResult {
       ? nothing
       : html`<span class="series-tag" data-testid="match-card-series">${match.seriesTag}</span>`;
   return html`<span class="head-line" data-testid="match-card-head"
-    ><span class="head-words"
-      ><span class="up-next-word">${ptBR.upNextWord}</span>${roundPart}</span
+    ><span class="head-words"><span class="up-next-word">${ptBR.upNextWord}</span>${roundPart}</span
     >${seriesTag}</span
   >`;
 }

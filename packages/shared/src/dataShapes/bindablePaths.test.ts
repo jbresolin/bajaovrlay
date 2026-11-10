@@ -321,7 +321,7 @@ describe('listBindablePathsOfShape', () => {
     });
     expect(
       focusPaths.find((bindablePath) => bindablePath.path === 'matchNow.carA.shortName'),
-      'the short name of the match bug\'s first car must be offered',
+      "the short name of the match bug's first car must be offered",
     ).toEqual({
       path: 'matchNow.carA.shortName',
       label: 'Chaves › Partida agora › Carro A › Nome curto',

@@ -68,13 +68,14 @@ describe('each side of the card', () => {
     const look = readLookOf(data);
 
     // Assert: Corisco's logo off the plate; Cactus's number in place of a logo.
-    expect(look.match?.cars.map((car) => car.logo), 'a logo, or nothing for the chip').toEqual([
-      { url: '/media/logo-corisco-baja', isOnLightPlate: false },
-      undefined,
-    ]);
-    expect(look.match?.cars.map((car) => car.carNumber), 'each car keeps its number').toEqual([
-      32, 13,
-    ]);
+    expect(
+      look.match?.cars.map((car) => car.logo),
+      'a logo, or nothing for the chip',
+    ).toEqual([{ url: '/media/logo-corisco-baja', isOnLightPlate: false }, undefined]);
+    expect(
+      look.match?.cars.map((car) => car.carNumber),
+      'each car keeps its number',
+    ).toEqual([32, 13]);
   });
 
   it('puts a logo on the light plate when the team chose it', () => {

@@ -287,7 +287,10 @@ export default class BracketMatchCardGraphic extends LitElement implements OGraf
    * Runs a motion, kept so dispose can end it early; one still running is finished at once
    * first, so a stop that comes during the play-in never tangles with it.
    */
-  private async runPanelTimeline(timeline: MatchCardTimeline, skipAnimation: boolean): Promise<void> {
+  private async runPanelTimeline(
+    timeline: MatchCardTimeline,
+    skipAnimation: boolean,
+  ): Promise<void> {
     if (this.runningPanelTimeline !== undefined) {
       finishTimelineAtOnce(this.runningPanelTimeline);
     }

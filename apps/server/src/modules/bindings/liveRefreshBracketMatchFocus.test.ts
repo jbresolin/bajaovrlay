@@ -22,7 +22,10 @@
  *   - The real match bug's drawing: packages/graphics/bracket-match-bug.
  */
 import type { BracketRound } from '@bajaovrlay/shared';
-import { buildQuarterFinals, superPrimeCars } from '@bajaovrlay/shared/superPrimeBrackets.testSupport';
+import {
+  buildQuarterFinals,
+  superPrimeCars,
+} from '@bajaovrlay/shared/superPrimeBrackets.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import { createGraphicsFolderWithBuiltPackage } from '../../core/store/builtGraphicsFolder.testSupport.js';

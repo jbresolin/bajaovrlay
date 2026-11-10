@@ -84,7 +84,12 @@ const readinessScenarios = [
   {
     name: 'a bound flag whose source has no data cannot, naming the field and source',
     item: buildClockItemWithFields({ state: buildSessionBinding('state') }),
-    sources: { dataSources: [buildSimulatorThatIsOk()], dataSnapshots: [], overrides: [], bracketMatchFocuses: [] },
+    sources: {
+      dataSources: [buildSimulatorThatIsOk()],
+      dataSnapshots: [],
+      overrides: [],
+      bracketMatchFocuses: [],
+    },
     expected: 'Bandeira: a fonte Simulador — Enduro ainda não tem dados.',
   },
   // The simulator was deleted after the item was saved.

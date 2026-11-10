@@ -143,7 +143,13 @@ describe('a new database', () => {
       (item) => item.home.kind === 'quickFire' && item.home.panelId === 'chave',
     );
     expect(
-      itemsOfTheKeyPanel.map((item) => [item.id, item.order, item.graphicId, item.layerId, item.label]),
+      itemsOfTheKeyPanel.map((item) => [
+        item.id,
+        item.order,
+        item.graphicId,
+        item.layerId,
+        item.label,
+      ]),
       'the bug first, then the card on the lower third',
     ).toEqual([
       ['partida-agora', 0, 'bracket-match-bug', 'bracket-match', 'Partida agora'],
@@ -177,7 +183,7 @@ describe('a new database', () => {
     });
     expect(
       Object.values(bug?.fields ?? {}).filter((field) => field.kind === 'binding'),
-      'eleven of the bug\'s fields are bound (all but the corner)',
+      "eleven of the bug's fields are bound (all but the corner)",
     ).toHaveLength(11);
     expect(
       Object.values(card?.fields ?? {}).filter((field) => field.kind === 'binding'),

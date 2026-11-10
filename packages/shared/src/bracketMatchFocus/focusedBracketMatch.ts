@@ -2,7 +2,10 @@ import type { BracketCar, BracketsShape } from '../dataShapes/index.js';
 import type { Team } from '../entities/team.js';
 import { buildMediaUrl } from '../media/mediaId.js';
 import type { BracketMatchFocus, BracketMatchSlot } from './bracketMatchFocus.js';
-import { type BracketMatchInPlayOrder, listBracketMatchesInPlayOrder } from './bracketMatchPlayOrder.js';
+import {
+  type BracketMatchInPlayOrder,
+  listBracketMatchesInPlayOrder,
+} from './bracketMatchPlayOrder.js';
 
 /**
  * What one slot of the focus holds now:

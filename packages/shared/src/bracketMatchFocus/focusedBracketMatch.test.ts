@@ -27,10 +27,7 @@ import { describe, expect, it } from 'vitest';
 import type { Team } from '../entities/team.js';
 import { buildFakeMediaId } from '../media/fakeMediaIds.testSupport.js';
 import type { BracketMatchFocus } from './bracketMatchFocus.js';
-import {
-  describeFocusedMatchForGraphics,
-  readFocusedBracketMatch,
-} from './focusedBracketMatch.js';
+import { describeFocusedMatchForGraphics, readFocusedBracketMatch } from './focusedBracketMatch.js';
 import {
   buildBestOfThreeUnderWay,
   buildQuarterFinals,
@@ -181,7 +178,7 @@ describe('describeFocusedMatchForGraphics', () => {
     const data = describeFocusedMatchForGraphics(matchInPlayOrder, [buildCoriscoInCadastros()]);
 
     // Assert: Pequi is drawn from the bracket alone, nothing invented.
-    expect(data.carB, 'a team not in Cadastros must keep the bracket\'s names only').toEqual({
+    expect(data.carB, "a team not in Cadastros must keep the bracket's names only").toEqual({
       carNumber: 12,
       shortName: 'Pequi',
       teamName: 'Pequi',

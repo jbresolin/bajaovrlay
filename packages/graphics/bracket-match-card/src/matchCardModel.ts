@@ -110,7 +110,11 @@ function hasMatchStarted(cars: CarFields[], isSeries: boolean): boolean {
 }
 
 /** The side's result once the match has started: its wins, or its time when it has run. */
-function writeResultText(car: CarFields, isSeries: boolean, hasStarted: boolean): string | undefined {
+function writeResultText(
+  car: CarFields,
+  isSeries: boolean,
+  hasStarted: boolean,
+): string | undefined {
   if (!hasStarted) {
     return undefined;
   }

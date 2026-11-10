@@ -1,4 +1,7 @@
-import type { BracketMatchFocus, BracketMatchSlot } from '../bracketMatchFocus/bracketMatchFocus.js';
+import type {
+  BracketMatchFocus,
+  BracketMatchSlot,
+} from '../bracketMatchFocus/bracketMatchFocus.js';
 import {
   describeFocusedMatchForGraphics,
   findBracketMatchFocusOfSource,

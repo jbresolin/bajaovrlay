@@ -29,7 +29,7 @@ function SlotLine(props: { slotName: string; slot: SlotOnThePage }) {
   }
   return (
     <p className="text-sm">
-      <span className="font-semibold">{props.slotName}: </span>
+      <span className="font-semibold">{texts.slotLabel(props.slotName)}</span>
       <span className={slot.kind === 'chosen' ? undefined : 'text-muted-foreground'}>
         {slotText}
       </span>
@@ -150,7 +150,9 @@ export function BracketMatchFocusPanel() {
           title={isOneSource ? source.sourceLabel : texts.sourceTitle(source.sourceLabel)}
         />
       ))}
-      <CommandErrorMessage commandTypes={['setBracketMatchFocus', 'acceptSuggestedBracketMatches']} />
+      <CommandErrorMessage
+        commandTypes={['setBracketMatchFocus', 'acceptSuggestedBracketMatches']}
+      />
     </section>
   );
 }

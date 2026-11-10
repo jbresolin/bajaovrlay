@@ -11,12 +11,12 @@
  * is dimmed, as the bracket marks them. The short names and the round are scrolling boxes
  * of the kit: a name too long for its box scrolls inside it (BAJAOVRLAY-55).
  */
-import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import {
   describeScreenCornerPosition,
   type ScreenCorner,
   type ScreenCornerInset,
 } from '@bajaovrlay/graphics-kit/screenCornerPosition';
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { html, nothing, type TemplateResult } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 

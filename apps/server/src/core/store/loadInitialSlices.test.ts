@@ -4,10 +4,10 @@
  * What this module is for:
  *   At boot the store needs its slices. Layers and instances are the operator's: they
  *   are loaded from the database as they are, or, on the very first boot (an empty
- *   database), seeded with the nine fixed layers (bug, channel-logo, bracket-match, ticker, clock, tower,
- *   lower-third, notice, fullscreen, bottom to top) and nothing on air. A layer seeded since a database was
- *   first written (the tower, BAJAOVRLAY-22) is added to it on the next boot, or no
- *   graphic could ever be placed there. Graphics are not the operator's: they
+ *   database), seeded with the nine fixed layers (bug, channel-logo, bracket-match,
+ *   ticker, clock, tower, lower-third, notice, fullscreen, bottom to top) and nothing on
+ *   air. A layer seeded since a database was first written (the tower, BAJAOVRLAY-22) is
+ *   added to it on the next boot, or no graphic could ever be placed there. Graphics are not the operator's: they
  *   describe what is built under packages/graphics, so they are rebuilt from the built
  *   OGraf manifests on every boot and saved. A package that is not built, or whose
  *   manifest is broken, is logged and left out; it never stops the boot.
@@ -15,9 +15,8 @@
  * What these tests prove (with a real SQLite file and a stand-in graphics folder, both
  * in temporary folders):
  *   - An empty database is seeded with the nine layers in ascending z-order, each with
- *     its pt-BR name, `out-then-in` swaps, and only the logo, channel logo, clock and
- *     tower persistent;
- *     the seed is saved, stamped with the store's clock rather than the machine's.
+ *     its pt-BR name, `out-then-in` swaps, and only the logo, channel logo, match bug,
+ *     clock and tower persistent; the seed is saved, stamped with the store's clock.
  *   - A built race clock is registered with its manifest, under its folder name; an
  *     unbuilt one logs a warning, a broken one logs an error, and the boot carries on.
  *   - The graphics kit's folder, which holds no manifest, is passed over without a
@@ -111,13 +110,9 @@ describe('loadInitialSlices on an empty database', () => {
       graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     });
 
-    // Assert: the nine layers, bottom to top, and the seed is in the slices table.
-    // Every layer swaps out-then-in (two graphics never overlap); only the logo, the
-    // channel logo, the match bug, the clock and the tower are persistent, the things
-    // meant to stay on screen all day. The channel logo (BAJAOVRLAY-63) sits at 15, just
-    // above the bug, and the match bug (BAJAOVRLAY-65) at 17, just above the channel logo;
-    // the tower at 35, between the clock it stacks under on the same right-hand column
-    // and the lower third; the notice (BAJAOVRLAY-44) at 45, above the lower third.
+    // Assert: the nine layers, bottom to top, and the seed in the slices table. All swap
+    // out-then-in; the logo, channel logo (15), match bug (17), clock and tower (35, under
+    // the clock) are persistent, meant to stay on screen all day; the notice sits at 45.
     expect(slices.layers, 'the seeded layers must be exactly these nine').toEqual([
       {
         id: 'bug',

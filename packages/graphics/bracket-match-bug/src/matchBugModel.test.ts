@@ -88,7 +88,7 @@ describe('the match on the bug', () => {
     },
     {
       // A timed quarter-final: each car's time as the scoring writes it, no "MD3".
-      name: 'shows each car\'s time in a timed run',
+      name: "shows each car's time in a timed run",
       data: {
         roundName: 'Quartas de final',
         carANumber: 47,

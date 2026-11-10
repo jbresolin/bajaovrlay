@@ -11,6 +11,8 @@ export const ptBRBracketMatchFocus = {
   matchText: (carAName: string, carBName: string, roundName: string) =>
     `${carAName} × ${carBName} (${roundName})`,
   slotNames: { current: 'Agora', upNext: 'A seguir' },
+  /** "Agora: ", before the slot's match. */
+  slotLabel: (slotName: string) => `${slotName}: `,
   emptySlot: 'Nenhuma partida',
   /** A chosen match the source stopped listing: the graphics show nothing for it. */
   goneSlot: (matchId: string) =>

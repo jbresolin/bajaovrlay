@@ -62,7 +62,12 @@ describe('resolveItemFieldsIntoGraphicData with bindings that cannot resolve', (
         ...buildTypedEnduroClockFields(),
         sessionName: buildLiveBindingToTheSimulatorSession('sessionName'),
       },
-      sources: { dataSources: [buildSimulatorSourceThatIsOn()], dataSnapshots: [], overrides: [], bracketMatchFocuses: [] },
+      sources: {
+        dataSources: [buildSimulatorSourceThatIsOn()],
+        dataSnapshots: [],
+        overrides: [],
+        bracketMatchFocuses: [],
+      },
       expectedMessage: 'Título: a fonte Simulador — Enduro ainda não tem dados.',
     },
     // A required title bound to the leader's gap, which the leader never has.

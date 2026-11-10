@@ -215,7 +215,12 @@ describe('buildRefreshOfLiveBoundFields', () => {
 
   it('keeps every value on air when the source was deleted', () => {
     // Arrange: no source at all any more.
-    const sources: SourcesForBindings = { dataSources: [], dataSnapshots: [], overrides: [], bracketMatchFocuses: [] };
+    const sources: SourcesForBindings = {
+      dataSources: [],
+      dataSnapshots: [],
+      overrides: [],
+      bracketMatchFocuses: [],
+    };
 
     // Act: ask what to send.
     const refresh = buildRefreshOfTheClock(sources);
