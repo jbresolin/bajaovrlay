@@ -74,12 +74,12 @@ async function readStateOfTheOwnServer(): Promise<StateThePlainRollTestReads> {
   return (await response.json()) as StateThePlainRollTestReads;
 }
 
-/** The plain roll on the bug layer's program output, or undefined when it is off air. */
+/** The plain roll on its layer's program output, or undefined when it is off air. */
 async function findThePlainRollOnAir() {
   const state = await readStateOfTheOwnServer();
   return state.instances.find(
     (instance) =>
-      instance.layerId === 'bug' &&
+      instance.layerId === 'sponsor-roll-plain' &&
       instance.target === 'program' &&
       instance.itemId === seededItemId,
   );
@@ -146,8 +146,8 @@ test('the seeded trigger on auto every 5 minutes puts the plain roll on air, and
     const obsPage = await context.newPage();
     await obsPage.goto(`${ownServerAddress}/render/`);
     await expect(
-      obsPage.locator('[data-layer-id="bug"]'),
-      'OBS draws the bug layer',
+      obsPage.locator('[data-layer-id="sponsor-roll-plain"]'),
+      'OBS draws the roll’s layer',
     ).toBeAttached();
     await setTheSeededTriggerToAutoEveryFiveMinutes(page);
     await expect
@@ -183,7 +183,7 @@ test('the seeded trigger on auto every 5 minutes puts the plain roll on air, and
     const seenOnAirAtMs = Date.now();
     await expect(
       obsPage
-        .locator('[data-layer-id="bug"] > baja-graphic-sponsor-roll-plain')
+        .locator('[data-layer-id="sponsor-roll-plain"] > baja-graphic-sponsor-roll-plain')
         .getByTestId('sponsor-roll-plain-heading'),
       'the program output must draw Bosch’s level',
     ).toHaveText('PATROCÍNIO DIAMANTE', { timeout: waitForTheFiringInMilliseconds });

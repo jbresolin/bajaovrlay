@@ -19,6 +19,8 @@
  *   - A sponsor with no logo adds no time.
  *   - A sponsor list changed while the roll is on air neither extends nor cuts the pass.
  *   - A preview carries the pass too, and "Tomar" sends it to air with it.
+ *   - A take whose sponsors have no logo at all is refused in pt-BR, before anything leaves
+ *     the layer: the roll would show nothing and clear the layer for nothing.
  *
  * What these tests deliberately do not cover:
  *   - The table and the plan; shared's sponsorRollPass.test.ts.
@@ -95,7 +97,7 @@ function startStoreWithThePlainRollItem(sponsors: object[]) {
     type: 'createItem',
     home: { kind: 'quickFire', panelId: 'atalhos' },
     graphicId: 'sponsor-roll-plain',
-    layerId: 'bug',
+    layerId: 'sponsor-roll-plain',
     label: 'Patrocinadores (simples)',
     fields: {
       sponsors: { kind: 'literal', value: sponsors },
@@ -118,11 +120,13 @@ function applyOrThrow(store: StateStore, command: Record<string, unknown>): void
   }
 }
 
-/** The roll's instance on the bug layer's program output, or undefined when it is off air. */
+/** The roll's instance on its layer's program output, or undefined when it is off air. */
 function findRollOnAir(store: StateStore) {
   return store
     .readAllSlices()
-    .instances.find((instance) => instance.layerId === 'bug' && instance.target === 'program');
+    .instances.find(
+      (instance) => instance.layerId === 'sponsor-roll-plain' && instance.target === 'program',
+    );
 }
 
 describe('a take of the plain sponsor roll', () => {
@@ -216,9 +220,31 @@ describe('a take of the plain sponsor roll', () => {
     applyOrThrow(store, { type: 'previewItem', itemId, origin: 'manual' });
 
     // Act: "Tomar" sends the preview to air.
-    applyOrThrow(store, { type: 'takePreview', layerId: 'bug' });
+    applyOrThrow(store, { type: 'takePreview', layerId: 'sponsor-roll-plain' });
 
     // Assert: on air with the same pass.
     expect(findRollOnAir(store)?.autoOutAfterMs, 'the preview’s pass goes to air').toBe(18_400);
+  });
+
+  it('refuses a take whose sponsors have no logo at all, in pt-BR, leaving the layer as it was', () => {
+    // Arrange: the roll typed with Randon and Fras-le, neither with a logo yet.
+    const { store, itemId } = startStoreWithThePlainRollItem([
+      { name: 'Randon', level: 'prata', logoOnLightPlate: false },
+      { name: 'Fras-le', level: 'apoio', logoUrl: '', logoOnLightPlate: false },
+    ]);
+
+    // Act: take it.
+    const outcome = store.applyCommand({ type: 'takeItem', itemId }, operatorActor);
+
+    // Assert: refused, saying why, and nothing on the layer.
+    expect(outcome, 'a roll with nothing to show is refused, saying why').toEqual({
+      ok: false,
+      error: {
+        code: 'NOTHING_TO_SHOW',
+        message:
+          'O gráfico "sponsor-roll-plain" não tem o que mostrar: nenhum patrocinador da lista tem logo.',
+      },
+    });
+    expect(findRollOnAir(store), 'nothing goes on air').toBeUndefined();
   });
 });

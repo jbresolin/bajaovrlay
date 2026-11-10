@@ -4,23 +4,23 @@
 // a test asks, the auto-out, all on Vitest's fake
 // time (the clock and every timer move only when a test moves them). Every call builds its
 // own store, database and service, so no test can change what another test sees.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import type { MacroStep, ObsStatus, TriggerFiring } from '@bajaovrlay/shared';
 import { expect, onTestFinished, vi } from 'vitest';
 
-import { openTemporaryDatabase } from '../../core/db/temporaryDatabase.testSupport.js';
+import {
+  openDatabaseForTests,
+  openTemporaryDatabase,
+} from '../../core/db/temporaryDatabase.testSupport.js';
+import type { ServerLogger } from '../../core/logger/createLogger.js';
 import {
   createRecordingLogger,
   type RecordedLogLine,
 } from '../../core/logger/recordingLogger.testSupport.js';
 import { startAutoOutScheduler } from '../../core/store/autoOut.js';
-import { createGraphicsFolderWithUnbuiltRaceClock } from '../../core/store/builtGraphicsFolder.testSupport.js';
 import { obsConnectionActor } from '../../core/store/commandActors.js';
 import { createStateStore, type StateStore } from '../../core/store/createStateStore.js';
 import { startMacroRunner } from '../../core/store/macroRunner.js';
+import { createGraphicsFolderWithTheRealGraphicsOfTheMacros } from './realGraphicsOfTheMacros.testSupport.js';
 import { startTriggerService } from './service.js';
 
 /** The operator's actor in these tests: one control page's connection. */
@@ -48,33 +48,6 @@ export const plainSponsorRollMacroId = 'macro-patrocinadores-simples';
  * entrance, Bosch's 8 s (Diamante) and SAE Brasil's 5 s (Realização).
  */
 export const plainSponsorRollPassMs = 13_400;
-
-/** The graphics whose real manifests the store registers, by package folder. */
-const graphicFoldersUsed = ['lower-third', 'notice', 'countdown', 'sponsor-roll-plain'];
-
-/** packages/graphics in this repository, where the real manifests are. */
-const repositoryGraphicsFolder = fileURLToPath(
-  new URL('../../../../../packages/graphics/', import.meta.url),
-);
-
-/**
- * A temporary graphics folder with the lower third, the notice, the countdown and the plain
- * sponsor roll "built": their real manifests copied into dist/, so a take here is refused or
- * accepted exactly as on race day.
- */
-function createGraphicsFolderWithTheRealGraphicsOfTheMacros(): string {
-  const graphicsFolder = createGraphicsFolderWithUnbuiltRaceClock();
-  for (const folderName of graphicFoldersUsed) {
-    const manifestText = readFileSync(
-      join(repositoryGraphicsFolder, folderName, `${folderName}.ograf.json`),
-      'utf8',
-    );
-    const distFolder = join(graphicsFolder, folderName, 'dist');
-    mkdirSync(distFolder, { recursive: true });
-    writeFileSync(join(distFolder, `${folderName}.ograf.json`), manifestText);
-  }
-  return graphicsFolder;
-}
 
 /** Applies a command as the operator and fails the test at once if it is refused. */
 export function applyAsTheOperatorOrThrow(store: StateStore, command: unknown): void {
@@ -126,7 +99,7 @@ function createTheItemsOfTheMacros(store: StateStore): void {
     type: 'createItem',
     home,
     graphicId: 'sponsor-roll-plain',
-    layerId: 'bug',
+    layerId: 'sponsor-roll-plain',
     label: 'Patrocinadores (simples)',
     fields: {
       sponsors: {
@@ -211,7 +184,36 @@ export type TriggersOnTheStore = {
   stepTheClockBack: (milliseconds: number) => void;
   /** Every line the store, the macro runner and the trigger service have logged. */
   readRecordedLogLines: () => RecordedLogLine[];
+  /**
+   * Stops the store's services and boots a new store on the same database file, with the
+   * macro runner, the trigger service and (if asked) the auto-out started again, as a
+   * restart of the server does; returns the new store.
+   */
+  restartTheServer: () => StateStore;
 };
+
+/** Starts the macro runner, the trigger service and, if asked, the auto-out on a store. */
+function startTheServicesOf(
+  store: StateStore,
+  logger: ServerLogger,
+  readTheFakedWallClock: () => Date,
+  isAutoOutRunning: boolean,
+): () => void {
+  const macroRunner = startMacroRunner({ stateStore: store, logger });
+  const triggerService = startTriggerService({
+    stateStore: store,
+    logger,
+    readCurrentTime: readTheFakedWallClock,
+  });
+  const autoOutScheduler = isAutoOutRunning
+    ? startAutoOutScheduler({ stateStore: store, logger })
+    : undefined;
+  return () => {
+    triggerService.stop();
+    macroRunner.stop();
+    autoOutScheduler?.stop();
+  };
+}
 
 /**
  * Builds what every trigger test starts from: the fake clock at 11:00 in São Paulo on race
@@ -242,10 +244,11 @@ export function startTriggersOnTheStore(
   // is being made, never from how many times it was asked for.
   let idOfTheNextMacro = 'macro-sem-id';
   const { logger, readRecordedLines } = createRecordingLogger();
+  const graphicPackagesFolder = createGraphicsFolderWithTheRealGraphicsOfTheMacros();
   const store: StateStore = createStateStore({
     database,
     logger,
-    graphicPackagesFolder: createGraphicsFolderWithTheRealGraphicsOfTheMacros(),
+    graphicPackagesFolder,
     readCurrentTime: readTheFakedWallClock,
     createItemId: () => {
       const itemIdsHeld = store.readAllSlices().items.map((item) => item.id);
@@ -276,20 +279,9 @@ export function startTriggersOnTheStore(
       steps: stepsOfEachMacro[macroId] ?? [],
     });
   }
-  const macroRunner = startMacroRunner({ stateStore: store, logger });
-  const triggerService = startTriggerService({
-    stateStore: store,
-    logger,
-    readCurrentTime: readTheFakedWallClock,
-  });
-  onTestFinished(() => {
-    triggerService.stop();
-    macroRunner.stop();
-  });
-  if (options.isAutoOutRunning === true) {
-    const autoOutScheduler = startAutoOutScheduler({ stateStore: store, logger });
-    onTestFinished(() => autoOutScheduler.stop());
-  }
+  const isAutoOutRunning = options.isAutoOutRunning === true;
+  let stopTheServices = startTheServicesOf(store, logger, readTheFakedWallClock, isAutoOutRunning);
+  onTestFinished(() => stopTheServices());
   return {
     store,
     databasePath,
@@ -303,6 +295,22 @@ export function startTriggersOnTheStore(
       vi.setSystemTime(Date.now() - milliseconds);
     },
     readRecordedLogLines: readRecordedLines,
+    restartTheServer: () => {
+      stopTheServices();
+      const storeAfterTheRestart = createStateStore({
+        database: openDatabaseForTests(databasePath),
+        logger,
+        graphicPackagesFolder,
+        readCurrentTime: readTheFakedWallClock,
+      });
+      stopTheServices = startTheServicesOf(
+        storeAfterTheRestart,
+        logger,
+        readTheFakedWallClock,
+        isAutoOutRunning,
+      );
+      return storeAfterTheRestart;
+    },
   };
 }
 

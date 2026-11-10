@@ -25,6 +25,11 @@ export const CommandErrorCodeSchema = z.enum([
   'INSTANCE_NOT_FOUND',
   /** The data does not fit the graphic's manifest schema; the message names the field. */
   'INVALID_GRAPHIC_DATA',
+  /**
+   * The data fits, but the graphic would show nothing (BAJAOVRLAY-64: a plain sponsor roll
+   * whose sponsors have no logo); the message says why.
+   */
+  'NOTHING_TO_SHOW',
   /** A WebSocket message that is not JSON or not in the protocol. */
   'INVALID_MESSAGE',
   /** Something broke on the server (for example, saving to the database). */

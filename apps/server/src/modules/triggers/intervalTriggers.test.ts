@@ -16,62 +16,34 @@
  *     of N counts again from the save.
  *   - Between 12:00 and 13:00 it fires at 12:00, 12:30 and 13:00 only; a window across
  *     midnight holds 23:30 and 01:30, not 03:00.
- *   - The moments a sleep jumped over are not fired late; the next one on its grid is.
- *   - A firing while the roll is still on air does nothing and logs why; once the roll has
- *     left (cleared, or its pass over with the auto-out), the next firing takes it again.
+ *   - The moments a sleep jumped over are not fired late; the next one on its grid is. A step
+ *     of the clock by days looks at no more than 1000 steps of the grid at once, and the
+ *     warning of the moments skipped says its count was cut there.
  *   - Paused, it fires nothing; unpaused, it goes on at the next moment of its grid.
  *
  * What these tests deliberately do not cover:
  *   - The schema of the form; shared's trigger.test.ts.
  *   - How the server clock itself runs; core/time.
+ *   - The roll on air (its layer busy, nothing to show, a restart mid-pass);
+ *     intervalTriggersAndTheRoll.test.ts.
  *   - The roll's pass length; core/store/plainSponsorRollAutoOut.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 
-import { listScheduleMomentsDue } from './scheduleMoments.js';
+import {
+  buildSponsorsEveryMinutesTrigger,
+  momentOfRaceDayAt,
+  oneMinuteMs,
+  readFiringTimesOfDay,
+} from './intervalTriggers.testSupport.js';
+import { listScheduleMomentsDue, mostIntervalStepsLookedAtOnce } from './scheduleMoments.js';
 import {
   applyAsTheOperatorOrThrow,
   createTrigger,
-  plainSponsorRollMacroId,
-  plainSponsorRollPassMs,
-  readDataOnAirOnLayer,
   readFirings,
   startOfRaceDay,
   startTriggersOnTheStore,
 } from './triggersOnTheStore.testSupport.js';
-
-/** One minute, in milliseconds. */
-const oneMinuteMs = 60_000;
-
-/** A moment of race day in São Paulo, "HH:MM", as ms since 1970 (UTC is 3 h ahead). */
-function momentOfRaceDayAt(timeOfDay: string): number {
-  return Date.parse(`2027-08-14T${timeOfDay}:00.000-03:00`);
-}
-
-/** "Patrocinadores a cada N min", asking first unless the test says auto. */
-function buildSponsorsEveryMinutesTrigger(
-  everyMinutes: number,
-  changes: Record<string, unknown> = {},
-) {
-  return {
-    name: `Patrocinadores a cada ${String(everyMinutes)} min`,
-    when: { kind: 'schedule', moment: { kind: 'everyMinutes', everyMinutes, window: null } },
-    macroId: plainSponsorRollMacroId,
-    mode: 'ask',
-    ...changes,
-  };
-}
-
-/** When each firing of the list came, as "HH:MM" in São Paulo. */
-function readFiringTimesOfDay(store: Parameters<typeof readFirings>[0]): string[] {
-  return readFirings(store).map((firing) =>
-    new Date(firing.firedAtMs).toLocaleTimeString('pt-BR', {
-      timeZone: 'America/Sao_Paulo',
-      hour: '2-digit',
-      minute: '2-digit',
-    }),
-  );
-}
 
 describe('every N minutes', () => {
   it('fires at 11:05 and 11:10 when switched on at 11:00 every 5 minutes', () => {
@@ -202,65 +174,58 @@ describe('a moment that came while the machine slept', () => {
   });
 });
 
-describe('while the roll is still on air', () => {
-  it('does nothing, and logs why', () => {
-    // Arrange: auto every 5 minutes, no auto-out, so the roll taken at 11:05 stays up.
-    const { store, passTime, readRecordedLogLines } = startTriggersOnTheStore();
-    createTrigger(store, buildSponsorsEveryMinutesTrigger(5, { mode: 'auto' }));
-    passTime(5 * oneMinuteMs + 1_000);
-    const rollTakenAt1105 = readDataOnAirOnLayer(store, 'bug');
+describe('a forward step of the clock by days', () => {
+  it('looks at no more than 1000 steps of the grid at once, so one look stays short', () => {
+    // Arrange: every 5 minutes between 12:00 and 13:00, switched on at 11:00 on race day.
+    const moment = {
+      kind: 'everyMinutes' as const,
+      everyMinutes: 5,
+      window: { from: '12:00', to: '13:00' },
+    };
+    const switchedOnAtMs = momentOfRaceDayAt('11:00');
 
-    // Act: 11:10 comes with the roll still on air.
-    passTime(5 * oneMinuteMs);
-
-    // Assert: on air at 11:05, still the one firing at 11:10, and a log line naming why.
-    expect(rollTakenAt1105, 'the roll went on air at 11:05').toBeDefined();
-    expect(readFiringTimesOfDay(store), 'no firing over a roll still on air').toEqual(['11:05']);
-    const notFiredLines = readRecordedLogLines().filter((line) =>
-      line.message.includes('still on air'),
-    );
-    expect(notFiredLines[0], 'the log must name the trigger and say why in pt-BR').toMatchObject({
-      level: 'info',
-      trigger_name: 'Patrocinadores a cada 5 min',
-      reason:
-        'O gatilho "Patrocinadores a cada 5 min" não disparou: "Patrocinadores (simples)" ainda está no ar.',
+    // Act: list the moments over a whole year, as a look after a step of the clock would.
+    const momentsDue = listScheduleMomentsDue(moment, [], {
+      afterMs: switchedOnAtMs,
+      upToMs: switchedOnAtMs + 365 * 24 * 60 * oneMinuteMs,
+      intervalCountedFromMs: switchedOnAtMs,
     });
+
+    // Assert: some moments, and none past the first 1000 steps of 5 minutes.
+    expect(mostIntervalStepsLookedAtOnce, 'the cap is 1000 steps').toBe(1000);
+    expect(momentsDue.length, 'the window’s moments of those steps are listed').toBeGreaterThan(0);
+    expect(
+      momentsDue.length,
+      'never more than the steps looked at: 13 moments a day for about 3,5 days',
+    ).toBeLessThanOrEqual(13 * 4);
   });
 
-  it('takes the roll again at the next moment once the roll was cleared', () => {
-    // Arrange: auto every 5 minutes, no auto-out; the roll went up at 11:05.
-    const { store, passTime } = startTriggersOnTheStore();
-    createTrigger(store, buildSponsorsEveryMinutesTrigger(5, { mode: 'auto' }));
-    passTime(5 * oneMinuteMs + 1_000);
+  it('logs the moments it skipped as a count cut at the cap', () => {
+    // Arrange: every 5 minutes from 11:00, between 12:00 and 13:00.
+    const { store, passTime, sleep, readRecordedLogLines } = startTriggersOnTheStore();
+    createTrigger(store, {
+      ...buildSponsorsEveryMinutesTrigger(5),
+      when: {
+        kind: 'schedule',
+        moment: { kind: 'everyMinutes', everyMinutes: 5, window: { from: '12:00', to: '13:00' } },
+      },
+    });
 
-    // Act: the operator clears the bug layer, and 11:10 comes.
-    applyAsTheOperatorOrThrow(store, { type: 'clearLayer', layerId: 'bug', target: 'program' });
-    passTime(5 * oneMinuteMs);
+    // Act: the server clock steps 30 days forwards, and the next tick comes.
+    sleep(30 * 24 * 60 * oneMinuteMs);
+    passTime(2_000);
 
-    // Assert: a second firing, and the roll back on air.
-    expect(readFiringTimesOfDay(store), 'the layer is free, so 11:10 fires').toEqual([
-      '11:05',
-      '11:10',
+    // Assert: nothing fired, and one warning whose count says it was cut at the cap.
+    expect(readFirings(store), 'nothing from the step is fired').toEqual([]);
+    const skippedWarnings = readRecordedLogLines().filter(
+      (line) => line.level === 'warn' && line.message.includes('skipped'),
+    );
+    expect(skippedWarnings, 'one warning, its count cut at the cap').toEqual([
+      expect.objectContaining({
+        trigger_name: 'Patrocinadores a cada 5 min',
+        is_count_capped: true,
+      }),
     ]);
-    expect(readDataOnAirOnLayer(store, 'bug'), 'the roll is up again').toBeDefined();
-  });
-
-  it('leaves after its pass with the auto-out, and comes back at the next moment', () => {
-    // Arrange: auto every 5 minutes, the auto-out running.
-    const { store, passTime } = startTriggersOnTheStore({ isAutoOutRunning: true });
-    createTrigger(store, buildSponsorsEveryMinutesTrigger(5, { mode: 'auto' }));
-
-    // Act: 11:05 comes, then the pass's 13,4 s, then 11:10.
-    passTime(5 * oneMinuteMs + 1_000);
-    const isOnAirAt1105 = readDataOnAirOnLayer(store, 'bug') !== undefined;
-    passTime(plainSponsorRollPassMs);
-    const isOnAirAfterThePass = readDataOnAirOnLayer(store, 'bug') !== undefined;
-    passTime(5 * oneMinuteMs - plainSponsorRollPassMs);
-
-    // Assert: up at 11:05, gone after its pass, up again at 11:10.
-    expect(isOnAirAt1105, 'the roll goes on air at 11:05').toBe(true);
-    expect(isOnAirAfterThePass, 'the roll leaves when its pass ends').toBe(false);
-    expect(readFiringTimesOfDay(store), 'both moments fired').toEqual(['11:05', '11:10']);
   });
 });
 

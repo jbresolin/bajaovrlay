@@ -15,6 +15,30 @@ const oneMinuteMs = 60_000;
 /** One day, in milliseconds. */
 const oneDayMs = 24 * 60 * oneMinuteMs;
 
+/**
+ * The most steps of an every-N-minutes grid one look examines: 1000, three and a half days
+ * of a 5-minute grid. A look spans a second, or the 5 s a late tick may still fire, so only a
+ * step of the clock by days reaches it, and the moments of such a step are only counted for
+ * the log, never fired. Without it a step of a year would examine 100 000 steps, each read on
+ * the São Paulo calendar, in one go, blocking the event loop with graphics on air.
+ */
+export const mostIntervalStepsLookedAtOnce = 1000;
+
+/**
+ * São Paulo's wall clock, field by field, built once: building an Intl.DateTimeFormat is far
+ * slower than formatting with one, and a look may read many moments.
+ */
+const saoPauloWallClockFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: timeZoneOfTheSchedule,
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: 'numeric',
+  second: 'numeric',
+  hourCycle: 'h23',
+});
+
 /** The stretch of time looked at, and the moment an interval trigger counts from. */
 export type ScheduleLook = {
   /** The look holds the moments after this one… */
@@ -67,7 +91,8 @@ export function listScheduleMomentsDue(
 /**
  * The moments of an interval trigger in the look, oldest first: the switch-on moment plus
  * one, two, three… times N minutes (the switch-on itself is not one), kept when they fall
- * inside the trigger's part of the day. Never switched on, it has none.
+ * inside the trigger's part of the day, from at most mostIntervalStepsLookedAtOnce steps
+ * after the look's start. Never switched on, it has none.
  */
 function listIntervalMomentsDue(
   moment: Extract<TriggerScheduleMoment, { kind: 'everyMinutes' }>,
@@ -81,8 +106,13 @@ function listIntervalMomentsDue(
   // The first step after the look's start: a whole number of steps past the switch-on.
   const stepsBeforeTheLook = Math.floor((look.afterMs - countedFromMs) / stepMs);
   const firstStep = Math.max(1, stepsBeforeTheLook + 1);
+  const lastStepLookedAt = firstStep + mostIntervalStepsLookedAtOnce - 1;
   const momentsDue: number[] = [];
-  for (let step = firstStep; countedFromMs + step * stepMs <= look.upToMs; step += 1) {
+  for (
+    let step = firstStep;
+    step <= lastStepLookedAt && countedFromMs + step * stepMs <= look.upToMs;
+    step += 1
+  ) {
     const momentMs = countedFromMs + step * stepMs;
     const isInsideTheWindow =
       moment.window === null || isMomentInsideTheDayWindow(momentMs, moment.window);
@@ -153,17 +183,7 @@ function findOffsetOfSaoPauloAt(momentMs: number): number {
 
 /** The São Paulo wall clock at a moment, field by field. */
 function readSaoPauloWallClock(momentMs: number) {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: timeZoneOfTheSchedule,
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
-    hourCycle: 'h23',
-  });
-  const parts = formatter.formatToParts(new Date(momentMs));
+  const parts = saoPauloWallClockFormatter.formatToParts(new Date(momentMs));
   const readPart = (type: Intl.DateTimeFormatPartTypes): number =>
     Number(parts.find((part) => part.type === type)?.value ?? '0');
   return {
@@ -174,4 +194,16 @@ function readSaoPauloWallClock(momentMs: number) {
     minute: readPart('minute'),
     second: readPart('second'),
   };
+}
+
+/**
+ * Whether a look this long at this moment examines fewer steps than it spans, so a count of
+ * its moments is cut at the cap: only an every-N-minutes grid can be, after a step of days.
+ */
+export function isTheCountOfMomentsCapped(moment: TriggerScheduleMoment, lookMs: number): boolean {
+  if (moment.kind !== 'everyMinutes') {
+    return false;
+  }
+  const stepsInTheLook = lookMs / (moment.everyMinutes * oneMinuteMs);
+  return stepsInTheLook > mostIntervalStepsLookedAtOnce;
 }

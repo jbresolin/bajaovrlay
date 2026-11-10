@@ -2,8 +2,8 @@
  * The plain sponsor roll OGraf graphic (BAJAOVRLAY-64): every sponsor once, one at a time,
  * its logo under its level's heading on the theme's card, in the corner the item picks.
  * This file owns the OGraf lifecycle (load, play, update, stop, dispose) in the team card's
- * shape and the turns of the one pass, and wires the pieces together:
- * sponsorRollPlainModel (data, corner, the pass), sponsorRollPlainView (the DOM, drawn by
+ * shape, and wires the pieces together: sponsorRollPlainModel (data, corner, the pass),
+ * sponsorRollPlainTurns (when each sponsor comes), sponsorRollPlainView (the DOM, drawn by
  * Lit), playSteps (the OGraf step rule) and sponsorRollPlainAnimations (the fades).
  *
  * One pass, then out: play shows the first sponsor and turns to each next one when the
@@ -55,6 +55,7 @@ import {
   type SponsorRollPlainPass,
 } from './sponsorRollPlainModel.js';
 import { sponsorRollPlainStyles } from './sponsorRollPlainStyles.js';
+import { TurnsOfThePass } from './sponsorRollPlainTurns.js';
 import {
   findPlainRollCard,
   findSponsorCells,
@@ -84,7 +85,7 @@ export default class SponsorRollPlainGraphic extends LitElement implements OGraf
   private data: SponsorRollPlainData | undefined = undefined;
   private pass: SponsorRollPlainPass | undefined = undefined;
   // The turns of the pass on air, started at play; called off at stop and dispose.
-  private turnTimers: Array<ReturnType<typeof setTimeout>> = [];
+  private readonly turns = new TurnsOfThePass();
   // One card motion at a time (in or out), and one turn at a time.
   private runningCardTimeline: PlainRollTimeline | undefined = undefined;
   private runningTurnTimeline: PlainRollTimeline | undefined = undefined;
@@ -161,7 +162,9 @@ export default class SponsorRollPlainGraphic extends LitElement implements OGraf
     this.currentStep = target.step;
     showOnlyTheCellAt(findSponsorCells(this.renderRoot), 0);
     // The turns count from this moment, as the server's auto-out counts from the take.
-    this.startTheTurnsOfThePass();
+    this.turns.start(this.requirePass(), (sponsorIndex) => {
+      void this.turnToTheSponsorAt(sponsorIndex);
+    });
     await this.runCardTimeline(buildCardFadeInTimeline(this.requireCard()), skipAnimation);
 
     if (this.readLifecycleNow() === 'disposed') {
@@ -252,31 +255,9 @@ export default class SponsorRollPlainGraphic extends LitElement implements OGraf
     return okAnswer;
   }
 
-  /**
-   * Starts one timer per turn of the pass: when a sponsor's hold ends, the next one comes.
-   * The last sponsor's hold ends the pass, so it has no turn: the server's clear comes then.
-   */
-  private startTheTurnsOfThePass(): void {
-    this.callTheTurnsOff();
-    const sponsorsShown = this.requirePass().sponsorsShown;
-    for (let nextIndex = 1; nextIndex < sponsorsShown.length; nextIndex += 1) {
-      const holdBefore = sponsorsShown[nextIndex - 1];
-      if (holdBefore === undefined) {
-        continue;
-      }
-      const turnTimer = setTimeout(() => {
-        void this.turnToTheSponsorAt(nextIndex);
-      }, holdBefore.holdEndsAtMs);
-      this.turnTimers.push(turnTimer);
-    }
-  }
-
   /** Calls every pending turn off and ends a turn half done, the next cell shown at once. */
   private callTheTurnsOff(): void {
-    for (const turnTimer of this.turnTimers) {
-      clearTimeout(turnTimer);
-    }
-    this.turnTimers = [];
+    this.turns.callOff();
     const runningTurnTimeline = this.runningTurnTimeline;
     this.runningTurnTimeline = undefined;
     if (runningTurnTimeline !== undefined) {

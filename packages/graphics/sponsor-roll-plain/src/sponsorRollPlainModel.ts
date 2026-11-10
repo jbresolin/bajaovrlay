@@ -25,7 +25,7 @@ import { z } from 'zod';
 
 import { ptBR } from './ptBR.js';
 
-/** Top-left, the sponsor bug's corner, whose layer and footprint the roll takes. */
+/** Top-left, the sponsor bug's corner: the roll's layer sits just above the bug's. */
 export const sponsorRollPlainDefaultCorner: ScreenCorner = 'top-left';
 
 // One sponsor as the entity list of sponsors writes it. Strict, as the manifest's items are.

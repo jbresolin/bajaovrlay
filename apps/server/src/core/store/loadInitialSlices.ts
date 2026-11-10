@@ -35,7 +35,7 @@ import { forgetChangesThatCannotComeBack } from './programHistory/forgetChangesT
 import { bringStepsWithinTheirCount } from './reducers/instanceStepsWithinTheirCount.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 import {
-  addPlainSponsorRollItemMacroAndTriggerOnce,
+  addPlainSponsorRollLayerItemMacroAndTriggerOnce,
   listRowsOfThePlainSponsorRollSeed,
   logPlainSponsorRollSeed,
   plainSponsorRollSeedName,
@@ -132,12 +132,11 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     updatedAt,
     logger: options.logger,
   });
-  const layers = oneOffSeeds.layers;
-  // The plain sponsor roll's panel, item, macro and trigger (BAJAOVRLAY-64), once per
-  // database (seeds_done), after the one-off seeds so its panel comes after "Chave".
-  const plainSponsorRollSeed = addPlainSponsorRollItemMacroAndTriggerOnce({
+  // The plain sponsor roll's layer, panel, item, macro and trigger (BAJAOVRLAY-64), once
+  // per database (seeds_done), after the one-off seeds so its panel comes after "Chave".
+  const plainSponsorRollSeed = addPlainSponsorRollLayerItemMacroAndTriggerOnce({
     seedNamesDone,
-    layers,
+    layers: oneOffSeeds.layers,
     quickFirePanels: oneOffSeeds.quickFirePanels,
     items: oneOffSeeds.items,
     macros: quickFireAndMacroSlices.macros,
@@ -146,6 +145,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     ),
   });
   logPlainSponsorRollSeed(plainSponsorRollSeed, options.logger);
+  const layers = plainSponsorRollSeed.layers;
   const items = plainSponsorRollSeed.items;
   const graphics = discoverBuiltGraphics({
     graphicPackagesFolder: options.graphicPackagesFolder,
@@ -157,9 +157,16 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   // the operator was looking at, not state the show depends on, and a stale one would
   // sit one "Tomar" away from air with nobody remembering why. Program instances stay,
   // except an event's notice (BAJAOVRLAY-44, gate 2 of PR #22): its auto-out is lost at a
-  // restart, so it would stay up for good; its event is marked shown below.
+  // restart, so it would stay up for good; its event is marked shown below. For the same
+  // reason, any instance that carries an auto-out of its own (the plain sponsor roll's pass,
+  // BAJAOVRLAY-64, gate 2 of PR #59): kept, it would sit on its last sponsor for good and
+  // its layer would stay busy, so its trigger would never take it again. An item's own delay
+  // is not on its instance, and those instances stay, as autoOut.ts explains.
   const instancesKeptAcrossTheRestart = operatorSlices.instances.filter(
-    (instance) => instance.target !== 'preview' && !isInstanceOfAnEvent(instance),
+    (instance) =>
+      instance.target !== 'preview' &&
+      !isInstanceOfAnEvent(instance) &&
+      instance.autoOutAfterMs === undefined,
   );
   // A graphic rebuilt with fewer steps since the stop (or data counted again by a newer
   // step counter) would leave an instance past its count: "Passo 6 de 3" on Camadas. It is

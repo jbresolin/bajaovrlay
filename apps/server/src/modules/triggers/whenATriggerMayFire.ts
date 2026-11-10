@@ -24,7 +24,8 @@ export type ReasonNotToFire = {
  * - "Pausar gatilhos" is on;
  * - its minimum interval has not passed since its last firing (the interval counts from
  *   the last firing, whatever became of it: a firing that asked counts too);
- * - for a schedule every N minutes, an item its macro takes is still on air (below);
+ * - for a schedule every N minutes, a layer its macro takes an item onto still has a graphic
+ *   on program (below);
  * - the two rules against loops below, which read `causedBy`, the actor behind what
  *   happened.
  */
@@ -49,11 +50,11 @@ export function findWhyTriggerMayNotFireNow(
     return { why: 'tooSoon', message: reasons.tooSoon(trigger.name, intervalSeconds) };
   }
 
-  const itemStillOnAir = findItemOfTheMacroStillOnAir(slices, trigger);
-  if (itemStillOnAir !== undefined) {
+  const layerStillOnAir = findLayerOfTheMacroStillOnAir(slices, trigger);
+  if (layerStillOnAir !== undefined) {
     return {
       why: 'stillOnAir',
-      message: reasons.stillOnAir(trigger.name, itemStillOnAir.label),
+      message: reasons.stillOnAir(trigger.name, layerStillOnAir.name),
     };
   }
 
@@ -88,17 +89,19 @@ export function findWhyTriggerMayNotFireNow(
 }
 
 /**
- * For a schedule every N minutes (BAJAOVRLAY-64), the first item its macro takes that is
- * on air now, on the program output; undefined for any other trigger, or when none is.
+ * For a schedule every N minutes (BAJAOVRLAY-64), the first layer its macro takes an item
+ * onto that has anything on the program output now; undefined for any other trigger, or
+ * when every such layer is free. By layer, not by item: a copy of the roll item, or the roll
+ * sent to air from its preview, keeps the layer as busy as the roll itself.
  * Deliberate: a firing over the plain sponsor roll still on air would take it again, and
  * the layer's out-then-in would cut the pass short and start it over, every N minutes
  * while it overruns. The other kinds keep firing over what is on air, as before: a scene
  * or an event means "now", and the operator chose that by setting the trigger.
  */
-function findItemOfTheMacroStillOnAir(
+function findLayerOfTheMacroStillOnAir(
   slices: SlicesChangedByCommands,
   trigger: Trigger,
-): { label: string } | undefined {
+): { name: string } | undefined {
   const isInterval =
     trigger.when.kind === 'schedule' && trigger.when.moment.kind === 'everyMinutes';
   if (!isInterval) {
@@ -112,12 +115,16 @@ function findItemOfTheMacroStillOnAir(
     if (step.kind !== 'takeItem') {
       continue;
     }
-    const isOnAir = slices.instances.some(
-      (instance) => instance.target === 'program' && instance.itemId === step.itemId,
+    const item = slices.items.find((candidate) => candidate.id === step.itemId);
+    if (item === undefined) {
+      continue;
+    }
+    const isLayerBusy = slices.instances.some(
+      (instance) => instance.target === 'program' && instance.layerId === item.layerId,
     );
-    if (isOnAir) {
-      const item = slices.items.find((candidate) => candidate.id === step.itemId);
-      return { label: item?.label ?? step.itemId };
+    if (isLayerBusy) {
+      const layer = slices.layers.find((candidate) => candidate.id === item.layerId);
+      return { name: layer?.name ?? item.layerId };
     }
   }
   return undefined;

@@ -62,6 +62,7 @@ describe('createLayer', () => {
     expect(readLayerIdsWithTheirOutput(layersAfter), 'in its place, bottom to top').toEqual([
       'bug@program:10',
       'moldura-pip@pip:10',
+      'sponsor-roll-plain@program:12',
       'channel-logo@program:15',
       'placar-pip@pip:15',
       'bracket-match@program:17',

@@ -1,7 +1,7 @@
 import type { Item, Layer, QuickFirePanel } from '@bajaovrlay/shared';
 
 import { ptBR } from '../messages/ptBR.js';
-import { channelLogoLayerId, seededLayers } from './seedLayers.js';
+import { addTheSeededLayerUnlessItsHeightIsTaken, channelLogoLayerId } from './seedLayers.js';
 
 /** The name the channel logo's seed is recorded under in `seeds_done`. */
 export const channelLogoSeedName = 'channelLogo';
@@ -86,20 +86,15 @@ export function addChannelLogoLayerAndItemOnce(options: {
     return { ...unchanged, isSeedApplied: false, zIndexTakenByTheOperator: undefined };
   }
 
-  const seededLayer = seededLayers.find((layer) => layer.id === channelLogoLayerId);
-  if (seededLayer === undefined) {
-    throw new Error('the channel logo layer is missing from seededLayers; this is a bug');
+  const layerAddition = addTheSeededLayerUnlessItsHeightIsTaken(options.layers, channelLogoLayerId);
+  if (layerAddition.zIndexTakenByTheOperator !== undefined) {
+    return {
+      ...unchanged,
+      isSeedApplied: true,
+      zIndexTakenByTheOperator: layerAddition.zIndexTakenByTheOperator,
+    };
   }
-  const isLayerThere = options.layers.some((layer) => layer.id === channelLogoLayerId);
-  const layerAtTheSeededHeight = options.layers.find(
-    (layer) => layer.outputId === seededLayer.outputId && layer.zIndex === seededLayer.zIndex,
-  );
-  if (!isLayerThere && layerAtTheSeededHeight !== undefined) {
-    return { ...unchanged, isSeedApplied: true, zIndexTakenByTheOperator: seededLayer.zIndex };
-  }
-  const layersAfter = isLayerThere
-    ? options.layers
-    : [...options.layers, seededLayer].sort((lower, higher) => lower.zIndex - higher.zIndex);
+  const layersAfter = layerAddition.layers;
 
   const isItemThere = options.items.some((item) => item.id === channelLogoItemId);
   if (isItemThere) {

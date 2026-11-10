@@ -50,26 +50,33 @@ meia-noite, por exemplo 22:00 a 02:00).
 - Fora da janela, o horário da grade passa sem disparar; a grade não se desloca.
 - Vale tudo o que vale para os outros gatilhos: auto ou perguntar, o intervalo mínimo,
   **Pausar gatilhos** e nada de disparo atrasado depois de o PC dormir.
-- **Enquanto o gráfico da macro ainda está no ar, o disparo não acontece.** Se um item que a
-  macro põe no ar ainda está no Programa (por exemplo, a passada de patrocinadores ainda não
-  terminou), o disparo é ignorado, sem linha no log de eventos, e o log do servidor diz por quê:
-  `O gatilho "<nome>" não disparou: "<item>" ainda está no ar.` Disparar por cima reiniciaria a
-  passada no meio. Os outros tipos de gatilho continuam disparando por cima do que está no ar,
-  como antes.
+- **Enquanto a camada da macro ainda tem um gráfico no ar, o disparo não acontece.** Se a
+  camada de um item que a macro põe no ar ainda tem qualquer gráfico no Programa (a passada de
+  patrocinadores que não terminou, uma cópia do item, ou o mesmo item mandado ao ar pela
+  **Prévia**), o disparo é ignorado, sem linha no log de eventos, e o log do servidor diz por
+  quê: `O gatilho "<nome>" não disparou: a camada "<camada>" ainda tem um gráfico no ar.`
+  Disparar por cima reiniciaria a passada no meio. Os outros tipos de gatilho continuam
+  disparando por cima do que está no ar, como antes.
+- Um reinício do servidor no meio de uma passada tira os patrocinadores do ar (o tempo da
+  passada fica só na memória), para que o gráfico não fique parado no último patrocinador e o
+  gatilho volte a dispará-lo no horário seguinte.
 
 ### Patrocinadores a cada 30 min
 
 Todo banco novo (e, uma vez, um banco que já existia) ganha:
 
+- a camada **Patrocinadores (rodízio)**, logo acima da camada do bug, no mesmo canto: durante a
+  passada o cartão cobre o bug, e quando sai o bug continua lá, no ar o dia todo;
 - o item **Patrocinadores (simples)**, único botão do painel **Patrocinadores** de **Atalhos e
-  macros**, no gráfico de patrocinadores simples (`sponsor-roll-plain`), na camada do bug, com a
+  macros**, no gráfico de patrocinadores simples (`sponsor-roll-plain`), nessa camada, com a
   lista de patrocinadores dos **Cadastros**;
 - a macro **Patrocinadores (simples)**, que põe o item no ar;
 - o gatilho **Patrocinadores a cada 30 min**, que roda a macro a cada 30 minutos, o dia todo,
   **desligado e em perguntar**: nada vai ao ar de surpresa até o operador ligá-lo.
 
-Os patrocinadores passam uma vez cada um, cada nível pelo seu tempo, e o gráfico sai sozinho
-no fim da passada: o servidor calcula o tempo da passada pela mesma tabela do gráfico. Uma
+Os patrocinadores passam uma vez cada um, cada nível pelo seu tempo (um patrocinador sem logo
+fica de fora; se nenhum tiver logo, o item não entra no ar e a macro para nesse passo dizendo
+por quê), e o gráfico sai sozinho no fim da passada: o servidor calcula o tempo da passada pela mesma tabela do gráfico. Uma
 lista mudada no meio da passada não a encurta nem a alonga; a próxima passada já sai com a lista
 nova. O que o operador excluir não volta.
 

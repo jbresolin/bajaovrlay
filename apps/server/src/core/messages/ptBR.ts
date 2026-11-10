@@ -72,6 +72,11 @@ export const ptBR = {
       `Dados inválidos para o gráfico "${graphicId}": o campo "${fieldPath}" não existe neste gráfico.`,
     graphicDataFieldValueInvalid: (graphicId: string, fieldPath: string) =>
       `Dados inválidos para o gráfico "${graphicId}": o campo "${fieldPath}" tem um valor que o gráfico não aceita.`,
+    // The data fits the graphic, but its auto-out rule finds nothing to show (BAJAOVRLAY-64).
+    graphicHasNothingToShow: (graphicId: string, why: string) =>
+      `O gráfico "${graphicId}" não tem o que mostrar: ${why}.`,
+    // Why the plain sponsor roll has nothing to show.
+    noSponsorWithALogo: 'nenhum patrocinador da lista tem logo',
     graphicDataSchemaUnusable: (graphicId: string) =>
       `O gráfico "${graphicId}" tem um esquema de dados que o servidor não consegue ler. Corrija o manifesto do gráfico e reinicie o servidor.`,
     // A command asked the server to write its own moment into a field that the
@@ -95,6 +100,7 @@ export const ptBR = {
   // Names of the layers seeded on the first boot, as the operator sees them.
   seededLayerNames: {
     bug: 'Logo',
+    plainSponsorRoll: 'Patrocinadores (rodízio)',
     channelLogo: 'Logo do canal',
     bracketMatch: 'Partida da chave',
     ticker: 'Letreiro',

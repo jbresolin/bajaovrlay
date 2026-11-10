@@ -10,7 +10,7 @@ import type { StateStore } from '../../core/store/createStateStore.js';
 import { readServerTime } from '../../core/time/serverClock.js';
 import { readTriggerDataEventOfInboxEvent } from './dataEventsOfTheInbox.js';
 import { readObsReading } from './obsSceneChanges.js';
-import { listScheduleMomentsDue } from './scheduleMoments.js';
+import { isTheCountOfMomentsCapped, listScheduleMomentsDue } from './scheduleMoments.js';
 import { findWhyTriggerMayNotFireNow } from './whenATriggerMayFire.js';
 
 /** What the service needs; the timers default to Node's own, the clock to the server clock. */
@@ -217,6 +217,11 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
             trigger_id: trigger.id,
             trigger_name: trigger.name,
             moments_skipped: momentsSkipped.length,
+            // A step of days on an every-N-minutes grid: counted up to the cap only.
+            is_count_capped: isTheCountOfMomentsCapped(
+              trigger.when.moment,
+              skippedUpToMs - skippedFromMs,
+            ),
             gap_ms: skippedUpToMs - skippedFromMs,
           },
           'schedule moments skipped, not fired: the clock jumped past them',

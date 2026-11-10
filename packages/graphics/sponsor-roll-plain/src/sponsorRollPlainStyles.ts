@@ -1,7 +1,7 @@
 /**
  * The plain sponsor roll's look in Ardósia: the theme's card, the sponsor bug's width
  * (--bug-width), and on it the level's heading over one logo. One size, no size field: the
- * card fits the bug's footprint, whose layer it takes. The corner's margins are the theme's
+ * card fits the bug's footprint, on a layer just above the bug's. The corner's margins are the theme's
  * safe-area tokens, put on the card by the kit's screenCornerPosition. No fallback values,
  * by design: without the theme the card is unstyled, and packages/theme's
  * noHardCodedValues guard keeps it so.

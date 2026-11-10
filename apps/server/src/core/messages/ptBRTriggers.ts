@@ -26,8 +26,8 @@ export const ptBRTriggers = {
     unknown: 'O gatilho não disparou; veja o log do servidor.',
     causedByAMacro: (triggerName: string) =>
       `O gatilho "${triggerName}" não dispara por uma mudança feita por uma macro.`,
-    stillOnAir: (triggerName: string, itemLabel: string) =>
-      `O gatilho "${triggerName}" não disparou: "${itemLabel}" ainda está no ar.`,
+    stillOnAir: (triggerName: string, layerName: string) =>
+      `O gatilho "${triggerName}" não disparou: a camada "${layerName}" ainda tem um gráfico no ar.`,
   },
 };
 

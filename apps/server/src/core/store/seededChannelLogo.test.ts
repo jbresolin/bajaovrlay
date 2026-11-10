@@ -91,9 +91,9 @@ function loadSlicesAtBoot(options: {
 /**
  * A database as the server of BAJAOVRLAY-61 left it: booted once, then the channel logo's
  * layer, item and seed mark taken out again, and the Super Prime match graphics' and the
- * plain sponsor roll's panels and items too (BAJAOVRLAY-65 and -64, seeded after it), so it
- * holds what an operator's database held before
- * this update. The operator had added a "Patrocínio" button to "Atalhos" there.
+ * plain sponsor roll's layers, panels and items too (BAJAOVRLAY-65 and -64, seeded after
+ * it), so it holds what an operator's database held before this update. The operator had
+ * added a "Patrocínio" button to "Atalhos" there.
  */
 function openDatabaseOfAServerBeforeTheChannelLogo() {
   const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
@@ -122,7 +122,10 @@ function openDatabaseOfAServerBeforeTheChannelLogo() {
     {
       name: 'layers',
       json: slicesOfTheOldBoot.layers.filter(
-        (layer) => layer.id !== 'channel-logo' && layer.id !== 'bracket-match',
+        (layer) =>
+          layer.id !== 'channel-logo' &&
+          layer.id !== 'bracket-match' &&
+          layer.id !== 'sponsor-roll-plain',
       ),
       updatedAt: '2026-11-08T22:10:00.000Z',
     },
@@ -158,9 +161,9 @@ describe('a new database', () => {
       'the layer is seeded at z 15 on program',
     ).toEqual(seededChannelLogoLayer);
     expect(
-      slices.layers.map((layer) => layer.id).slice(0, 4),
-      'the channel logo sits above the bug, under the match bug (BAJAOVRLAY-65) and the ticker',
-    ).toEqual(['bug', 'channel-logo', 'bracket-match', 'ticker']);
+      slices.layers.map((layer) => layer.id).slice(0, 5),
+      'the channel logo sits above the bug and the sponsor roll’s layer, under the match bug and the ticker',
+    ).toEqual(['bug', 'sponsor-roll-plain', 'channel-logo', 'bracket-match', 'ticker']);
     expect(
       slices.items.find((item) => item.id === 'logo-do-canal'),
       'the item is seeded with no image, the rest at the defaults',
@@ -201,10 +204,11 @@ describe('a database written before the channel logo', () => {
     // operator's button alone in "Atalhos", the three
     // rows written, and an info line.
     expect(
-      slices.layers.map((layer) => [layer.id, layer.zIndex]).slice(0, 4),
+      slices.layers.map((layer) => [layer.id, layer.zIndex]).slice(0, 5),
       'the layer is added in its z-order place',
     ).toEqual([
       ['bug', 10],
+      ['sponsor-roll-plain', 12],
       ['channel-logo', 15],
       ['bracket-match', 17],
       ['ticker', 20],

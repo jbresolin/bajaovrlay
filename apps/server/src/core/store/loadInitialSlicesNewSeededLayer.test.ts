@@ -17,7 +17,7 @@
  * What these tests prove (with a real SQLite file and a stand-in graphics folder, both
  * in temporary folders):
  *   - A database whose layers row has the five layers of a server before the tower
- *     boots with nine, the tower between the clock and the lower third exactly as the
+ *     boots with ten, the tower between the clock and the lower third exactly as the
  *     seed defines it (and the notice and the channel logo); the row is rewritten,
  *     stamped with this boot, and an info line names the layers added.
  *   - A database of a server before the notice (six layers) gains the notice at 45,
@@ -112,14 +112,15 @@ describe('loadInitialSlices on a database seeded before the tower layer existed'
     const slicesAfterTheUpdate = loadSlicesAtBoot({ database, graphicPackagesFolder, logger });
 
     // Assert: the tower is there, in its place in the z-order, exactly as seeded (the
-    // notice, the channel logo and the match bug's layer too, added since); the layers row
-    // now holds the nine,
+    // notice, the plain sponsor roll's, the channel logo and the match bug's layer too, added
+    // since); the layers row now holds the ten,
     // stamped with this boot; and an info line names them.
     expect(
       slicesAfterTheUpdate.layers.map((layer) => layer.id),
       'the tower must sit between the clock and the lower third',
     ).toEqual([
       'bug',
+      'sponsor-roll-plain',
       'channel-logo',
       'bracket-match',
       'ticker',
@@ -151,7 +152,7 @@ describe('loadInitialSlices on a database seeded before the tower layer existed'
       expect.objectContaining({
         level: 'info',
         message: 'seeded layers missing from the stored layers were added',
-        added_layer_ids: ['channel-logo', 'bracket-match', 'tower', 'notice'],
+        added_layer_ids: ['sponsor-roll-plain', 'channel-logo', 'bracket-match', 'tower', 'notice'],
       }),
     );
   });
@@ -189,10 +190,10 @@ describe('loadInitialSlices on a database seeded before the tower layer existed'
       replacePolicy: 'out-then-in',
       persistent: false,
     });
-    expect(readRecordedLines(), 'an info line must name the three layers added').toContainEqual(
+    expect(readRecordedLines(), 'an info line must name the four layers added').toContainEqual(
       expect.objectContaining({
         message: 'seeded layers missing from the stored layers were added',
-        added_layer_ids: ['channel-logo', 'bracket-match', 'notice'],
+        added_layer_ids: ['sponsor-roll-plain', 'channel-logo', 'bracket-match', 'notice'],
       }),
     );
   });

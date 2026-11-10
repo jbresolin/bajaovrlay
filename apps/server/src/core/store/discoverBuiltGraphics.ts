@@ -9,6 +9,7 @@ import {
 } from '@bajaovrlay/shared';
 
 import type { ServerLogger } from '../logger/createLogger.js';
+import { isAutoOutRuleKnown } from './autoOutRules.js';
 import { isDataSchemaOfGraphicUsable } from './graphicDataValidation.js';
 import { decideGraphicPlacementFromManifest } from './graphicPlacement.js';
 import { chooseUpdateRuleOfGraphic } from './updateRules/index.js';
@@ -166,6 +167,15 @@ function readBuiltGraphic(options: {
     logger.warn(
       { graphic_package: packageName, step_counter: stepCounterName },
       'graphic names a step counter the server does not know; it will have one step',
+    );
+  }
+  const autoOutRuleName = manifest.v_baja?.autoOutRule;
+  if (autoOutRuleName !== undefined && !isAutoOutRuleKnown(autoOutRuleName)) {
+    // An unknown rule means no auto-out at all (autoOutRules.ts), so a plain sponsor roll
+    // would stay on its last sponsor until cleared; this line says why (BAJAOVRLAY-64).
+    logger.warn(
+      { graphic_package: packageName, auto_out_rule: autoOutRuleName },
+      'graphic names an auto-out rule the server does not know; it will not leave by itself',
     );
   }
   const carGroupsReading = readCarGroupsOfManifest(manifest);

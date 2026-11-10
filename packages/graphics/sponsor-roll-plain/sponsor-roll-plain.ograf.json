@@ -12,7 +12,7 @@
   "supportsNonRealTime": false,
   "stepCount": 1,
   "v_baja": {
-    "defaultLayerId": "bug",
+    "defaultLayerId": "sponsor-roll-plain",
     "category": "sponsor",
     "autoOutRule": "onePlainSponsorRollPass"
   },

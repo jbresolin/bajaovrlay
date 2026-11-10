@@ -3,6 +3,7 @@ import type { Item, Layer, Macro, QuickFirePanel, Trigger } from '@bajaovrlay/sh
 import type { SliceRow } from '../db/tables.js';
 import type { ServerLogger } from '../logger/createLogger.js';
 import { ptBR } from '../messages/ptBR.js';
+import { addTheSeededLayerUnlessItsHeightIsTaken, plainSponsorRollLayerId } from './seedLayers.js';
 
 /** The name the plain sponsor roll's seed is recorded under in `seeds_done`. */
 export const plainSponsorRollSeedName = 'plainSponsorRoll';
@@ -13,12 +14,9 @@ const plainSponsorRollItemId = 'patrocinadores-simples';
 const plainSponsorRollMacroId = 'patrocinadores-simples';
 const sponsorsEvery30MinutesTriggerId = 'patrocinadores-a-cada-30-min';
 
-/** The layer the roll goes on: the sponsor bug's, whose footprint its card fits. */
-const plainSponsorRollLayerId = 'bug';
-
 /**
  * The item on the plain sponsor roll: every sponsor of Cadastros (the entity list the
- * sponsor roll's items read), top-left, the sponsor bug's corner, on the bug's layer.
+ * sponsor roll's items read), top-left, the sponsor bug's corner, on the roll's own layer above it.
  */
 function buildPlainSponsorRollItem(order: number): Item {
   return {
@@ -64,16 +62,17 @@ function buildSponsorsEvery30MinutesTrigger(): Trigger {
   };
 }
 
-/** The panels, items, macros and triggers after the seed, and what the boot must do. */
+/** The layers, panels, items, macros and triggers after the seed, and what the boot must do. */
 export type PlainSponsorRollSeedOutcome = {
+  layers: Layer[];
   quickFirePanels: QuickFirePanel[];
   items: Item[];
   macros: Macro[];
   triggers: Trigger[];
   /** False when the seed was already done here: nothing changed, nothing to write. */
   isSeedApplied: boolean;
-  /** True when nothing could be added: the operator deleted the bug layer. */
-  isBugLayerMissing: boolean;
+  /** Set when nothing could be added: the operator's own layer holds the roll layer's height. */
+  zIndexTakenByTheOperator: number | undefined;
 };
 
 /** The panels with the "Patrocinadores" panel after the last one, unless it is there already. */
@@ -92,17 +91,19 @@ function addPlainSponsorRollPanelAfterTheLast(quickFirePanels: QuickFirePanel[])
 }
 
 /**
- * Adds the "Patrocinadores" panel after the last one, the "Patrocinadores (simples)" item
- * as its only button, the macro that takes it and the trigger that runs the macro, once per
- * database: nothing when `seeds_done` already names the seed. Any of them already there is
- * kept as it is. When the operator deleted the bug layer none is added, since the item would
- * have no layer to go on; the seed counts as applied all the same, so it is never tried again.
+ * Adds the "Patrocinadores (rodízio)" layer in its z-order place, the "Patrocinadores" panel
+ * after the last one, the "Patrocinadores (simples)" item as its only button, the macro that
+ * takes it and the trigger that runs the macro, once per database: nothing when `seeds_done`
+ * already names the seed. Any of them already there (a new database's layer comes from
+ * seededLayers) is kept as it is. When the operator's own layer holds the layer's height none
+ * is added, since the item would have no layer to go on; the seed counts as applied all the
+ * same, so the boot records it and never tries again.
  *
  * Deliberate (following João's ruling for the channel logo, gate 2 of PR #56): a panel of
  * its own, so the roll never takes a button of "Atalhos" from the operator's own, and never
  * the rundown, whose first item must stay the operator's to get the cursor.
  */
-export function addPlainSponsorRollItemMacroAndTriggerOnce(options: {
+export function addPlainSponsorRollLayerItemMacroAndTriggerOnce(options: {
   seedNamesDone: string[];
   layers: Layer[];
   quickFirePanels: QuickFirePanel[];
@@ -111,17 +112,25 @@ export function addPlainSponsorRollItemMacroAndTriggerOnce(options: {
   triggers: Trigger[];
 }): PlainSponsorRollSeedOutcome {
   const unchanged = {
+    layers: options.layers,
     quickFirePanels: options.quickFirePanels,
     items: options.items,
     macros: options.macros,
     triggers: options.triggers,
   };
   if (options.seedNamesDone.includes(plainSponsorRollSeedName)) {
-    return { ...unchanged, isSeedApplied: false, isBugLayerMissing: false };
+    return { ...unchanged, isSeedApplied: false, zIndexTakenByTheOperator: undefined };
   }
-  const isBugLayerThere = options.layers.some((layer) => layer.id === plainSponsorRollLayerId);
-  if (!isBugLayerThere) {
-    return { ...unchanged, isSeedApplied: true, isBugLayerMissing: true };
+  const layerAddition = addTheSeededLayerUnlessItsHeightIsTaken(
+    options.layers,
+    plainSponsorRollLayerId,
+  );
+  if (layerAddition.zIndexTakenByTheOperator !== undefined) {
+    return {
+      ...unchanged,
+      isSeedApplied: true,
+      zIndexTakenByTheOperator: layerAddition.zIndexTakenByTheOperator,
+    };
   }
 
   let quickFirePanels = options.quickFirePanels;
@@ -143,27 +152,32 @@ export function addPlainSponsorRollItemMacroAndTriggerOnce(options: {
     ? options.triggers
     : [...options.triggers, buildSponsorsEvery30MinutesTrigger()];
   return {
+    layers: layerAddition.layers,
     quickFirePanels,
     items,
     macros,
     triggers,
     isSeedApplied: true,
-    isBugLayerMissing: false,
+    zIndexTakenByTheOperator: undefined,
   };
 }
 
 /**
- * The rows the plain sponsor roll's seed changed: the panels, items, macros and triggers
- * when it was applied with the bug layer there, none otherwise.
+ * The rows the plain sponsor roll's seed changed: the layers, panels, items, macros and
+ * triggers when it was applied, none when it was not or its layer's height was taken.
  */
 export function listRowsOfThePlainSponsorRollSeed(
   plainSponsorRollSeed: PlainSponsorRollSeedOutcome,
   updatedAt: string,
 ): SliceRow[] {
-  if (!plainSponsorRollSeed.isSeedApplied || plainSponsorRollSeed.isBugLayerMissing) {
+  const wasAnythingAdded =
+    plainSponsorRollSeed.isSeedApplied &&
+    plainSponsorRollSeed.zIndexTakenByTheOperator === undefined;
+  if (!wasAnythingAdded) {
     return [];
   }
   return [
+    { name: 'layers', json: plainSponsorRollSeed.layers, updatedAt },
     { name: 'quickFirePanels', json: plainSponsorRollSeed.quickFirePanels, updatedAt },
     { name: 'items', json: plainSponsorRollSeed.items, updatedAt },
     { name: 'macros', json: plainSponsorRollSeed.macros, updatedAt },
@@ -179,11 +193,14 @@ export function logPlainSponsorRollSeed(
   if (!plainSponsorRollSeed.isSeedApplied) {
     return;
   }
-  if (plainSponsorRollSeed.isBugLayerMissing) {
+  if (plainSponsorRollSeed.zIndexTakenByTheOperator !== undefined) {
     logger.warn(
-      'the "Patrocinadores (simples)" item, macro and trigger were not seeded: the bug layer is gone',
+      { z_index: plainSponsorRollSeed.zIndexTakenByTheOperator },
+      'the "Patrocinadores (rodízio)" layer and its item, macro and trigger were not seeded: a layer of the operator already holds its height',
     );
     return;
   }
-  logger.info('seeded the "Patrocinadores (simples)" item, macro and trigger');
+  logger.info(
+    'seeded the "Patrocinadores (rodízio)" layer and the "Patrocinadores (simples)" item, macro and trigger',
+  );
 }

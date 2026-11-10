@@ -10,7 +10,7 @@
  *
  * What these tests prove:
  *   - The manifest passes the official OGraf v1 manifest JSON Schema (vendored in the kit).
- *   - The settings: id, name, main, real-time only, one step; the bug's layer by default, in
+ *   - The settings: id, name, main, real-time only, one step; its own layer above the bug's by default, in
  *     the sponsor category, with the auto-out rule `onePlainSponsorRollPass`.
  *   - The play length is shared's entrance, the pass's first 0,4 s, and the theme's
  *     `--motion-in`; the stop length is `--motion-out`.
@@ -86,7 +86,7 @@ describe('sponsor-roll-plain.ograf.json', () => {
       v_baja: plainRollManifest.v_baja,
     };
 
-    // Assert: on the bug's layer, and taken off by the server when its pass ends.
+    // Assert: on its own layer, and taken off by the server when its pass ends.
     expect(fixedSettings, 'the manifest must declare its fixed settings').toEqual({
       id: 'baja-sponsor-roll-plain',
       name: 'Patrocinadores (simples)',
@@ -95,7 +95,7 @@ describe('sponsor-roll-plain.ograf.json', () => {
       supportsNonRealTime: false,
       stepCount: 1,
       v_baja: {
-        defaultLayerId: 'bug',
+        defaultLayerId: 'sponsor-roll-plain',
         category: 'sponsor',
         autoOutRule: 'onePlainSponsorRollPass',
       },
