@@ -10,10 +10,11 @@
  *
  * What these tests prove:
  *   - Every manifest under packages/graphics passes the shared check of its car groups.
- *   - Only the battle card groups its fields (the car ahead and the car right behind it,
- *     the gap with the car behind), and each group fills the fields it should. The team
- *     card and the notice, whose usual items read Cadastros or the event, keep their fields
- *     one by one until BAJAOVRLAY-67 gives them "Do cadastro" and "Do evento" ways.
+ *   - The battle card groups its fields (the car ahead and the car right behind it, the
+ *     gap with the car behind), and the notice its car, team and school, whose templates
+ *     read them "Do evento" (BAJAOVRLAY-67); each group fills the fields it should. The
+ *     team card, whose usual items read Cadastros, keeps its fields one by one until a
+ *     "Do cadastro" way exists.
  *
  * What these tests deliberately do not cover:
  *   - The check's refusals one by one; carGroupsOfManifest.test.ts in packages/shared.
@@ -63,7 +64,7 @@ describe('the car groups of every manifest', () => {
     expect(refusedGraphics, 'no manifest may declare a car group the check refuses').toEqual([]);
   });
 
-  it('groups the fields of one car in the battle card only', () => {
+  it('groups the fields of one car in the battle card and the notice only', () => {
     // Arrange: every manifest on disk.
     const manifests = listEveryGraphicManifest();
 
@@ -76,7 +77,7 @@ describe('the car groups of every manifest', () => {
       }
     }
 
-    // Assert: the battle card alone, each group filling exactly these fields.
+    // Assert: the battle card and the notice alone, each group filling exactly these fields.
     expect(groupsOfEachGraphic, 'the per-car fields must be grouped as listed').toEqual({
       'battle-card': [
         {
@@ -102,6 +103,13 @@ describe('the car groups of every manifest', () => {
             behindLaps: 'laps',
             gapMs: 'intervalMs',
           },
+        },
+      ],
+      notice: [
+        {
+          id: 'car',
+          label: 'Carro',
+          fields: { carNumber: 'carNumber', teamName: 'teamName', schoolName: 'schoolName' },
         },
       ],
     });
