@@ -18,39 +18,62 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ptBR } from '@/i18n/ptBR';
-import { useSendCommandAndReadItsRefusal } from '@/state/ControlPageStateProvider';
+import { useSendCommandAndReadItsRefusal, useServerState } from '@/state/ControlPageStateProvider';
 
 import {
   emptyManualEventFormValues,
   type ManualEventFormValues,
   readManualEventFormIntoCommand,
 } from './manualEventForm';
+import {
+  changeFieldATeamFills,
+  chooseTeamInForm,
+  generalNoticeTeamChoice,
+  listTeamChoicesFoundBySearch,
+} from './manualEventTeamPick';
 
 const texts = ptBR.events.manualForm;
 
-/** The text inputs of the form, in the order drawn, each with its label and id. */
-const textFields: Array<{ key: keyof ManualEventFormValues; label: string; id: string }> = [
+/** The fields a team fills, in the order drawn, each with its label and id. */
+const fieldsATeamFills: Array<{
+  key: 'carNumberText' | 'teamName' | 'schoolName';
+  label: string;
+  id: string;
+}> = [
   { key: 'carNumberText', label: texts.carLabel, id: 'manual-event-car' },
   { key: 'teamName', label: texts.teamLabel, id: 'manual-event-team' },
   { key: 'schoolName', label: texts.schoolLabel, id: 'manual-event-school' },
-  { key: 'reason', label: texts.reasonLabel, id: 'manual-event-reason' },
 ];
 
 /**
- * "+ Evento" (BAJAOVRLAY-44): a penalty or a notice about one car, typed by the operator.
- * "Criar evento" reads the form (manualEventForm.ts), sends createManualEvent and closes on
- * the server's ok; a problem or a refusal stays in the dialog. Like the correction dialog,
- * it shows its own command's refusal only, and its button is off while it waits.
+ * "+ Evento" (BAJAOVRLAY-44): a penalty or a notice about one car, typed by the operator,
+ * or (BAJAOVRLAY-67) a notice about no car, "Sem equipe (aviso geral)". "Equipe dos
+ * cadastros" picks a team of Cadastros, searched by car number, team or school, which
+ * fills the car, team and school; with no team in Cadastros a line says so and the fields
+ * are typed as before (manualEventTeamPick.ts holds every rule). "Criar evento" reads the
+ * form (manualEventForm.ts), sends createManualEvent and closes on the server's ok; a
+ * problem or a refusal stays in the dialog. Like the correction dialog, it shows its own
+ * command's refusal only, and its button is off while it waits.
  */
 export function ManualEventDialog(props: { onClose: () => void }) {
   const sendCommandAndReadItsRefusal = useSendCommandAndReadItsRefusal();
+  const teams = useServerState((state) => state.teams);
   const [values, setValues] = useState<ManualEventFormValues>(emptyManualEventFormValues);
+  const [teamSearchText, setTeamSearchText] = useState('');
   const [problem, setProblem] = useState<string | undefined>(undefined);
   const [isWaitingForTheServer, setIsWaitingForTheServer] = useState(false);
 
-  function changeValue(key: keyof ManualEventFormValues, text: string): void {
-    setValues((valuesBefore) => ({ ...valuesBefore, [key]: text }));
-  }
+  const areThereTeams = teams.length > 0;
+  const isAGeneralNotice = values.teamChoice === generalNoticeTeamChoice;
+  // The team picked stays listed whatever the search, so its name stays in the box.
+  const teamsFound = listTeamChoicesFoundBySearch(teams, teamSearchText);
+  const teamPicked = listTeamChoicesFoundBySearch(teams, '').find(
+    (choice) => choice.value === values.teamChoice,
+  );
+  const teamsListed =
+    teamPicked === undefined || teamsFound.some((choice) => choice.value === teamPicked.value)
+      ? teamsFound
+      : [teamPicked, ...teamsFound];
 
   async function createTheEvent(): Promise<void> {
     const reading = readManualEventFormIntoCommand(values);
@@ -87,7 +110,9 @@ export function ManualEventDialog(props: { onClose: () => void }) {
           <Label>{texts.kindLabel}</Label>
           <Select
             value={values.noticeKind}
-            onValueChange={(noticeKind) => changeValue('noticeKind', noticeKind)}
+            onValueChange={(noticeKind) =>
+              setValues({ ...values, noticeKind: noticeKind === 'notice' ? 'notice' : 'penalty' })
+            }
           >
             <SelectTrigger className="w-full" aria-label={texts.kindLabel}>
               <SelectValue />
@@ -98,17 +123,62 @@ export function ManualEventDialog(props: { onClose: () => void }) {
             </SelectContent>
           </Select>
         </div>
-        {textFields.map((textField) => (
-          <div key={textField.key} className="flex flex-col gap-1">
-            <Label htmlFor={textField.id}>{textField.label}</Label>
+        <div className="flex flex-col gap-1">
+          <Label>{texts.teamListLabel}</Label>
+          {areThereTeams ? (
             <Input
-              id={textField.id}
+              aria-label={texts.teamSearchLabel}
+              placeholder={texts.teamSearchPlaceholder}
               autoComplete="off"
-              value={values[textField.key]}
-              onChange={(event) => changeValue(textField.key, event.target.value)}
+              value={teamSearchText}
+              onChange={(event) => setTeamSearchText(event.target.value)}
             />
-          </div>
-        ))}
+          ) : (
+            <p className="text-sm text-muted-foreground">{texts.noTeamsInCadastros}</p>
+          )}
+          <Select
+            value={values.teamChoice}
+            onValueChange={(choice) => setValues(chooseTeamInForm(values, choice, teams))}
+          >
+            <SelectTrigger className="w-full" aria-label={texts.teamListLabel}>
+              <SelectValue placeholder={texts.teamListPlaceholder} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={generalNoticeTeamChoice}>{texts.generalNoticeOption}</SelectItem>
+              {teamsListed.map((choice) => (
+                <SelectItem key={choice.value} value={choice.value}>
+                  {choice.optionName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {isAGeneralNotice
+          ? null
+          : fieldsATeamFills.map((textField) => (
+              <div key={textField.key} className="flex flex-col gap-1">
+                <Label htmlFor={textField.id}>{textField.label}</Label>
+                <Input
+                  id={textField.id}
+                  autoComplete="off"
+                  value={values[textField.key]}
+                  onChange={(event) =>
+                    setValues(
+                      changeFieldATeamFills(values, textField.key, event.target.value, teams),
+                    )
+                  }
+                />
+              </div>
+            ))}
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="manual-event-reason">{texts.reasonLabel}</Label>
+          <Input
+            id="manual-event-reason"
+            autoComplete="off"
+            value={values.reason}
+            onChange={(event) => setValues({ ...values, reason: event.target.value })}
+          />
+        </div>
         {values.noticeKind === 'penalty' ? (
           <div className="flex flex-col gap-1">
             <Label htmlFor="manual-event-penalty">{texts.penaltyLabel}</Label>
@@ -117,7 +187,7 @@ export function ManualEventDialog(props: { onClose: () => void }) {
               autoComplete="off"
               placeholder={texts.penaltyPlaceholder}
               value={values.penaltyText}
-              onChange={(event) => changeValue('penaltyText', event.target.value)}
+              onChange={(event) => setValues({ ...values, penaltyText: event.target.value })}
             />
           </div>
         ) : null}

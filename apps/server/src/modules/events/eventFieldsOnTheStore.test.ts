@@ -13,7 +13,8 @@
  * team, its laps the lap):
  *   - Showing a penalty fills the title with car 47's team and the laps with its lap.
  *   - Taking the item by itself is refused with "Este item é preenchido por um evento".
- *   - Its Prévia shows the sample fastest lap's team, and "Tomar" on it is refused.
+ *   - Its Prévia shows the sample fastest lap's team, and "Tomar" on it is refused; a
+ *     Prévia naming a kind (Regras' "Prévia", BAJAOVRLAY-67) shows that kind's sample.
  *   - Prévia of the penalty shows the penalty's team; "Tomar" puts it on air as the event,
  *     with the rule's duration, and the event is on air.
  *   - An item reading both the event and the entity library (BAJAOVRLAY-19) shows the
@@ -160,6 +161,24 @@ describe('an item filled by an event', () => {
         message: 'Este item é preenchido por um evento: ele entra no ar pela aba Eventos.',
       },
     });
+  });
+
+  it('previews the item from the sample of the kind "Regras" names, when it names one', () => {
+    // Arrange: the template item, named by both the incidents' and the fastest lap's rule.
+    const inbox = openInboxWithATemplateItem();
+
+    // Act: "Prévia" in the fastest lap's row of "Regras" (BAJAOVRLAY-67).
+    applyOrThrow(inbox.stateStore, {
+      type: 'previewItem',
+      itemId: inbox.itemId,
+      sampleEventKind: 'fastestLap',
+    });
+
+    // Assert: the sample fastest lap, not the incident the first rule naming it would give.
+    expect(
+      readClockLayer(inbox, 'preview')?.resolvedData.sessionName,
+      "the row's kind decides the sample",
+    ).toBe('Acauã Baja');
   });
 
   it('previews an event with its own data, and Tomar shows the event', () => {

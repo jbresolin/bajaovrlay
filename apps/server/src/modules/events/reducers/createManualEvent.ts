@@ -1,4 +1,4 @@
-import type { CreateManualEventCommand, InboxEventPayload, InboxEvent } from '@bajaovrlay/shared';
+import type { CreateManualEventCommand, InboxEvent,InboxEventPayload } from '@bajaovrlay/shared';
 
 import { ptBR } from '../../../core/messages/ptBR.js';
 import type {

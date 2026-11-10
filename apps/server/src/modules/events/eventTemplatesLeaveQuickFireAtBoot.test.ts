@@ -26,11 +26,11 @@
 import type { Item } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
+import { openEventInboxOnTheStore, restartTheServer } from './eventInboxOnTheStore.testSupport.js';
 import {
   makeTheDatabaseOlderThanTemplatesInRegras,
   readSeedNamesDoneOfDatabase,
 } from './eventTemplatesOnOlderDatabases.testSupport.js';
-import { openEventInboxOnTheStore, restartTheServer } from './eventInboxOnTheStore.testSupport.js';
 
 /** The ids and orders of the items of one panel, first to last. */
 function readItemsOfPanel(items: Item[], panelId: string): Array<[string, number]> {

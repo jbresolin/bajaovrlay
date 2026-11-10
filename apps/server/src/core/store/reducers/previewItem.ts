@@ -29,7 +29,12 @@ export function reducePreviewItem(
   command: PreviewItemCommand,
   context: ReducerContext,
 ): ReducerOutcome {
-  const fillChoice = chooseEventFillOfPreview(slices, command.itemId, command.eventId);
+  const fillChoice = chooseEventFillOfPreview(
+    slices,
+    command.itemId,
+    command.eventId,
+    command.sampleEventKind,
+  );
   if (fillChoice.status === 'refused') {
     return fillChoice;
   }

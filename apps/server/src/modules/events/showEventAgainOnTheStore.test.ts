@@ -18,144 +18,31 @@
  *     after the wait has passed again, "No ar" expires it.
  *   - Every restore's moment is kept on the event, in order.
  *   - A restored event stays waiting under an automatic rule: the runner never shows it.
- *   - The event-log row says the event was brought back after being shown.
- *   - An event waiting or on air cannot be brought back (EVENT_NOT_DISMISSED).
  *
  * What these tests deliberately do not cover:
  *   - Restoring a dismissed event, and EVENT_TOO_OLD on one; restoreEventOnTheStore.test.ts.
  *   - The "Mostrar de novo" button; the control page's EventHistoryShowAgain.test.tsx.
+ *   - The event-log row of a restore, and the events that cannot come back;
+ *     showEventAgainLogAndRefusalsOnTheStore.test.ts.
  */
-import type { EventPayloadPath, InboxEventKind, InboxEventStatus } from '@bajaovrlay/shared';
+import type { InboxEventStatus } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
-import { eventInboxActor } from '../../core/store/commandActors.js';
 import type { CommandOutcome } from '../../core/store/createStateStore.js';
 import {
   applyOrThrow,
-  createClockItemForEvents,
   type EventInboxOnTheStore,
-  openEventInboxOnTheStore,
   readEvent,
-  typedEventId,
 } from './eventInboxOnTheStore.testSupport.js';
-
-/** The Produtor at the main desk, logged in with a PIN. */
-const producerActor = 'produtor:Mesa 1';
-
-/** Dados at the second desk, reading the chat. */
-const dataRoleActor = 'dados:Mesa 2';
-
-/** The id of each kind's event in these tests. */
-const eventIdOfKind: Record<'newIncident' | 'fastestLap' | 'manual' | 'superChat', string> = {
-  newIncident: 'simulador-enduro:incident:ocorrencia-0007',
-  fastestLap: 'simulador-enduro:fastestLap:31-29',
-  manual: `manual:${typedEventId}`,
-  superChat: 'youtube-ao-vivo:superChat:mensagem-pequi-0001',
-};
-
-type KindInTheseTests = keyof typeof eventIdOfKind;
-
-/** The payload field each kind's item reads, one the kind's event carries. */
-const pathReadByTheItemOfKind: Record<KindInTheseTests, EventPayloadPath> = {
-  newIncident: 'teamName',
-  fastestLap: 'teamName',
-  manual: 'reason',
-  superChat: 'authorName',
-};
-
-/**
- * An inbox with every rule asking, each with a clock item reading a field its event has,
- * no maximum wait, and one event of each kind waiting: car 47's start penalty, car 31's
- * fastest lap, a general notice typed in "+ Evento" and a fictional viewer's Super Chat.
- */
-function openInboxWithAnEventOfEachKind(): EventInboxOnTheStore {
-  const inbox = openEventInboxOnTheStore();
-  for (const kind of Object.keys(eventIdOfKind) as KindInTheseTests[]) {
-    const itemId = createClockItemForEvents(inbox.stateStore, `Relógio — ${kind}`, {
-      sessionName: { kind: 'eventField', path: pathReadByTheItemOfKind[kind] },
-    });
-    applyOrThrow(inbox.stateStore, {
-      type: 'updateEventRule',
-      kind,
-      mode: 'ask',
-      itemId,
-      maxAgeMs: null,
-    });
-  }
-  const detectedAtMs = inbox.clock.readCurrentTime().getTime();
-  applyOrThrow(
-    inbox.stateStore,
-    {
-      type: 'recordDetectedEvents',
-      events: [
-        {
-          eventId: eventIdOfKind.newIncident,
-          kind: 'newIncident',
-          sourceId: 'simulador-enduro',
-          detectedAtMs,
-          payload: {
-            carNumber: 47,
-            teamName: 'Carnaúba Baja',
-            noticeKind: 'penalty',
-            reason: 'Queima de largada',
-            penaltyText: '+30 segundos',
-          },
-        },
-        {
-          eventId: eventIdOfKind.fastestLap,
-          kind: 'fastestLap',
-          sourceId: 'simulador-enduro',
-          detectedAtMs,
-          payload: { carNumber: 31, teamName: 'Acauã Baja', lapNumber: 29, lapTimeText: '4:38,2' },
-        },
-        {
-          eventId: eventIdOfKind.superChat,
-          kind: 'superChat',
-          sourceId: 'youtube-ao-vivo',
-          detectedAtMs,
-          payload: {
-            authorName: 'Torcida Pequi Off-Road',
-            amountText: 'R$ 20,00',
-            messageText: 'Vai, Pequi! Abraço de Goiânia',
-          },
-        },
-      ],
-    },
-    eventInboxActor,
-  );
-  applyOrThrow(inbox.stateStore, {
-    type: 'createManualEvent',
-    noticeKind: 'notice',
-    reason: 'Largada adiada em 15 minutos',
-  });
-  return inbox;
-}
-
-/** The kind's event shown and off the air again: "No ar" (after "Aprovar"), then cleared. */
-function showAndClear(inbox: EventInboxOnTheStore, kind: KindInTheseTests): void {
-  if (kind === 'superChat') {
-    applyOrThrow(inbox.stateStore, { type: 'approveEvent', eventId: eventIdOfKind.superChat });
-  }
-  applyOrThrow(inbox.stateStore, { type: 'showEvent', eventId: eventIdOfKind[kind] });
-  applyOrThrow(inbox.stateStore, { type: 'clearLayer', layerId: 'clock' });
-}
-
-/**
- * The kind's event expired: its rule given a one-minute wait, two minutes gone by, and
- * "No ar" pressed too late. A Super Chat is approved first when `isApprovedFirst`.
- */
-function letExpire(
-  inbox: EventInboxOnTheStore,
-  kind: KindInTheseTests,
-  isApprovedFirst: boolean,
-): void {
-  applyOrThrow(inbox.stateStore, { type: 'updateEventRule', kind, maxAgeMs: 60_000 });
-  if (isApprovedFirst) {
-    applyOrThrow(inbox.stateStore, { type: 'approveEvent', eventId: eventIdOfKind[kind] });
-  }
-  inbox.clock.letTimePass(120_000);
-  applyOrThrow(inbox.stateStore, { type: 'showEvent', eventId: eventIdOfKind[kind] });
-}
+import {
+  dataRoleActor,
+  eventIdOfKind,
+  type KindInTheseTests,
+  letExpire,
+  openInboxWithAnEventOfEachKind,
+  producerActor,
+  showAndClear,
+} from './showEventAgain.testSupport.js';
 
 /** 'ok', or the error code of a refused outcome. */
 function readOutcomeCode(outcome: CommandOutcome): string {
@@ -393,95 +280,5 @@ describe('a restored event and an automatic rule', () => {
       inbox.stateStore.readAllSlices().instances.filter((instance) => instance.layerId === 'clock'),
       'nothing went on air by itself',
     ).toEqual([]);
-  });
-});
-
-describe('the event-log row of "Mostrar de novo"', () => {
-  const restoredFromScenarios: Array<{
-    name: string;
-    kind: InboxEventKind & KindInTheseTests;
-    prepare: (inbox: EventInboxOnTheStore) => void;
-    expectedRestoredFrom: InboxEventStatus;
-  }> = [
-    // The row the history reads as "já exibido".
-    {
-      name: 'says the event was shown before',
-      kind: 'newIncident',
-      prepare: (inbox) => showAndClear(inbox, 'newIncident'),
-      expectedRestoredFrom: 'shown',
-    },
-    // The row the history reads as "expirado".
-    {
-      name: 'says the event had expired',
-      kind: 'newIncident',
-      prepare: (inbox) => letExpire(inbox, 'newIncident', false),
-      expectedRestoredFrom: 'expired',
-    },
-    // An undone "Descartar" says so too, for the history to tell the two apart.
-    {
-      name: 'says the event had been dismissed',
-      kind: 'newIncident',
-      prepare: (inbox) =>
-        applyOrThrow(inbox.stateStore, {
-          type: 'dismissEvent',
-          eventId: eventIdOfKind.newIncident,
-        }),
-      expectedRestoredFrom: 'dismissed',
-    },
-  ];
-
-  it.each(restoredFromScenarios)('$name', ({ kind, prepare, expectedRestoredFrom }) => {
-    // Arrange: the penalty where the row takes it.
-    const inbox = openInboxWithAnEventOfEachKind();
-    prepare(inbox);
-
-    // Act: bring it back.
-    applyOrThrow(inbox.stateStore, { type: 'restoreEvent', eventId: eventIdOfKind[kind] });
-
-    // Assert: the row's details say where it came back from.
-    const newestRow = inbox.stateStore.readAllSlices().eventLog.at(-1);
-    expect(newestRow?.command, 'the newest row is the restore').toBe('restoreEvent');
-    expect(newestRow?.details, 'the row must say where the event came back from').toEqual({
-      restoredFrom: expectedRestoredFrom,
-    });
-  });
-});
-
-describe('events that cannot be brought back', () => {
-  const refusalScenarios = [
-    // Still waiting: there is nothing to bring back.
-    {
-      name: 'refuses an event that is waiting',
-      prepare: () => undefined,
-      expectedMessage: 'Este evento não pode ser trazido de volta: está esperando.',
-    },
-    // On air right now: "Mostrar de novo" is for after it leaves.
-    {
-      name: 'refuses an event that is on air',
-      prepare: (inbox: EventInboxOnTheStore) =>
-        applyOrThrow(inbox.stateStore, {
-          type: 'showEvent',
-          eventId: eventIdOfKind.newIncident,
-        }),
-      expectedMessage: 'Este evento não pode ser trazido de volta: está no ar.',
-    },
-  ];
-
-  it.each(refusalScenarios)('$name', ({ prepare, expectedMessage }) => {
-    // Arrange: the penalty waiting, then whatever this row does to it.
-    const inbox = openInboxWithAnEventOfEachKind();
-    prepare(inbox);
-
-    // Act: try to bring it back.
-    const outcome = inbox.stateStore.applyCommand(
-      { type: 'restoreEvent', eventId: eventIdOfKind.newIncident },
-      producerActor,
-    );
-
-    // Assert: refused, saying where the event is.
-    expect(outcome, 'the restore must be refused, saying why').toEqual({
-      ok: false,
-      error: { code: 'EVENT_NOT_DISMISSED', message: expectedMessage },
-    });
   });
 });

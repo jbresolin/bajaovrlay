@@ -1,5 +1,6 @@
 import {
   type CommandError,
+  type InboxEventKind,
   isItemFilledByAnEvent,
   readSampleEventPayload,
 } from '@bajaovrlay/shared';
@@ -21,14 +22,16 @@ export type EventFillOfPreviewChoice =
  *   hold is refused (EVENT_NOT_FOUND), and so is one no longer waiting (EVENT_NOT_WAITING:
  *   dismissed, shown or expired, it has nothing left to preview; gate 2 of PR #22);
  * - an item filled by events, with no event named ("Prévia" of the item): the sample event
- *   of the kind of the first rule naming the item (an incident's when none does), with no
- *   id, so the operator sees the look and "Tomar" is refused;
+ *   of the kind given (Regras' "Prévia" of a rule's row, BAJAOVRLAY-67), or else of the
+ *   first rule naming the item (an incident's when none does), with no id, so the operator
+ *   sees the look and "Tomar" is refused;
  * - any other item: nothing, a preview as before.
  */
 export function chooseEventFillOfPreview(
   slices: SlicesChangedByCommands,
   itemId: string,
   eventId: string | undefined,
+  sampleEventKind?: InboxEventKind,
 ): EventFillOfPreviewChoice {
   if (eventId !== undefined) {
     const event = slices.events.find((candidate) => candidate.eventId === eventId);
@@ -60,6 +63,8 @@ export function chooseEventFillOfPreview(
     return { status: 'chosen', eventFill: undefined };
   }
   const kindOfTheItem =
-    slices.eventRules.find((rule) => rule.itemId === itemId)?.kind ?? 'newIncident';
+    sampleEventKind ??
+    slices.eventRules.find((rule) => rule.itemId === itemId)?.kind ??
+    'newIncident';
   return { status: 'chosen', eventFill: { payload: readSampleEventPayload(kindOfTheItem) } };
 }

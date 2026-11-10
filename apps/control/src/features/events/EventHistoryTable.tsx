@@ -12,7 +12,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ActionButton } from '@/features/connection/ActionButton';
-import { useWhyTheDataRoleMayNotTriage } from '@/features/events/whyTheDataRoleMayNotTriage';
+import {
+  useWhyTheDataRoleMayNotShowAgain,
+  useWhyTheDataRoleMayNotTriage,
+} from '@/features/events/whyTheDataRoleMayNotTriage';
 import { ptBR } from '@/i18n/ptBR';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
@@ -64,14 +67,17 @@ function SortableHeader(props: {
  * rows it finds, and a click on a header sorts by that column (eventHistoryView.ts);
  * newest first until then. Both are this page's own view, lost on a reload. "Nenhum
  * evento ainda." stands in for an empty history, "Nenhum evento encontrado." for a search
- * that finds nothing. Only a dismissed event has a button, "Restaurar" (restoreEvent):
- * humans err (the walk of PR #22).
+ * that finds nothing. A dismissed event has "Restaurar" (restoreEvent): humans err (the
+ * walk of PR #22); a shown or expired one has "Mostrar de novo" (restoreEvent too,
+ * BAJAOVRLAY-67), for an event the commentators come back to. Either brings the event
+ * back to wait for "No ar"; Dados sees "Mostrar de novo" greyed out, never hidden.
  */
 export function EventHistoryTable() {
   const events = useServerState((state) => state.events);
   const dataSources = useServerState((state) => state.dataSources);
   const sendCommand = useSendCommand();
   const findWhyTheDataRoleMayNotTriage = useWhyTheDataRoleMayNotTriage();
+  const findWhyTheDataRoleMayNotShowAgain = useWhyTheDataRoleMayNotShowAgain();
   const [searchText, setSearchText] = useState('');
   const [sort, setSort] = useState<HistorySort>(newestFirstSort);
 
@@ -135,6 +141,19 @@ export function EventHistoryTable() {
                       }
                     >
                       {texts.restoreButton}
+                    </ActionButton>
+                  ) : null}
+                  {event.status === 'shown' || event.status === 'expired' ? (
+                    <ActionButton
+                      commandType="restoreEvent"
+                      disabledReason={findWhyTheDataRoleMayNotShowAgain(event)}
+                      size="xs"
+                      variant="outline"
+                      onClick={() =>
+                        void sendCommand({ type: 'restoreEvent', eventId: event.eventId })
+                      }
+                    >
+                      {texts.showAgainButton}
                     </ActionButton>
                   ) : null}
                 </TableCell>
