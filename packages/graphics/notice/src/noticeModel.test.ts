@@ -3,7 +3,8 @@
  *
  * What this module is for:
  *   Everything the notice shows comes from one small data object: the variant (a fastest
- *   lap or a notice from race control), the car and, optionally, the team, the school,
+ *   lap or a notice from race control) and, optionally, the car (a general notice has
+ *   none, BAJAOVRLAY-67), the team, the school,
  *   the lap and its time, the kind of notice, the reason and the penalty. The renderer
  *   sends the whole object to `load` and then partial changes to `updateAction`. This
  *   module checks that data, merges the partial changes in, and explains in pt-BR what
@@ -11,7 +12,7 @@
  *
  * What these tests prove:
  *   - Complete, correct data of either variant is accepted as it is, and so is the bare
- *     minimum: a variant and a car number.
+ *     minimum: a variant and a car number, or a general notice with no car at all.
  *   - Data missing a required field, with a wrong value, or with a field the graphic does
  *     not know is refused with a pt-BR message naming the field.
  *   - A partial update changes only the fields it carries and keeps every other field.
@@ -68,6 +69,11 @@ describe('parseCompleteNoticeData', () => {
       name: 'accepts the bare minimum: a variant and a car number',
       data: { variant: 'penalty', carNumber: 47 },
     },
+    // A general notice (BAJAOVRLAY-67) is about the event itself: it has no car.
+    {
+      name: 'accepts a general notice with no car',
+      data: { variant: 'penalty', noticeKind: 'notice', reason: 'Largada adiada em 15 minutos' },
+    },
   ];
 
   it.each(acceptedDataScenarios)('$name', ({ data }) => {
@@ -84,12 +90,6 @@ describe('parseCompleteNoticeData', () => {
   });
 
   const refusedDataScenarios = [
-    {
-      // The car is what the notice is about; a notice without one is a mistake upstream.
-      name: 'refuses data missing the car number',
-      data: { ...createFastestLapData(), carNumber: undefined },
-      expectedProblem: 'Falta o campo obrigatório "carNumber".',
-    },
     {
       // Without a variant the graphic cannot know which head to draw.
       name: 'refuses data missing the variant',

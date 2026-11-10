@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { CommandErrorSchema } from '../commands/commandError.js';
+import { InboxEventStatusSchema } from '../eventInbox/inboxEventsSlice.js';
 
 /** How a command ended: ok, or failed with the error the operator was shown. */
 export const EventLogResultSchema = z.discriminatedUnion('status', [
@@ -12,10 +13,12 @@ export const EventLogResultSchema = z.discriminatedUnion('status', [
  * What the server knew when it applied a command and the payload does not say (gate 2 of
  * PR #44). `placedOn` is the layer a take or a preview put its item on, and that layer's
  * output, as they were then: the history names them, not the item's layer now, which
- * may have moved since.
+ * may have moved since. `restoredFrom` is the status a restoreEvent brought its event
+ * back from (BAJAOVRLAY-67), so the history tells "Mostrar de novo" from an undone discard.
  */
 export const EventLogDetailsSchema = z.object({
   placedOn: z.object({ layerId: z.string().min(1), outputId: z.string().min(1) }).optional(),
+  restoredFrom: InboxEventStatusSchema.optional(),
 });
 
 /** The details of an event-log row, after validation. */

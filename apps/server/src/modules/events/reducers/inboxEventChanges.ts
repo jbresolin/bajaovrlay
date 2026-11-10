@@ -81,6 +81,15 @@ export function findStatusOfNewEvent(rule: EventRule | undefined): InboxEventSta
   return canTheRunnerShowIt ? 'queued' : 'pending';
 }
 
+/**
+ * The moment an event's wait is measured from: its latest restore, or its detection when it
+ * was never restored (BAJAOVRLAY-67). A fastest lap brought back with "Mostrar de novo" ten
+ * minutes after it was shown would otherwise expire the moment "No ar" is pressed.
+ */
+export function readMomentTheWaitCountsFrom(event: InboxEvent): number {
+  return event.restoresAtMs?.at(-1) ?? event.detectedAtMs;
+}
+
 /** A moment of the store (ISO 8601 text) in ms since 1970. */
 export function readMomentMs(isoMoment: string): number {
   return Date.parse(isoMoment);

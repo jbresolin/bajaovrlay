@@ -18,12 +18,13 @@
  *   - A dismissed penalty past its rule's maximum wait is refused (EVENT_TOO_OLD), saying
  *     so in pt-BR, and stays dismissed, rather than coming back only to expire at "No ar".
  *     Kinds with no maximum wait (incidents, typed events) can be restored hours later.
- *   - Restoring an event that was not dismissed (one waiting, one already shown) is
- *     refused with EVENT_NOT_DISMISSED, saying its status; an unknown one with
- *     EVENT_NOT_FOUND.
+ *   - Restoring an event that is waiting is refused with EVENT_NOT_DISMISSED, saying its
+ *     status; an unknown one with EVENT_NOT_FOUND.
  *
  * What these tests deliberately do not cover:
  *   - Who may send it (operators only); authorizeEventCommands.test.ts.
+ *   - Bringing back a shown or expired event ("Mostrar de novo", BAJAOVRLAY-67);
+ *     showEventAgainOnTheStore.test.ts.
  *   - The max age at "No ar" itself; inboxCommandsOnTheStore.test.ts.
  */
 import { describe, expect, it } from 'vitest';
@@ -179,30 +180,15 @@ describe('refused restores', () => {
     // Two operators: the second press of "Desfazer" finds the event already waiting.
     {
       name: 'refuses to restore an event that is waiting',
-      prepare: () => undefined,
       eventId: startPenaltyEventId,
       expectedError: {
         code: 'EVENT_NOT_DISMISSED',
-        message: 'Este evento não foi descartado: está esperando.',
-      },
-    },
-    // A shown event stays shown: bringing it back would show the penalty twice.
-    {
-      name: 'refuses to restore an event already shown',
-      prepare: (inbox: EventInboxOnTheStore) => {
-        applyOrThrow(inbox.stateStore, { type: 'showEvent', eventId: startPenaltyEventId });
-        applyOrThrow(inbox.stateStore, { type: 'clearLayer', layerId: 'clock' });
-      },
-      eventId: startPenaltyEventId,
-      expectedError: {
-        code: 'EVENT_NOT_DISMISSED',
-        message: 'Este evento não foi descartado: já foi exibido.',
+        message: 'Este evento não pode ser trazido de volta: está esperando.',
       },
     },
     // An id the inbox no longer holds (it keeps its newest 200).
     {
       name: 'refuses an event the inbox does not hold',
-      prepare: () => undefined,
       eventId: 'simulador-enduro:incident:nenhuma',
       expectedError: {
         code: 'EVENT_NOT_FOUND',
@@ -211,10 +197,9 @@ describe('refused restores', () => {
     },
   ];
 
-  it.each(refusalScenarios)('$name', ({ prepare, eventId, expectedError }) => {
-    // Arrange: the penalty waiting, then whatever this row does to it.
+  it.each(refusalScenarios)('$name', ({ eventId, expectedError }) => {
+    // Arrange: the penalty waiting.
     const inbox = openInboxWithThePenalty('ask');
-    prepare(inbox);
 
     // Act: restore it.
     const outcome = inbox.stateStore.applyCommand({ type: 'restoreEvent', eventId }, operatorActor);

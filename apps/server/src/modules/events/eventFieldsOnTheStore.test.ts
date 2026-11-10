@@ -293,7 +293,7 @@ describe('an item filled by an event', () => {
     const outcome = inbox.stateStore.applyCommand(
       {
         type: 'createItem',
-        home: { kind: 'quickFire', panelId: 'atalhos' },
+        home: { kind: 'eventTemplates' },
         graphicId: 'race-clock',
         layerId: 'clock',
         label: 'Relógio — errado',

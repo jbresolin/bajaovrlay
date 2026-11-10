@@ -2,6 +2,7 @@ import { isSameItemHome, type Item, type MoveItemToHomeCommand } from '@bajaovrl
 
 import { refuseUnknownItem } from '../rundownCommandRefusals.js';
 import { findRefusalOfUnknownItemHome } from './itemHomeExistence.js';
+import { findRefusalOfItemInTheWrongHome } from './itemHomeOfEventTemplates.js';
 import { listItemsOfHomeInOrder, numberItemsByPositionInList } from './itemOrdering.js';
 import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 import {
@@ -13,7 +14,9 @@ import {
  * moveItemToHome: moves an item to a home (a rundown or a quick-fire panel) at the
  * position the command names (a position past the end means the end). Both homes are
  * renumbered 0, 1, 2, ... with no gaps: the one the item leaves closes up, the one it
- * joins makes room. Refused if the item, or the rundown or panel named, does not exist.
+ * joins makes room. Refused if the item, or the rundown or panel named, does not exist,
+ * and when a template would go to a panel or another item among the templates
+ * (itemHomeOfEventTemplates.ts, BAJAOVRLAY-67).
  *
  * The cursors follow the rules of the commands this move looks like. Leaving a rundown
  * is a deleteItem for that rundown: a cursor on the item moves to the item that followed
@@ -30,7 +33,9 @@ export function reduceMoveItemToHome(
   if (movedItem === undefined) {
     return { status: 'refused', error: refuseUnknownItem(command.itemId) };
   }
-  const refusalOfTheHome = findRefusalOfUnknownItemHome(slices, command.home);
+  const refusalOfTheHome =
+    findRefusalOfUnknownItemHome(slices, command.home) ??
+    findRefusalOfItemInTheWrongHome(command.home, movedItem.fields, movedItem.label);
   if (refusalOfTheHome !== undefined) {
     return { status: 'refused', error: refusalOfTheHome };
   }

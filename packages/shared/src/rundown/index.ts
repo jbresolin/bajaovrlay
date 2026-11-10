@@ -20,9 +20,10 @@ export {
   type TakeTimeFieldValue,
   TakeTimeFieldValueSchema,
 } from './fieldValue.js';
-// The items of one home, a rundown or a quick-fire panel, first to last
-// (itemsOfHomeInOrder.ts); the one place that reads the order of a home.
+// The items of one home, a rundown, a quick-fire panel or the event templates, first to
+// last (itemsOfHomeInOrder.ts); the one place that reads the order of a home.
 export {
+  listEventTemplatesInOrder,
   listItemsOfQuickFirePanelInOrder,
   listItemsOfRundownInOrder,
 } from './itemsOfHomeInOrder.js';

@@ -19,7 +19,7 @@ export const ptBREventInbox = {
     messageText: 'Mensagem (Super Chat)',
   },
   payloadReasons: {
-    carNumberMissing: 'Falta o número do carro: só um Super Chat vem sem carro.',
+    carNumberMissing: 'Falta o número do carro: só um Super Chat ou um aviso geral vem sem carro.',
   },
   fieldReasons: {
     pathDoesNotFit: (pathLabel: string) =>

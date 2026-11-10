@@ -1,4 +1,4 @@
-import type { RestoreEventCommand } from '@bajaovrlay/shared';
+import type { InboxEvent, InboxEventStatus, RestoreEventCommand } from '@bajaovrlay/shared';
 
 import { ptBR } from '../../../core/messages/ptBR.js';
 import type {
@@ -11,19 +11,30 @@ import {
   findInboxEvent,
   findRuleOfKind,
   readMomentMs,
+  readMomentTheWaitCountsFrom,
   replaceInboxEvent,
 } from './inboxEventChanges.js';
 
+/** The statuses an event can be brought back from. */
+const statusesThatCanBeRestored: InboxEventStatus[] = ['dismissed', 'shown', 'expired'];
+
 /**
- * restoreEvent ("Desfazer" on the console, "Restaurar" on the "Eventos" page): undoes
- * "Descartar". A dismissed event goes back to pending at the command's moment, even when
- * its rule is automatic: a corrected mistake is the operator's to show, so it never goes
- * on air by itself seconds after being brought back; and even when its rule is now
- * "Ignorar", since the operator asked for this one by name. Refused for an unknown event
- * (EVENT_NOT_FOUND), one that was not dismissed (EVENT_NOT_DISMISSED: a shown event
- * brought back would show twice), and one past its rule's maximum wait (EVENT_TOO_OLD),
- * which would only expire at "No ar". A kind with no maximum wait (incidents and typed
- * events by default) can be restored hours later, on purpose: a penalty stays news.
+ * restoreEvent brings an event back to wait for the operator: a dismissed one ("Desfazer"
+ * on the console, "Restaurar" on the "Eventos" page), or, since BAJAOVRLAY-67, a shown or
+ * expired one ("Mostrar de novo": the commentators come back to a penalty). It lands at the
+ * command's moment:
+ * - pending, whatever its rule says: a corrected mistake or a second showing is the
+ *   operator's to put on air, never the runner's seconds later, and even a rule now on
+ *   "Ignorar" lists it, since the operator asked for this one by name;
+ * - approved, for a Super Chat a person had approved and that was shown or expired since:
+ *   it needs no second approval. A discarded Super Chat waits for approval again (gate 2 of
+ *   PR #54), as does one that expired before anyone approved it.
+ * The moment is added to the event's restoresAtMs, and its rule's maximum wait counts from
+ * it from then on (readMomentTheWaitCountsFrom). Refused: an unknown event
+ * (EVENT_NOT_FOUND), one still waiting or on air (EVENT_NOT_DISMISSED, saying its status),
+ * and a dismissed one past its rule's maximum wait (EVENT_TOO_OLD), which would only
+ * expire at "No ar". A shown or expired one is never too old: bringing it back restarts
+ * its wait. A kind with no maximum wait can be restored hours later, on purpose.
  */
 export function reduceRestoreEvent(
   slices: SlicesChangedByCommands,
@@ -37,27 +48,44 @@ export function reduceRestoreEvent(
       error: { code: 'EVENT_NOT_FOUND', message: ptBR.eventErrors.eventNotFound },
     };
   }
-  if (event.status !== 'dismissed') {
+  if (!statusesThatCanBeRestored.includes(event.status)) {
     return {
       status: 'refused',
       error: {
         code: 'EVENT_NOT_DISMISSED',
-        message: ptBR.eventErrors.eventNotDismissed(event.status),
+        message: ptBR.eventErrors.eventCannotComeBack(event.status),
       },
     };
   }
   const nowMs = readMomentMs(context.now);
-  const maxAgeMs = findRuleOfKind(slices.eventRules, event.kind)?.maxAgeMs ?? null;
-  const ageMs = nowMs - event.detectedAtMs;
-  if (maxAgeMs !== null && ageMs > maxAgeMs) {
-    return {
-      status: 'refused',
-      error: { code: 'EVENT_TOO_OLD', message: ptBR.eventErrors.eventTooOldToRestore },
-    };
+  if (event.status === 'dismissed') {
+    const maxAgeMs = findRuleOfKind(slices.eventRules, event.kind)?.maxAgeMs ?? null;
+    const ageMs = nowMs - readMomentTheWaitCountsFrom(event);
+    if (maxAgeMs !== null && ageMs > maxAgeMs) {
+      return {
+        status: 'refused',
+        error: { code: 'EVENT_TOO_OLD', message: ptBR.eventErrors.eventTooOldToRestore },
+      };
+    }
   }
-  const restoredEvent = changeStatusOfEvent(event, 'pending', nowMs);
+  const statusAfter = chooseStatusOfRestoredEvent(event);
+  const restoredEvent: InboxEvent = {
+    ...changeStatusOfEvent(event, statusAfter, nowMs),
+    restoresAtMs: [...(event.restoresAtMs ?? []), nowMs],
+  };
   return {
     status: 'applied',
     slices: { ...slices, events: replaceInboxEvent(slices.events, restoredEvent) },
   };
+}
+
+/**
+ * Where a restored event lands: approved for a Super Chat a person had approved and that
+ * was not discarded since (shown, or expired after approval), pending for everything else.
+ */
+function chooseStatusOfRestoredEvent(event: InboxEvent): InboxEventStatus {
+  const wasApprovedBefore = event.statusChanges.some((change) => change.status === 'approved');
+  const isAnApprovedSuperChatNotDiscarded =
+    event.kind === 'superChat' && wasApprovedBefore && event.status !== 'dismissed';
+  return isAnApprovedSuperChatNotDiscarded ? 'approved' : 'pending';
 }

@@ -14,6 +14,9 @@ import { checkCarNumberForKind, DetectedEventFieldsSchema } from './inboxEvent.j
  * - `shown`: that instance has left the air;
  * - `dismissed`: the operator said no ("Descartar");
  * - `expired`: not shown within its rule's maxAgeMs; never shown late.
+ * A dismissed, shown or expired event may be brought back by restoreEvent ("Desfazer",
+ * "Restaurar", "Mostrar de novo"), to pending, or to approved for a Super Chat a person
+ * had approved and that was not dismissed (BAJAOVRLAY-67).
  */
 export const InboxEventStatusSchema = z.enum([
   'pending',
@@ -39,13 +42,16 @@ export type InboxEventStatusChange = z.infer<typeof InboxEventStatusChangeSchema
 
 /**
  * One event of the inbox: the detected (or typed) event, its status now, every change of
- * status with its moment (the first one is its arrival), and the instance showing it while
- * it is on air.
+ * status with its moment (the first one is its arrival), the instance showing it while
+ * it is on air, and the moment of each restore ("Desfazer", "Restaurar", "Mostrar de novo";
+ * BAJAOVRLAY-67), oldest first: the rule's maximum wait counts from the latest one.
+ * `restoresAtMs` is left out until the first restore, as in every event saved before.
  */
 export const InboxEventSchema = DetectedEventFieldsSchema.extend({
   status: InboxEventStatusSchema,
   statusChanges: z.array(InboxEventStatusChangeSchema).min(1),
   instanceId: z.string().min(1).optional(),
+  restoresAtMs: z.array(z.number().int().min(0)).optional(),
 }).superRefine((event, context) => checkCarNumberForKind(event, context));
 
 /** One inbox event after validation. */

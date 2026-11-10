@@ -36,8 +36,9 @@ export type EventNoticeKind = z.infer<typeof EventNoticeKindSchema>;
  * What a graphic needs to show the event: the car, and the fields of the kind that has
  * them. An item's event fields (kind `eventField`) read these by name, so the names are
  * the paths the item editor offers. Strict: a key no graphic can read is refused.
- * The car is optional here only because a Super Chat has none; every other kind must
- * carry one, checked with the kind by checkCarNumberForKind below.
+ * The car is optional here because a Super Chat has none, and neither has a general notice
+ * typed in "+ Evento" (BAJAOVRLAY-67); every other event must carry one, checked with the
+ * kind by checkCarNumberForKind below.
  */
 export const InboxEventPayloadSchema = z.strictObject({
   carNumber: z.number().int().positive().optional(),
@@ -66,16 +67,20 @@ export const InboxEventPayloadSchema = z.strictObject({
 export type InboxEventPayload = z.infer<typeof InboxEventPayloadSchema>;
 
 /**
- * The one place that says which kinds need a car: every kind but `superChat`, which is a
- * viewer's message about no car in particular. Reported at `payload.carNumber`. Used by
- * DetectedEventSchema and the slice's InboxEventSchema alike.
+ * The one place that says which events need a car: every one but a `superChat`, a viewer's
+ * message about no car in particular, and a typed notice (`manual` with noticeKind
+ * `notice`), which may be about the event itself, "Largada adiada em 15 minutos"
+ * (BAJAOVRLAY-67). A typed penalty still needs one: a penalty is always given to a car.
+ * Reported at `payload.carNumber`. Used by DetectedEventSchema and the slice's
+ * InboxEventSchema alike.
  */
 export function checkCarNumberForKind(
   event: { kind: InboxEventKind; payload: InboxEventPayload },
   context: z.RefinementCtx,
 ): void {
-  const doesTheKindNeedACar = event.kind !== 'superChat';
-  if (doesTheKindNeedACar && event.payload.carNumber === undefined) {
+  const isAGeneralNoticeAllowed = event.kind === 'manual' && event.payload.noticeKind === 'notice';
+  const doesTheEventNeedACar = event.kind !== 'superChat' && !isAGeneralNoticeAllowed;
+  if (doesTheEventNeedACar && event.payload.carNumber === undefined) {
     context.addIssue({
       code: 'custom',
       path: ['payload', 'carNumber'],

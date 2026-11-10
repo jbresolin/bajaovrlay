@@ -9,7 +9,11 @@ import {
 import type { SliceRow } from '../../core/db/tables.js';
 import type { ServerLogger } from '../../core/logger/createLogger.js';
 import {
-  addSeededEventPanelAndItems,
+  eventTemplatesOffQuickFireSeedName,
+  moveEventTemplatesOffQuickFire,
+} from './moveEventTemplatesOffQuickFire.js';
+import {
+  addSeededEventTemplates,
   addSeededSuperChatItemToAnOlderDatabase,
 } from './seedEventItems.js';
 import { seededEventRules } from './seedEventRules.js';
@@ -31,7 +35,7 @@ export type EventInboxSlicesAtBoot = PanelsAndItemsAtBoot & {
   eventRules: EventRule[];
   /**
    * The rules row, when it was missing or a kind had to be added to it, and the panels
-   * and items rows when the "Avisos" panel and its items were seeded with the rules.
+   * and items rows when the templates were seeded or moved off the panels.
    */
   rowsToSaveAtBoot: SliceRow[];
   /** The seeds this boot considered for the first time, for the boot to record as done. */
@@ -41,15 +45,16 @@ export type EventInboxSlicesAtBoot = PanelsAndItemsAtBoot & {
 /**
  * Reads the `events` and `eventRules` slices from the stored rows. The events start empty
  * on a database written before the inbox; the rules are seeded when their row is missing
- * (a first boot, or such a database), together with the "Avisos" panel and its two
- * notice items the rules name (seedEventItems.ts), once: a panel the operator deletes
- * later is not brought back. A kind seeded since the rules row was written is added to
- * it, so an installation gets a new kind's rule without a new database; and a database
- * seeded before BAJAOVRLAY-35 gets the "Super Chat" item once, when its rule still has no
- * item (addSeededSuperChatItemToAnOlderDatabase), `seeds_done` keeping that it was
- * considered. A row that fails
- * its schema stops the boot, as the items row does: a wrong rule could put things on air
- * by itself.
+ * (a first boot, or such a database), together with the three templates the rules name,
+ * in "Modelos de evento" (seedEventItems.ts), once: a template the operator deletes later
+ * is not brought back. A kind seeded since the rules row was written is added to it, so an
+ * installation gets a new kind's rule without a new database. Then two one-off steps, each
+ * remembered in `seeds_done`: a database seeded before BAJAOVRLAY-35 gets the "Super Chat"
+ * item when its rule still has no item (addSeededSuperChatItemToAnOlderDatabase); and a
+ * database written before BAJAOVRLAY-67 has its templates taken off the quick-fire panels
+ * (moveEventTemplatesOffQuickFire), after the Super Chat seed, which still adds to "Avisos".
+ * A row that fails its schema stops the boot, as the items row does: a wrong rule could put
+ * things on air by itself.
  */
 export function loadOrSeedEventInboxSlices(
   storedRows: SliceRow[],
@@ -58,29 +63,25 @@ export function loadOrSeedEventInboxSlices(
   updatedAt: string,
   logger: ServerLogger,
 ): EventInboxSlicesAtBoot {
-  const rowsToSaveAtBoot: SliceRow[] = [];
   const events = SlicesSchema.shape.events.parse(
     storedRows.find((row) => row.name === 'events')?.json ?? [],
   );
 
   const rulesRow = storedRows.find((row) => row.name === 'eventRules');
   if (rulesRow === undefined) {
-    const panelsAndItemsAfter = addSeededEventPanelAndItems(
-      panelsAndItems.quickFirePanels,
-      panelsAndItems.items,
-    );
-    rowsToSaveAtBoot.push(
-      { name: 'eventRules', json: seededEventRules, updatedAt },
-      { name: 'quickFirePanels', json: panelsAndItemsAfter.quickFirePanels, updatedAt },
-      { name: 'items', json: panelsAndItemsAfter.items, updatedAt },
-    );
-    logger.info('no stored event rules row; seeded the default rules and the panel "Avisos"');
+    const itemsAfter = addSeededEventTemplates(panelsAndItems.items);
+    logger.info('no stored event rules row; seeded the default rules and the event templates');
     return {
       events,
       eventRules: seededEventRules,
-      ...panelsAndItemsAfter,
-      rowsToSaveAtBoot,
-      seedNamesDoneAtBoot: [superChatItemSeedName],
+      quickFirePanels: panelsAndItems.quickFirePanels,
+      items: itemsAfter,
+      rowsToSaveAtBoot: [
+        { name: 'eventRules', json: seededEventRules, updatedAt },
+        { name: 'items', json: itemsAfter, updatedAt },
+      ],
+      // A database seeded now has its templates where they belong: neither step applies.
+      seedNamesDoneAtBoot: [superChatItemSeedName, eventTemplatesOffQuickFireSeedName],
     };
   }
 
@@ -91,39 +92,59 @@ export function loadOrSeedEventInboxSlices(
   let eventRules = storedRules;
   if (rulesMissing.length > 0) {
     eventRules = [...storedRules, ...rulesMissing];
-    rowsToSaveAtBoot.push({ name: 'eventRules', json: eventRules, updatedAt });
     logger.info(
       { added_kinds: rulesMissing.map((rule) => rule.kind) },
       'seeded event rules missing from the stored rules were added',
     );
   }
+  let isTheRulesRowChanged = rulesMissing.length > 0;
+  let items = panelsAndItems.items;
+  let quickFirePanels = panelsAndItems.quickFirePanels;
+  let isTheItemsRowChanged = false;
+  let isThePanelsRowChanged = false;
+  const seedNamesDoneAtBoot: string[] = [];
 
-  if (seedNamesDone.includes(superChatItemSeedName)) {
-    return { events, eventRules, ...panelsAndItems, rowsToSaveAtBoot, seedNamesDoneAtBoot: [] };
+  if (!seedNamesDone.includes(superChatItemSeedName)) {
+    // Considered once, whatever comes of it: an operator's own choice is never revisited.
+    seedNamesDoneAtBoot.push(superChatItemSeedName);
+    const withTheSuperChatItem = addSeededSuperChatItemToAnOlderDatabase(
+      eventRules,
+      quickFirePanels,
+      items,
+    );
+    if (withTheSuperChatItem !== undefined) {
+      eventRules = withTheSuperChatItem.eventRules;
+      items = withTheSuperChatItem.items;
+      isTheRulesRowChanged = true;
+      isTheItemsRowChanged = true;
+      logger.info('seeded the "Super Chat" item and named it in the Super Chat rule');
+    }
   }
-  // Considered once, whatever comes of it: an operator's own choice is never revisited.
-  const seedNamesDoneAtBoot = [superChatItemSeedName];
-  const withTheSuperChatItem = addSeededSuperChatItemToAnOlderDatabase(
-    eventRules,
-    panelsAndItems.quickFirePanels,
-    panelsAndItems.items,
-  );
-  if (withTheSuperChatItem === undefined) {
-    return { events, eventRules, ...panelsAndItems, rowsToSaveAtBoot, seedNamesDoneAtBoot };
+
+  if (!seedNamesDone.includes(eventTemplatesOffQuickFireSeedName)) {
+    seedNamesDoneAtBoot.push(eventTemplatesOffQuickFireSeedName);
+    const moveOutcome = moveEventTemplatesOffQuickFire(quickFirePanels, items);
+    if (moveOutcome.isAnythingMoved) {
+      isThePanelsRowChanged = moveOutcome.quickFirePanels !== quickFirePanels;
+      quickFirePanels = moveOutcome.quickFirePanels;
+      items = moveOutcome.items;
+      isTheItemsRowChanged = true;
+      logger.info(
+        { panels_after: quickFirePanels.map((panel) => panel.id) },
+        'moved the event templates off the quick-fire panels into "Modelos de evento"',
+      );
+    }
   }
-  // A rules row already queued above is replaced by this later one: the last row wins.
-  const rowsWithoutRules = rowsToSaveAtBoot.filter((row) => row.name !== 'eventRules');
-  rowsWithoutRules.push(
-    { name: 'eventRules', json: withTheSuperChatItem.eventRules, updatedAt },
-    { name: 'items', json: withTheSuperChatItem.items, updatedAt },
-  );
-  logger.info('seeded the "Super Chat" item and named it in the Super Chat rule');
-  return {
-    events,
-    eventRules: withTheSuperChatItem.eventRules,
-    quickFirePanels: panelsAndItems.quickFirePanels,
-    items: withTheSuperChatItem.items,
-    rowsToSaveAtBoot: rowsWithoutRules,
-    seedNamesDoneAtBoot,
-  };
+
+  const rowsToSaveAtBoot: SliceRow[] = [];
+  if (isTheRulesRowChanged) {
+    rowsToSaveAtBoot.push({ name: 'eventRules', json: eventRules, updatedAt });
+  }
+  if (isTheItemsRowChanged) {
+    rowsToSaveAtBoot.push({ name: 'items', json: items, updatedAt });
+  }
+  if (isThePanelsRowChanged) {
+    rowsToSaveAtBoot.push({ name: 'quickFirePanels', json: quickFirePanels, updatedAt });
+  }
+  return { events, eventRules, quickFirePanels, items, rowsToSaveAtBoot, seedNamesDoneAtBoot };
 }

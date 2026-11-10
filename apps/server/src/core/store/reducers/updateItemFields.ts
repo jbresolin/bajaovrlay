@@ -12,6 +12,7 @@ import {
   listKeysOfTakeTimeFields,
 } from '../itemTakeTimeFields.js';
 import { refuseUnknownItem } from '../rundownCommandRefusals.js';
+import { findRefusalOfItemInTheWrongHome } from './itemHomeOfEventTemplates.js';
 import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**
@@ -55,6 +56,15 @@ export function reduceUpdateItemFields(
   const refusalOfABinding = findRefusalOfBindingsInCommand(slices, itemBefore, itemAfter, command);
   if (refusalOfABinding !== undefined) {
     return { status: 'refused', error: refusalOfABinding };
+  }
+  // A button given an "Evento" field, or a template losing its last one (BAJAOVRLAY-67).
+  const refusalOfTheHome = findRefusalOfItemInTheWrongHome(
+    itemAfter.home,
+    itemAfter.fields,
+    itemAfter.label,
+  );
+  if (refusalOfTheHome !== undefined) {
+    return { status: 'refused', error: refusalOfTheHome };
   }
   // Compared by content: the editor may save a form the operator did not touch, and
   // that must not be saved and broadcast as if something had changed.

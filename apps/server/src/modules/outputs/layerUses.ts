@@ -35,7 +35,7 @@ export function describeWhatIsOnTheLayer(
 
 /**
  * The uses of the layer, one entry per kind that has any, in this order: items of a
- * rundown, quick-fire buttons, macros with a step that clears it, and event rules whose
+ * rundown, quick-fire buttons, event templates (BAJAOVRLAY-67), macros with a step that clears it, and event rules whose
  * item is on it (a rule names an item, not a layer, so its notice lands where the item
  * does). Each entry is counted and names its uses: `2 itens: "A", "B"`. Empty when
  * nothing names the layer. A graphic's default layer is not a use: it is only the
@@ -48,6 +48,9 @@ export function describeUsesOfTheLayer(slices: SlicesChangedByCommands, layer: L
     .map((item) => item.label);
   const shortcutLabels = itemsOnTheLayer
     .filter((item) => item.home.kind === 'quickFire')
+    .map((item) => item.label);
+  const eventTemplateLabels = itemsOnTheLayer
+    .filter((item) => item.home.kind === 'eventTemplates')
     .map((item) => item.label);
   const macroLabels = slices.macros
     .filter((macro) =>
@@ -65,6 +68,9 @@ export function describeUsesOfTheLayer(slices: SlicesChangedByCommands, layer: L
   }
   if (shortcutLabels.length > 0) {
     usesOfEachKind.push(ptBR.outputs.usesOfAKind.shortcuts(shortcutLabels));
+  }
+  if (eventTemplateLabels.length > 0) {
+    usesOfEachKind.push(ptBR.outputs.usesOfAKind.eventTemplates(eventTemplateLabels));
   }
   if (macroLabels.length > 0) {
     usesOfEachKind.push(ptBR.outputs.usesOfAKind.macros(macroLabels));

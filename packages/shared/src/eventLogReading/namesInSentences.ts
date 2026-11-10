@@ -148,7 +148,8 @@ export function nameInboxEvent(eventId: string, names: EventLogNames): string {
 
 /**
  * A detected event by what the reader knows it by: a Super Chat by its viewer and amount
- * ("Super Chat de Torcida Pequi Off-Road (R$ 20,00)"), every other kind by its car.
+ * ("Super Chat de Torcida Pequi Off-Road (R$ 20,00)"), a typed notice about no car as
+ * "aviso geral" (BAJAOVRLAY-67), every other kind by its car.
  */
 export function nameDetectedEvent(event: {
   kind: InboxEventKind;
@@ -158,6 +159,9 @@ export function nameDetectedEvent(event: {
   const { carNumber, authorName, amountText } = event.payload;
   if (event.kind === 'superChat' && authorName !== undefined && amountText !== undefined) {
     return nameTexts.superChatOfViewer(authorName, amountText);
+  }
+  if (carNumber === undefined && event.kind === 'manual') {
+    return nameTexts.generalNotice;
   }
   if (carNumber === undefined) {
     return nameTexts.eventWithoutCar(kindLabel);
@@ -187,6 +191,9 @@ export function nameItemHomeAsPlace(home: ItemHome, names: EventLogNames): strin
   if (home.kind === 'rundown') {
     return nameTexts.inRundown(nameRundown(home.rundownId, names));
   }
+  if (home.kind === 'eventTemplates') {
+    return nameTexts.inEventTemplates;
+  }
   return nameTexts.inPanel(nameQuickFirePanel(home.panelId, names));
 }
 
@@ -194,6 +201,9 @@ export function nameItemHomeAsPlace(home: ItemHome, names: EventLogNames): strin
 export function nameItemHomeAsDestination(home: ItemHome, names: EventLogNames): string {
   if (home.kind === 'rundown') {
     return nameTexts.toRundown(nameRundown(home.rundownId, names));
+  }
+  if (home.kind === 'eventTemplates') {
+    return nameTexts.toEventTemplates;
   }
   return nameTexts.toPanel(nameQuickFirePanel(home.panelId, names));
 }

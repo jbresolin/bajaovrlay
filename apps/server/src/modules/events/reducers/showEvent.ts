@@ -14,6 +14,7 @@ import {
   isEventWaiting,
   isSuperChatAwaitingApproval,
   readMomentMs,
+  readMomentTheWaitCountsFrom,
   replaceInboxEvent,
 } from './inboxEventChanges.js';
 
@@ -24,8 +25,8 @@ import {
  * onAir in reduceCommand's bookkeeping (eventsOfInstancesBookkeeping.ts), the one place
  * that follows instances carrying an event, so a previewed event taken with "Tomar"
  * counts too.
- * Never shown late: an event older than its rule's maxAgeMs (from its detection) is
- * expired instead, and nothing goes on air; the command is then applied, not refused, so
+ * Never shown late: an event older than its rule's maxAgeMs (from its detection, or its
+ * latest restore, BAJAOVRLAY-67) is expired instead, and nothing goes on air; the command is then applied, not refused, so
  * the runner expires a queued event with the one command it may send besides recording.
  * Refused: an unknown event (EVENT_NOT_FOUND), one no longer waiting (EVENT_NOT_WAITING), a
  * Super Chat no person approved (EVENT_NOT_APPROVED, checked after its age, so the runner
@@ -51,7 +52,7 @@ export function reduceShowEvent(
   const rule = findRuleOfKind(slices.eventRules, event.kind);
   const nowMs = readMomentMs(context.now);
   if (rule?.maxAgeMs !== null && rule?.maxAgeMs !== undefined) {
-    const ageMs = nowMs - event.detectedAtMs;
+    const ageMs = nowMs - readMomentTheWaitCountsFrom(event);
     if (ageMs > rule.maxAgeMs) {
       return expireEvent(slices, event, nowMs);
     }
