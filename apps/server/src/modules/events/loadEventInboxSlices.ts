@@ -5,7 +5,6 @@ import {
   type QuickFirePanel,
   SlicesSchema,
 } from '@bajaovrlay/shared';
-import { z } from 'zod';
 
 import type { SliceRow } from '../../core/db/tables.js';
 import type { ServerLogger } from '../../core/logger/createLogger.js';
@@ -16,18 +15,12 @@ import {
 import { seededEventRules } from './seedEventRules.js';
 
 /**
- * The row that remembers which of the inbox's later seeds a database has had, so each runs
- * once (gate 2 of PR #54): a seed that only looked at the slices would come back after an
- * operator undid it in a way that looks like a database that never had it. Not a slice:
- * no page receives it, and every other boot step ignores a row it does not read.
+ * The name the "Super Chat" item's seed (BAJAOVRLAY-35) is recorded under in `seeds_done`,
+ * the table of one-off seeds (BAJAOVRLAY-63), so it runs once (gate 2 of PR #54): a seed
+ * that only looked at the slices would come back after an operator undid it in a way that
+ * looks like a database that never had it.
  */
-export const eventInboxSeedsAppliedRowName = 'eventInboxSeedsApplied';
-
-/** The seed of the "Super Chat" item and its rule's item (BAJAOVRLAY-35). */
-const superChatItemSeedName = 'superChatItem';
-
-// The marker row's content: the names of the seeds applied.
-const SeedsAppliedSchema = z.array(z.string().min(1));
+export const superChatItemSeedName = 'superChatItem';
 
 /** The panels and items loaded before the inbox, which seeding the rules may add to. */
 export type PanelsAndItemsAtBoot = { quickFirePanels: QuickFirePanel[]; items: Item[] };
@@ -41,6 +34,8 @@ export type EventInboxSlicesAtBoot = PanelsAndItemsAtBoot & {
    * and items rows when the "Avisos" panel and its items were seeded with the rules.
    */
   rowsToSaveAtBoot: SliceRow[];
+  /** The seeds this boot considered for the first time, for the boot to record as done. */
+  seedNamesDoneAtBoot: string[];
 };
 
 /**
@@ -51,14 +46,15 @@ export type EventInboxSlicesAtBoot = PanelsAndItemsAtBoot & {
  * later is not brought back. A kind seeded since the rules row was written is added to
  * it, so an installation gets a new kind's rule without a new database; and a database
  * seeded before BAJAOVRLAY-35 gets the "Super Chat" item once, when its rule still has no
- * item (addSeededSuperChatItemToAnOlderDatabase), the row eventInboxSeedsApplied keeping
- * that it was considered. A row that fails
+ * item (addSeededSuperChatItemToAnOlderDatabase), `seeds_done` keeping that it was
+ * considered. A row that fails
  * its schema stops the boot, as the items row does: a wrong rule could put things on air
  * by itself.
  */
 export function loadOrSeedEventInboxSlices(
   storedRows: SliceRow[],
   panelsAndItems: PanelsAndItemsAtBoot,
+  seedNamesDone: string[],
   updatedAt: string,
   logger: ServerLogger,
 ): EventInboxSlicesAtBoot {
@@ -77,10 +73,15 @@ export function loadOrSeedEventInboxSlices(
       { name: 'eventRules', json: seededEventRules, updatedAt },
       { name: 'quickFirePanels', json: panelsAndItemsAfter.quickFirePanels, updatedAt },
       { name: 'items', json: panelsAndItemsAfter.items, updatedAt },
-      { name: eventInboxSeedsAppliedRowName, json: [superChatItemSeedName], updatedAt },
     );
     logger.info('no stored event rules row; seeded the default rules and the panel "Avisos"');
-    return { events, eventRules: seededEventRules, ...panelsAndItemsAfter, rowsToSaveAtBoot };
+    return {
+      events,
+      eventRules: seededEventRules,
+      ...panelsAndItemsAfter,
+      rowsToSaveAtBoot,
+      seedNamesDoneAtBoot: [superChatItemSeedName],
+    };
   }
 
   const storedRules = SlicesSchema.shape.eventRules.parse(rulesRow.json);
@@ -97,25 +98,18 @@ export function loadOrSeedEventInboxSlices(
     );
   }
 
-  const seedsApplied = SeedsAppliedSchema.parse(
-    storedRows.find((row) => row.name === eventInboxSeedsAppliedRowName)?.json ?? [],
-  );
-  if (seedsApplied.includes(superChatItemSeedName)) {
-    return { events, eventRules, ...panelsAndItems, rowsToSaveAtBoot };
+  if (seedNamesDone.includes(superChatItemSeedName)) {
+    return { events, eventRules, ...panelsAndItems, rowsToSaveAtBoot, seedNamesDoneAtBoot: [] };
   }
   // Considered once, whatever comes of it: an operator's own choice is never revisited.
-  rowsToSaveAtBoot.push({
-    name: eventInboxSeedsAppliedRowName,
-    json: [...seedsApplied, superChatItemSeedName],
-    updatedAt,
-  });
+  const seedNamesDoneAtBoot = [superChatItemSeedName];
   const withTheSuperChatItem = addSeededSuperChatItemToAnOlderDatabase(
     eventRules,
     panelsAndItems.quickFirePanels,
     panelsAndItems.items,
   );
   if (withTheSuperChatItem === undefined) {
-    return { events, eventRules, ...panelsAndItems, rowsToSaveAtBoot };
+    return { events, eventRules, ...panelsAndItems, rowsToSaveAtBoot, seedNamesDoneAtBoot };
   }
   // A rules row already queued above is replaced by this later one: the last row wins.
   const rowsWithoutRules = rowsToSaveAtBoot.filter((row) => row.name !== 'eventRules');
@@ -130,5 +124,6 @@ export function loadOrSeedEventInboxSlices(
     quickFirePanels: panelsAndItems.quickFirePanels,
     items: withTheSuperChatItem.items,
     rowsToSaveAtBoot: rowsWithoutRules,
+    seedNamesDoneAtBoot,
   };
 }

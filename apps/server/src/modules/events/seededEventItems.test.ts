@@ -20,7 +20,7 @@
  *     rule naming it, once; one whose operator chose another item, or chose none and kept
  *     the item, keeps that choice; one whose panel "Avisos" was deleted gets nothing; and
  *     an operator who deletes the item and clears the rule never gets it back (gate 2 of
- *     PR #54: the seed is remembered in its own row).
+ *     PR #54: the seed is remembered in seeds_done, as superChatItem).
  *   - A database written before the inbox gets the panel, the items and the rules at its
  *     next boot, its own panels and items kept.
  *   - Once deleted by the operator, the panel and its items stay deleted after a restart.
@@ -133,8 +133,8 @@ function makeTheDatabaseOlderThanSuperChats(databasePath: string): void {
     'items',
     items.filter((item) => item.id !== 'super-chat'),
   );
-  // Nor the row that remembers the seed was considered (gate 2 of PR #54).
-  database.$client.prepare("DELETE FROM slices WHERE name = 'eventInboxSeedsApplied'").run();
+  // Nor the seeds_done row that remembers the seed was considered (gate 2 of PR #54).
+  database.$client.prepare("DELETE FROM seeds_done WHERE name = 'superChatItem'").run();
   database.$client.close();
 }
 
@@ -344,5 +344,26 @@ describe('the seeded "Super Chat" item on a database older than it', () => {
       slices.eventRules.find((rule) => rule.kind === 'superChat')?.itemId,
       'the rule keeps no item',
     ).toBeNull();
+  });
+});
+
+describe('where the "Super Chat" seed is remembered', () => {
+  it('records superChatItem in seeds_done at the first boot', () => {
+    // Arrange: a new database.
+    const inbox = openEventInboxOnTheStore();
+    inbox.shutDown();
+
+    // Act: read the seeds the boot recorded as done.
+    const database = openDatabaseForTests(inbox.databasePath);
+    const seedNamesDone = (
+      database.$client.prepare('SELECT name FROM seeds_done').all() as Array<{ name: string }>
+    ).map((row) => row.name);
+    database.$client.close();
+
+    // Assert: the Super Chat seed is there, beside the channel logo's.
+    expect(
+      seedNamesDone,
+      'the one table of one-off seeds (BAJAOVRLAY-63) remembers the Super Chat item too',
+    ).toContain('superChatItem');
   });
 });

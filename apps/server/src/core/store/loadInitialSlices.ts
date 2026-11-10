@@ -108,9 +108,12 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   // their row is missing; see modules/events/loadEventInboxSlices.ts.
   // Seeding the rules also seeds the "Avisos" panel and its two items, once per database,
   // so the panels and items go through it.
+  // The one-off seeds this database has had (seeds_done): the inbox's and the logo's.
+  const seedNamesDone = readSeedNamesDone(options.database);
   const eventInboxSlices = loadOrSeedEventInboxSlices(
     storedRows,
     { quickFirePanels: quickFireAndMacroSlices.quickFirePanels, items: rundownSlices.items },
+    seedNamesDone,
     updatedAt,
     options.logger,
   );
@@ -118,7 +121,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   // Before the graphics are discovered: the logo bug's manifest names the layer, and a
   // graphic whose default layer is unknown falls back to fullscreen.
   const channelLogoSeed = addChannelLogoLayerAndItemOnce({
-    seedNamesDone: readSeedNamesDone(options.database),
+    seedNamesDone,
     layers: outputAndLayerSlices.layers,
     quickFirePanels: eventInboxSlices.quickFirePanels,
     items: eventInboxSlices.items,
@@ -199,7 +202,10 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     ],
     sliceRowNamesToDelete: dataSourceSlices.sliceRowNamesToDeleteAtBoot,
     dataSnapshotRowChanges: dataSourceSlices.dataSnapshotRowChangesAtBoot,
-    seedNamesDone: channelLogoSeed.isSeedApplied ? [channelLogoSeedName] : [],
+    seedNamesDone: [
+      ...eventInboxSlices.seedNamesDoneAtBoot,
+      ...(channelLogoSeed.isSeedApplied ? [channelLogoSeedName] : []),
+    ],
     bootedAt: updatedAt,
   });
   if (isFirstBoot) {

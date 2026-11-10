@@ -1525,7 +1525,7 @@ and §19 are the authority; PR lines record what an agent chose and João has no
 - 2026-11-08 — PR #54 — The simulator's Super Chats are opt-in ("Simular Super Chats", areSuperChatsSimulated, off when missing) so a rehearsal of the race alone fills no inbox with them.
 - 2026-11-09 — PR #54 — Gate 2 (João): Dados may restore any discarded Super Chat, whoever discarded it, since it only returns to pending and still needs approval; restoring a race event stays the Produtor's.
 - 2026-11-09 — PR #54 — Gate 2 (João): stripping YouTube's emoji codes removes only ":" + lowercase letters, digits, hyphens or underscores + ":", so "placar: 2:1" and "Vai :D" stay as typed.
-- 2026-11-09 — PR #54 — Gate 2: the "Super Chat" item's seed is remembered in a row of its own (eventInboxSeedsApplied) and considered once per database.
+- 2026-11-09 — PR #54 — Gate 2: the "Super Chat" item's seed is considered once per database, recorded as superChatItem in PR #56's seeds_done table (one place for every one-off seed) rather than in a marker row of its own.
 - 2026-11-09 — PR #54 — Gate 2: the YouTube quota file is written to a temporary file, fsynced and renamed over the real one; the folder is not fsynced, since a power cut then brings back at worst the previous count.
 - 2026-11-09 — PR #54 — Gate 2: one chat message the adapter cannot read is skipped and logged instead of failing the page, so the source never stays on the same page.
 - 2026-11-09 — PR #54 — Gate 2: a page token YouTube refuses (HTTP 400) is dropped and the next poll reads the chat from the start, instead of asking for the same page again.
