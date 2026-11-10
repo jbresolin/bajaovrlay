@@ -152,6 +152,11 @@ export const CommandErrorCodeSchema = z.enum([
    */
   'PENALTY_WITHOUT_CAR',
   /**
+   * createManualEvent of a notice with no car but a team or a school (gate 2 of PR #58): a
+   * general notice is about no team, and dropping what was sent would hide the mistake.
+   */
+  'GENERAL_NOTICE_WITH_TEAM',
+  /**
    * createItem, moveItemToHome or updateItemFields would put an event template (an item
    * with an "Evento" field) on a quick-fire panel (BAJAOVRLAY-67): templates live in
    * "Modelos de evento" and go on air only through their event.

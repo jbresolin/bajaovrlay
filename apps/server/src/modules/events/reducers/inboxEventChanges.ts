@@ -62,6 +62,19 @@ export function replaceInboxEvent(events: InboxEvent[], changedEvent: InboxEvent
 }
 
 /**
+ * The slice with one event replaced by its changed copy, moved to the end where the newest
+ * events are. For an event that waits again (a restore): left in its old place, it would be
+ * the next to fall out of a full slice while the operator still has to act on it.
+ */
+export function replaceInboxEventAtTheEnd(
+  events: InboxEvent[],
+  changedEvent: InboxEvent,
+): InboxEvent[] {
+  const otherEvents = events.filter((event) => event.eventId !== changedEvent.eventId);
+  return [...otherEvents, changedEvent];
+}
+
+/**
  * The slice with new events at its end, keeping only the newest `inboxEventsSliceSize`.
  * The event log table keeps every event; the slice is what the page lists and what the
  * inbox checks a new id against.

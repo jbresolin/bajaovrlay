@@ -33,9 +33,23 @@ export const ptBREventErrors = {
     `Este evento não pode ser trazido de volta: ${ptBREventErrors.whatItIsInstead[status]}.`,
   /** createManualEvent of a penalty with no car (BAJAOVRLAY-67). */
   penaltyWithoutCar: 'Uma penalidade é sempre dada a um carro: informe o número do carro.',
+  /** createManualEvent of a notice with no car but a team or a school (gate 2 of PR #58). */
+  generalNoticeWithTeam:
+    'Um aviso geral não tem carro, então não leva equipe nem escola: informe o número do carro ou deixe equipe e escola em branco.',
   /** An event template put on a quick-fire panel (BAJAOVRLAY-67). */
   templateNotOnQuickFire: (itemLabel: string) =>
     `"${itemLabel}" é um modelo de evento e não fica num painel de atalhos: ele entra no ar pela aba Eventos, e sua aparência se escolhe em Regras.`,
+  /**
+   * The boot's warning for a button the template move shifted (BAJAOVRLAY-67): a pad finds
+   * a button by its place, so the same key may now fire another item.
+   */
+  quickFireButtonShiftedByTheTemplateMove: (button: {
+    panelName: string;
+    itemLabel: string;
+    placeBefore: number;
+    placeAfter: number;
+  }) =>
+    `Botão de atalho mudou de lugar: no painel "${button.panelName}", "${button.itemLabel}" era o botão ${button.placeBefore} e agora é o ${button.placeAfter}. Confira as páginas do Companion e do D200 que disparam este painel.`,
   /** restoreEvent of a dismissed event past its rule's maximum wait. */
   /** showEvent, or "Tomar" on a Prévia, of a Super Chat no person approved (BAJAOVRLAY-35). */
   superChatNotApproved: 'Super Chat ainda não aprovado',

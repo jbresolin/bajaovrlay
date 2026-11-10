@@ -16,6 +16,8 @@
  *   - A notice with no car is listed with no car, team or school, waiting.
  *   - A penalty with no car is refused (PENALTY_WITHOUT_CAR), in pt-BR, and nothing is
  *     listed.
+ *   - A notice with no car but a team or a school is refused (GENERAL_NOTICE_WITH_TEAM),
+ *     in pt-BR, rather than the team dropped without a word (gate 2 of PR #58).
  *
  * What these tests deliberately do not cover:
  *   - The rest of a typed event (its id, status and moment); inboxCommandsOnTheStore.test.ts.
@@ -194,4 +196,45 @@ describe('a general notice, about no car', () => {
     });
     expect(inbox.stateStore.readAllSlices().events, 'nothing may be listed').toEqual([]);
   });
+
+  const generalNoticeWithATeamScenarios: Array<{
+    name: string;
+    teamAndSchool: { teamName?: string; schoolName?: string };
+  }> = [
+    // A team with no car: the page hides the team for a general notice, so only another
+    // client (the command API) sends this, and dropping the team would hide its mistake.
+    { name: 'a team', teamAndSchool: { teamName: 'Gralha Azul' } },
+    // The same for a school alone.
+    { name: 'a school', teamAndSchool: { schoolName: 'UFPR' } },
+  ];
+
+  it.each(generalNoticeWithATeamScenarios)(
+    'refuses a general notice sent with $name, saying why, and lists nothing',
+    ({ teamAndSchool }) => {
+      // Arrange: an inbox with nothing in it.
+      const inbox = openInboxWithCadastros([], false);
+
+      // Act: a notice with no car but with a team or a school.
+      const outcome = inbox.stateStore.applyCommand(
+        {
+          type: 'createManualEvent',
+          noticeKind: 'notice',
+          reason: 'Largada adiada em 15 minutos',
+          ...teamAndSchool,
+        },
+        operatorActor,
+      );
+
+      // Assert: refused in pt-BR rather than the team silently dropped.
+      expect(outcome, 'a general notice with a team must be refused, saying why').toEqual({
+        ok: false,
+        error: {
+          code: 'GENERAL_NOTICE_WITH_TEAM',
+          message:
+            'Um aviso geral não tem carro, então não leva equipe nem escola: informe o número do carro ou deixe equipe e escola em branco.',
+        },
+      });
+      expect(inbox.stateStore.readAllSlices().events, 'nothing may be listed').toEqual([]);
+    },
+  );
 });

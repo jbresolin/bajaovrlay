@@ -107,14 +107,14 @@ export function ManualEventDialog(props: { onClose: () => void }) {
           <DialogDescription>{texts.description}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-1">
-          <Label>{texts.kindLabel}</Label>
+          <Label htmlFor="manual-event-kind">{texts.kindLabel}</Label>
           <Select
             value={values.noticeKind}
             onValueChange={(noticeKind) =>
               setValues({ ...values, noticeKind: noticeKind === 'notice' ? 'notice' : 'penalty' })
             }
           >
-            <SelectTrigger className="w-full" aria-label={texts.kindLabel}>
+            <SelectTrigger id="manual-event-kind" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -124,7 +124,8 @@ export function ManualEventDialog(props: { onClose: () => void }) {
           </Select>
         </div>
         <div className="flex flex-col gap-1">
-          <Label>{texts.teamListLabel}</Label>
+          {/* Names the team list; the search box above it has a name of its own. */}
+          <Label htmlFor="manual-event-team-list">{texts.teamListLabel}</Label>
           {areThereTeams ? (
             <Input
               aria-label={texts.teamSearchLabel}
@@ -140,7 +141,7 @@ export function ManualEventDialog(props: { onClose: () => void }) {
             value={values.teamChoice}
             onValueChange={(choice) => setValues(chooseTeamInForm(values, choice, teams))}
           >
-            <SelectTrigger className="w-full" aria-label={texts.teamListLabel}>
+            <SelectTrigger id="manual-event-team-list" className="w-full">
               <SelectValue placeholder={texts.teamListPlaceholder} />
             </SelectTrigger>
             <SelectContent>

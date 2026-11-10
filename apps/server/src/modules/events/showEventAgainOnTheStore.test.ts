@@ -7,7 +7,8 @@
  *   shown or expired event back to wait for the operator, who puts it on air with "No ar"
  *   or "Prévia". It never goes on air by itself, whatever its rule says. A Super Chat that
  *   a person had approved comes back approved, ready for "No ar"; one that was discarded,
- *   or never approved, comes back waiting for approval again. Each restore is recorded on
+ *   or never approved since its latest discard, comes back waiting for approval again (a
+ *   discard takes back an approval made before it). Each restore is recorded on
  *   the event, and the rule's maximum wait is measured from the latest one, so a fastest
  *   lap brought back ten minutes later does not expire the moment "No ar" is pressed.
  *
@@ -114,6 +115,22 @@ const showAgainScenarios: ShowAgainScenario[] = [
     actor: producerActor,
     expectedOutcome: 'ok',
     expectedStatus: 'approved',
+  },
+  // Approved, then discarded: the discard undoes that approval. Brought back, it expired
+  // waiting for a new one, so "Mostrar de novo" must not revive the approval from before
+  // the discard (gate 2 of PR #58).
+  {
+    name: 'the Produtor brings back a Super Chat approved, discarded, restored and expired, awaiting approval',
+    kind: 'superChat',
+    prepare: (inbox) => {
+      applyOrThrow(inbox.stateStore, { type: 'approveEvent', eventId: eventIdOfKind.superChat });
+      applyOrThrow(inbox.stateStore, { type: 'dismissEvent', eventId: eventIdOfKind.superChat });
+      applyOrThrow(inbox.stateStore, { type: 'restoreEvent', eventId: eventIdOfKind.superChat });
+      letExpire(inbox, 'superChat', false);
+    },
+    actor: producerActor,
+    expectedOutcome: 'ok',
+    expectedStatus: 'pending',
   },
   // Never approved: nothing a viewer wrote may skip a person's approval.
   {

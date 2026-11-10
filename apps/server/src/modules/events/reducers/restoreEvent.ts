@@ -12,7 +12,7 @@ import {
   findRuleOfKind,
   readMomentMs,
   readMomentTheWaitCountsFrom,
-  replaceInboxEvent,
+  replaceInboxEventAtTheEnd,
 } from './inboxEventChanges.js';
 
 /** The statuses an event can be brought back from. */
@@ -75,17 +75,29 @@ export function reduceRestoreEvent(
   };
   return {
     status: 'applied',
-    slices: { ...slices, events: replaceInboxEvent(slices.events, restoredEvent) },
+    // Moved to the end of the slice: it waits again, so it must not be the next event a
+    // full slice drops (gate 2 of PR #58). The waiting list then shows it first.
+    slices: { ...slices, events: replaceInboxEventAtTheEnd(slices.events, restoredEvent) },
   };
 }
 
 /**
- * Where a restored event lands: approved for a Super Chat a person had approved and that
- * was not discarded since (shown, or expired after approval), pending for everything else.
+ * Where a restored event lands: approved for a Super Chat a person approved after its
+ * latest discard and that is not discarded now (shown, or expired after approval), pending
+ * for everything else. An approval from before a discard does not count: the discard took
+ * it back (gate 2 of PR #58).
  */
 function chooseStatusOfRestoredEvent(event: InboxEvent): InboxEventStatus {
-  const wasApprovedBefore = event.statusChanges.some((change) => change.status === 'approved');
-  const isAnApprovedSuperChatNotDiscarded =
-    event.kind === 'superChat' && wasApprovedBefore && event.status !== 'dismissed';
-  return isAnApprovedSuperChatNotDiscarded ? 'approved' : 'pending';
+  if (event.kind !== 'superChat' || event.status === 'dismissed') {
+    return 'pending';
+  }
+  const changesInOrder = event.statusChanges;
+  const placeOfLatestDiscard = changesInOrder.findLastIndex(
+    (change) => change.status === 'dismissed',
+  );
+  const changesSinceTheLatestDiscard = changesInOrder.slice(placeOfLatestDiscard + 1);
+  const wasApprovedSinceTheLatestDiscard = changesSinceTheLatestDiscard.some(
+    (change) => change.status === 'approved',
+  );
+  return wasApprovedSinceTheLatestDiscard ? 'approved' : 'pending';
 }

@@ -8,6 +8,7 @@ import {
 
 import type { SliceRow } from '../../core/db/tables.js';
 import type { ServerLogger } from '../../core/logger/createLogger.js';
+import { ptBR } from '../../core/messages/ptBR.js';
 import {
   eventTemplatesOffQuickFireSeedName,
   moveEventTemplatesOffQuickFire,
@@ -133,6 +134,21 @@ export function loadOrSeedEventInboxSlices(
         { panels_after: quickFirePanels.map((panel) => panel.id) },
         'moved the event templates off the quick-fire panels into "Modelos de evento"',
       );
+      // A pad finds a button by its place: the move cannot fix the pads, so it says which
+      // buttons moved, in pt-BR, for the operator to check (gate 2 of PR #58).
+      for (const button of moveOutcome.buttonsShifted) {
+        logger.warn(
+          {
+            shifted_button: {
+              panel_id: button.panelId,
+              item_id: button.itemId,
+              place_before: button.placeBefore,
+              place_after: button.placeAfter,
+            },
+          },
+          ptBR.eventErrors.quickFireButtonShiftedByTheTemplateMove(button),
+        );
+      }
     }
   }
 

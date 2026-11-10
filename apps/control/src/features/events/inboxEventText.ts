@@ -5,9 +5,23 @@
  */
 import type { DataSource, InboxEvent } from '@bajaovrlay/shared';
 
+import { formatRelativeTimePtBR } from '@/i18n/formatRelativeTimePtBR';
 import { ptBR } from '@/i18n/ptBR';
 
 const texts = ptBR.events;
+
+/**
+ * How long a waiting event has waited: "há 5 min" from its detection, or, once brought
+ * back, "trazido de volta há 3 min" from its latest restore, the moment the server's
+ * maximum wait counts from too.
+ */
+export function describeHowLongTheEventHasWaited(event: InboxEvent, now: Date): string {
+  const latestRestoreMs = event.restoresAtMs?.at(-1);
+  if (latestRestoreMs === undefined) {
+    return formatRelativeTimePtBR(new Date(event.detectedAtMs), now);
+  }
+  return texts.broughtBackAgo(formatRelativeTimePtBR(new Date(latestRestoreMs), now));
+}
 
 /**
  * What an event is, in a word: an incident or a typed event by what its notice says

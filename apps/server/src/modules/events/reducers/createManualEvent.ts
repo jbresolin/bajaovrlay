@@ -17,12 +17,14 @@ import {
  * createManualEvent ("+ Evento"): lists an event the operator typed, a penalty or a
  * notice about one car, or a notice about no car (a general notice, BAJAOVRLAY-67), with
  * no source, dated now, pending (or queued when the manual rule says auto). Its id is
- * `manual:<id the store made>`. A team or school left blank is read from the first source
- * (in the sources' order) whose positions list the car, and, when no source does, from
- * Cadastros (the teams of the entity library, BAJAOVRLAY-67): the source wins, since it is
- * what the timing screen shows on the day. When neither knows the car, they stay out and
- * the notice shows the car alone. What the operator typed always wins over both.
- * Refused: a penalty with no car (PENALTY_WITHOUT_CAR): a penalty is always given to one.
+ * `manual:<id the store made>`. The page fills team and school from Cadastros and sends
+ * them as typed, so what goes on air is what the operator saw in the form. A team or school
+ * the command leaves out (the command API, a car Cadastros does not know) is read from the
+ * first source (in the sources' order) whose positions list the car, and, when no source
+ * does, from Cadastros (BAJAOVRLAY-67). When neither knows the car, they stay out and the
+ * notice shows the car alone. What the command carries always wins over both.
+ * Refused: a penalty with no car (PENALTY_WITHOUT_CAR): a penalty is always given to one;
+ * and a notice with no car but a team or school (GENERAL_NOTICE_WITH_TEAM).
  */
 export function reduceCreateManualEvent(
   slices: SlicesChangedByCommands,
@@ -34,6 +36,15 @@ export function reduceCreateManualEvent(
     return {
       status: 'refused',
       error: { code: 'PENALTY_WITHOUT_CAR', message: ptBR.eventErrors.penaltyWithoutCar },
+    };
+  }
+  const isATeamOrSchoolSent = command.teamName !== undefined || command.schoolName !== undefined;
+  if (carNumber === undefined && isATeamOrSchoolSent) {
+    // The page hides team and school for a general notice; another client sending them
+    // is told, rather than having them dropped without a word (gate 2 of PR #58).
+    return {
+      status: 'refused',
+      error: { code: 'GENERAL_NOTICE_WITH_TEAM', message: ptBR.eventErrors.generalNoticeWithTeam },
     };
   }
   const nowMs = readMomentMs(context.now);

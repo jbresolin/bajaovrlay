@@ -25,6 +25,11 @@ export const ptBREvents = {
     count === 1 ? '1 evento esperando' : `${String(count)} eventos esperando`,
   waitingListLabel: 'Eventos esperando',
   nothingWaiting: 'Nenhum evento esperando.',
+  /**
+   * A waiting row's age after "Restaurar" or "Mostrar de novo" (gate 2 of PR #58), read
+   * with the relative time from the latest restore: "trazido de volta há 3 min".
+   */
+  broughtBackAgo: (relativeTime: string) => `trazido de volta ${relativeTime}`,
   /** The console tab's way to the review page, which opens in a new tab. */
   openReviewPageLink: 'Abrir a página de eventos',
   addEventButton: '+ Evento',
