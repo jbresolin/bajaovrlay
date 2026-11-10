@@ -11,7 +11,8 @@
  *
  * What these tests prove:
  *   - On each stage, a short and a long general notice draw like their baselines.
- *   - No chip and no team are drawn, and the card is head and one text row: 104 px.
+ *   - No chip and no team are drawn, and the card is the head and the text row only (the
+ *     text row is as tall as its text, as on a penalty).
  *
  * What these tests deliberately do not cover:
  *   - Which parts the writer hides; noticeView.test.ts.
@@ -66,11 +67,18 @@ for (const stage of ['grey', 'black'] as const) {
         // Assert: no chip and no team; the card head and one row; the look pinned.
         await expect(page.getByTestId('notice-car-number'), 'no car, no chip').toBeHidden();
         await expect(page.getByTestId('notice-team'), 'no team, no team line').toBeHidden();
-        const cardPlace = await page.getByTestId('notice-panel').boundingBox();
-        expect(cardPlace?.height, 'the card must be head and one text row, 104 px').toBe(104);
-        await expect(page, `the general notice must look like its baseline on ${stage}`).toHaveScreenshot(
-          `notice-aviso-geral-${slug}-${stage}.png`,
-        );
+        const cardHeight = (await page.getByTestId('notice-panel').boundingBox())?.height ?? 0;
+        const headHeight = (await page.locator('header.head').boundingBox())?.height ?? 0;
+        const textRowHeight =
+          (await page.getByTestId('notice-reason-row').boundingBox())?.height ?? 0;
+        expect(
+          cardHeight,
+          'the card must be the head and the text row only, with no car row between',
+        ).toBeCloseTo(headHeight + textRowHeight, 1);
+        await expect(
+          page,
+          `the general notice must look like its baseline on ${stage}`,
+        ).toHaveScreenshot(`notice-aviso-geral-${slug}-${stage}.png`);
       });
     }
   });
