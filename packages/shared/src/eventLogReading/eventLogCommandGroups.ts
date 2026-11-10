@@ -57,6 +57,9 @@ export const commandGroupOfEachCommandType: Record<Command['type'], EventLogComm
   // A trigger's firing starts its macro, or waits for "Rodar", which does (BAJAOVRLAY-48).
   fireTrigger: 'takesAndClears',
   runTriggerFiring: 'takesAndClears',
+  // The match bug on air follows "agora" of a Super Prime (BAJAOVRLAY-65): like a take.
+  setBracketMatchFocus: 'takesAndClears',
+  acceptSuggestedBracketMatches: 'takesAndClears',
   previewItem: 'previews',
   stopPreview: 'previews',
   previewClearLayer: 'previews',

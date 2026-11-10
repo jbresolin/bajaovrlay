@@ -85,6 +85,7 @@ function buildRaceDayStateWithTheClockOnAir() {
     instanceBindings: [],
     programHistory: [],
     overrides: [],
+    bracketMatchFocuses: [],
     eventLog: [
       {
         id: 1,
@@ -312,6 +313,7 @@ describe('SliceNameSchema', () => {
       'dataSources',
       'dataSnapshots',
       'overrides',
+      'bracketMatchFocuses',
       'recordings',
       'events',
       'eventRules',
@@ -327,7 +329,7 @@ describe('SliceNameSchema', () => {
     const everySliceName = SliceNameSchema.options;
 
     // Assert: exactly these, in this order.
-    expect(everySliceName, 'the slice names must be these twenty-eight, in this order').toEqual(
+    expect(everySliceName, 'the slice names must be these twenty-nine, in this order').toEqual(
       expectedSliceNames,
     );
   });

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { InstanceBindingsSchema } from '../bindings/instanceBindings.js';
+import { BracketMatchFocusesSchema } from '../bracketMatchFocus/bracketMatchFocus.js';
 import { DataSnapshotSchema } from '../dataSources/dataSnapshot.js';
 import { DataSourceSchema } from '../dataSources/dataSource.js';
 import { RecordingSchema } from '../dataSources/recording.js';
@@ -50,6 +51,7 @@ export const SliceNameSchema = z.enum([
   'dataSources',
   'dataSnapshots',
   'overrides',
+  'bracketMatchFocuses',
   'recordings',
   'events',
   'eventRules',
@@ -142,6 +144,12 @@ export const SlicesSchema = z.object({
    * until it is cleared. Saved; screens never receive it.
    */
   overrides: OverridesSchema,
+  /**
+   * Which match of each source's Super Prime is "agora" and which "a seguir"
+   * (BAJAOVRLAY-65), the operator's choice; the bindings of the match bug and the card read
+   * it. Saved; screens never receive it.
+   */
+  bracketMatchFocuses: BracketMatchFocusesSchema,
   /**
    * The recorded feeds a replay can play. Kept in the server's memory only and rebuilt
    * from the recordings folder at boot.

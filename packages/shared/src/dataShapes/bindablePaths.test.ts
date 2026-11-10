@@ -286,21 +286,56 @@ describe('listBindablePathsOfShape', () => {
     });
   });
 
-  it('offers only the whole list of rounds of the brackets shape', () => {
+  it('offers the whole list of rounds of the brackets shape first', () => {
     // Arrange: nothing to set up; the list is fixed in code.
 
     // Act: ask for the brackets paths.
     const bracketsPaths = listBindablePathsOfShape('brackets');
 
-    // Assert: one path: the graphic draws the whole bracket (BAJAOVRLAY-25).
-    expect(bracketsPaths, 'brackets must offer only the rounds').toEqual([
-      {
-        path: 'rounds',
-        label: 'Chaves › Todas as fases',
-        valueType: 'bracketsRounds',
-        isCarChosenByNumber: false,
-      },
-    ]);
+    // Assert: the rounds come first: the bracket graphic draws them all (BAJAOVRLAY-25).
+    expect(bracketsPaths[0], 'brackets must offer the rounds first').toEqual({
+      path: 'rounds',
+      label: 'Chaves › Todas as fases',
+      valueType: 'bracketsRounds',
+      isCarChosenByNumber: false,
+    });
+  });
+
+  it('offers the match "agora" and the match "a seguir" field by field after the rounds', () => {
+    // Arrange: nothing to set up; the list is fixed in code.
+
+    // Act: ask for the brackets paths, and keep those of the match focus.
+    const focusPaths = listBindablePathsOfShape('brackets').filter(
+      (bindablePath) => bindablePath.bracketMatchSlot !== undefined,
+    );
+
+    // Assert: two slots of 4 match fields and 2 cars of 10 fields each (BAJAOVRLAY-65),
+    // "agora" first, each path labelled with its slot and its car.
+    expect(focusPaths, 'each slot must offer 4 + 2 × 10 paths').toHaveLength(48);
+    expect(focusPaths[0], 'the first must be the round of the match "agora"').toEqual({
+      path: 'matchNow.roundName',
+      label: 'Chaves › Partida agora › Fase',
+      valueType: 'text',
+      isCarChosenByNumber: false,
+      bracketMatchSlot: 'current',
+    });
+    expect(
+      focusPaths.find((bindablePath) => bindablePath.path === 'matchNow.carA.shortName'),
+      'the short name of the match bug\'s first car must be offered',
+    ).toEqual({
+      path: 'matchNow.carA.shortName',
+      label: 'Chaves › Partida agora › Carro A › Nome curto',
+      valueType: 'text',
+      isCarChosenByNumber: false,
+      bracketMatchSlot: 'current',
+    });
+    expect(focusPaths.at(-1), 'the last must be the time of the second car "a seguir"').toEqual({
+      path: 'matchUpNext.carB.timeMs',
+      label: 'Chaves › Partida a seguir › Carro B › Tempo',
+      valueType: 'integer',
+      isCarChosenByNumber: false,
+      bracketMatchSlot: 'upNext',
+    });
   });
 
   const everyShapeScenarios: Array<{ name: string; shapeKey: DataShapeKey }> = [
@@ -310,7 +345,7 @@ describe('listBindablePathsOfShape', () => {
     { name: 'the positions', shapeKey: 'positions' },
     // The scope and the whole list sit before the rows and must not be repeated by them.
     { name: 'the standings', shapeKey: 'standings' },
-    // A single path (the whole rounds); this row keeps it honest if one is ever added.
+    // The rounds, then the two slots of the match focus, which must not repeat each other.
     { name: 'the brackets', shapeKey: 'brackets' },
     // A single path too; this row keeps it honest when a penalty board needs more.
     { name: 'the incidents', shapeKey: 'incidents' },

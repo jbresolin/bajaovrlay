@@ -87,6 +87,11 @@ export const whoMaySendEachCommandType: Record<Command['type'], WhoMaySendAComma
   refreshBoundInstanceData: onlyTheServer,
   setOverride: bothRoles,
   clearOverride: bothRoles,
+  // "agora" and "a seguir" of a Super Prime (BAJAOVRLAY-65): choosing is preparation, but
+  // the match bug on air follows "agora" at once, so changing it changes program. Kept the
+  // Produtor's, as the brief asked when unsure; Dados sees the focus but cannot move it.
+  setBracketMatchFocus: theProducerOnly,
+  acceptSuggestedBracketMatches: theProducerOnly,
   showEvent: theProducerOnly,
   // A Super Chat's moderation (BAJAOVRLAY-35): Dados reads the chat. Dados may dismiss a
   // Super Chat, and restore one (it only waits again, gate 2 of PR #54), and nothing else;
