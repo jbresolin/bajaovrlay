@@ -1,10 +1,13 @@
 import { z } from 'zod';
 
-import { DetectedEventSchema } from './inboxEvent.js';
+import { checkCarNumberForKind, DetectedEventFieldsSchema } from './inboxEvent.js';
 
 /**
  * Where an event stands in the inbox:
- * - `pending`: waiting for the operator (its rule says "ask");
+ * - `pending`: waiting for the operator (its rule says "ask"); a Super Chat waits here
+ *   for Dados (or the Produtor) to approve it;
+ * - `approved`: a Super Chat a person approved (BAJAOVRLAY-35), waiting for the
+ *   Produtor's "No ar"; no other kind is ever approved;
  * - `queued`: waiting for the automatic runner (its rule says "auto"), until its layer is
  *   free;
  * - `onAir`: an instance carrying its id is on the program output;
@@ -14,6 +17,7 @@ import { DetectedEventSchema } from './inboxEvent.js';
  */
 export const InboxEventStatusSchema = z.enum([
   'pending',
+  'approved',
   'queued',
   'onAir',
   'shown',
@@ -38,11 +42,11 @@ export type InboxEventStatusChange = z.infer<typeof InboxEventStatusChangeSchema
  * status with its moment (the first one is its arrival), and the instance showing it while
  * it is on air.
  */
-export const InboxEventSchema = DetectedEventSchema.extend({
+export const InboxEventSchema = DetectedEventFieldsSchema.extend({
   status: InboxEventStatusSchema,
   statusChanges: z.array(InboxEventStatusChangeSchema).min(1),
   instanceId: z.string().min(1).optional(),
-});
+}).superRefine((event, context) => checkCarNumberForKind(event, context));
 
 /** One inbox event after validation. */
 export type InboxEvent = z.infer<typeof InboxEventSchema>;

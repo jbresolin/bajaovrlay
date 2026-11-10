@@ -4,7 +4,8 @@ import { ptBR } from '@/i18n/ptBR';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
 import { listEventsDismissedJustNow } from './inboxEventLists';
-import { describeKindOfEvent } from './inboxEventText';
+import { describeKindOfEvent, describeSubjectOfEvent } from './inboxEventText';
+import { useWhyTheDataRoleMayNotTriage } from './whyTheDataRoleMayNotTriage';
 
 const texts = ptBR.events;
 
@@ -25,6 +26,7 @@ export function RecentlyDismissedEvents() {
   // own clock is off by seconds would otherwise close the window early or keep it open.
   const nowMs = useServerAlignedTimeMs(windowCheckIntervalMs);
 
+  const findWhyTheDataRoleMayNotTriage = useWhyTheDataRoleMayNotTriage();
   const dismissedJustNow = listEventsDismissedJustNow(events, nowMs);
   if (dismissedJustNow.length === 0) {
     return null;
@@ -35,11 +37,12 @@ export function RecentlyDismissedEvents() {
       {dismissedJustNow.map((event) => (
         <li key={event.eventId} className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>
-            {texts.recentlyDismissedText(describeKindOfEvent(event), event.payload.carNumber)}
+            {texts.recentlyDismissedText(describeKindOfEvent(event), describeSubjectOfEvent(event))}
           </span>
           <span>{texts.statusWords.dismissed}</span>
           <ActionButton
             commandType="restoreEvent"
+            disabledReason={findWhyTheDataRoleMayNotTriage(event)}
             size="xs"
             variant="outline"
             className="ml-auto"

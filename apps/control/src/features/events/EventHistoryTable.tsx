@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ActionButton } from '@/features/connection/ActionButton';
+import { useWhyTheDataRoleMayNotTriage } from '@/features/events/whyTheDataRoleMayNotTriage';
 import { ptBR } from '@/i18n/ptBR';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
@@ -70,6 +71,7 @@ export function EventHistoryTable() {
   const events = useServerState((state) => state.events);
   const dataSources = useServerState((state) => state.dataSources);
   const sendCommand = useSendCommand();
+  const findWhyTheDataRoleMayNotTriage = useWhyTheDataRoleMayNotTriage();
   const [searchText, setSearchText] = useState('');
   const [sort, setSort] = useState<HistorySort>(newestFirstSort);
 
@@ -125,6 +127,7 @@ export function EventHistoryTable() {
                   {event.status === 'dismissed' ? (
                     <ActionButton
                       commandType="restoreEvent"
+                      disabledReason={findWhyTheDataRoleMayNotTriage(event)}
                       size="xs"
                       variant="outline"
                       onClick={() =>

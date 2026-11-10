@@ -1,6 +1,8 @@
 // Starting and stopping the data-source machinery with the server: the poller (which
 // asks every source that is on for data) and the recorder (which writes the data of a
 // recording source to its file).
+import { join } from 'node:path';
+
 import type { ServerLogger } from '../../core/logger/createLogger.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
 import { createDataSourceAdapters } from './adapters/createDataSourceAdapters.js';
@@ -8,6 +10,7 @@ import {
   type SourceHostAllowlist,
   warnWhenNoSourceHostAllowlistIsSet,
 } from './adapters/httpJson/sourceHostAllowlist.js';
+import { youTubeQuotaLedgerFileName } from './adapters/youtubeLiveChat/youTubeQuotaLedger.js';
 import { startDataSourcePoller } from './poller.js';
 import { startDataSourceRecorder } from './recorder.js';
 import { buildRecordingsFolderPath } from './recordingsFromFolder.js';
@@ -41,7 +44,12 @@ export function startDataSourceService(options: DataSourceServiceOptions): DataS
   const poller = startDataSourcePoller({
     stateStore,
     logger,
-    adapters: createDataSourceAdapters({ recordingsFolder, logger, sourceHostAllowlist }),
+    adapters: createDataSourceAdapters({
+      recordingsFolder,
+      logger,
+      sourceHostAllowlist,
+      youTubeQuotaLedgerPath: join(dataFolder, youTubeQuotaLedgerFileName),
+    }),
   });
   logger.info({ data_folder: dataFolder }, 'data source service started');
 

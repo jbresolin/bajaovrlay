@@ -38,8 +38,9 @@ import {
 } from './eventInboxOnTheStore.testSupport.js';
 
 /**
- * João's defaults, with the two seeded notice items: "Penalidade" for incidents and
- * manual events, "Volta mais rápida" for fastest laps (seededEventItems.test.ts).
+ * João's defaults, with the three seeded notice items: "Penalidade" for incidents and
+ * manual events, "Volta mais rápida" for fastest laps, "Super Chat" for Super Chats
+ * (seededEventItems.test.ts).
  */
 const seededRules: EventRule[] = [
   { kind: 'newIncident', mode: 'ask', itemId: 'penalidade', durationMs: 10_000, maxAgeMs: null },
@@ -52,7 +53,7 @@ const seededRules: EventRule[] = [
   },
   { kind: 'leaderChanged', mode: 'ignore', itemId: null, durationMs: 6_000, maxAgeMs: 120_000 },
   { kind: 'manual', mode: 'ask', itemId: 'penalidade', durationMs: 10_000, maxAgeMs: null },
-  { kind: 'superChat', mode: 'ask', itemId: null, durationMs: 15_000, maxAgeMs: null },
+  { kind: 'superChat', mode: 'ask', itemId: 'super-chat', durationMs: 15_000, maxAgeMs: null },
 ];
 
 describe('the seeded event rules', () => {

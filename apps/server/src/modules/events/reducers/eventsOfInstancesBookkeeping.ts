@@ -1,14 +1,14 @@
 import type { Instance } from '@bajaovrlay/shared';
 
 import type { SlicesChangedByCommands } from '../../../core/store/reducers/reducerTypes.js';
-import { changeStatusOfEvent, readMomentMs } from './inboxEventChanges.js';
+import { changeStatusOfEvent, isEventWaiting, readMomentMs } from './inboxEventChanges.js';
 
 /**
  * Keeps the inbox in step with the program output, after any command that changed the
  * instances (core's reduceCommand calls it, in that one place, as it drops the bindings
  * of instances gone). The one rule: an event is on air while a program instance carries
  * its id, and shown once that instance has left.
- * - A waiting event (pending or queued) whose id a program instance carries becomes
+ * - A waiting event (pending, approved or queued) whose id a program instance carries becomes
  *   onAir, naming that instance: showEvent's take, or "Tomar" on a previewed event.
  * - An onAir event whose instance is no longer on the program output becomes shown: a
  *   clear, the auto-out, a replace by another take. One replaced by another instance of the
@@ -31,7 +31,7 @@ export function followEventsOfProgramInstances(
 
   let hasAnyEventChanged = false;
   const eventsAfter = slices.events.map((event) => {
-    const isWaiting = event.status === 'pending' || event.status === 'queued';
+    const isWaiting = isEventWaiting(event);
     const instanceIdShowingIt = programInstanceIdByEventId.get(event.eventId);
     // Its notice replaced by another of the same event (its preview taken over it): still
     // on air, now with the new instance (gate 2 of PR #22).

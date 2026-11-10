@@ -5,6 +5,7 @@ import { IncidentsShapeSchema } from '../dataShapes/incidentsShape.js';
 import { PositionsShapeSchema } from '../dataShapes/positionsShape.js';
 import { SessionShapeSchema } from '../dataShapes/sessionShape.js';
 import { StandingsShapeSchema } from '../dataShapes/standingsShape.js';
+import { SuperChatsShapeSchema } from '../dataShapes/superChatsShape.js';
 
 /** The canonical shapes one good poll produced; a source produces only some of them. */
 export const DataSnapshotShapesSchema = z.object({
@@ -13,6 +14,7 @@ export const DataSnapshotShapesSchema = z.object({
   standings: StandingsShapeSchema.optional(),
   brackets: BracketsShapeSchema.optional(),
   incidents: IncidentsShapeSchema.optional(),
+  superChats: SuperChatsShapeSchema.optional(),
 });
 
 /** The shapes of a snapshot, each one valid. */

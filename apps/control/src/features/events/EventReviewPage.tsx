@@ -44,7 +44,7 @@ export function EventReviewPage() {
       <section className="flex max-w-3xl flex-col gap-2">
         <h3 className="text-sm font-semibold">{texts.reviewPage.waitingHeading}</h3>
         <WaitingTriggerFirings />
-        <WaitingEventsList />
+        <WaitingEventsList isOnTheReviewPage />
       </section>
 
       <section className="flex flex-col gap-2">
@@ -56,6 +56,7 @@ export function EventReviewPage() {
         commandTypes={[
           'previewItem',
           'showEvent',
+          'approveEvent',
           'dismissEvent',
           'restoreEvent',
           'runTriggerFiring',

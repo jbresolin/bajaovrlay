@@ -8,6 +8,7 @@ import { ptBROutputs } from './ptBROutputs.js';
 import { ptBRProgramHistoryErrors } from './ptBRProgramHistory.js';
 import { ptBRServerClock } from './ptBRServerClock.js';
 import { ptBRTriggers } from './ptBRTriggers.js';
+import { ptBRYouTube } from './ptBRYouTube.js';
 
 /**
  * pt-BR catalog for every message the server sends to people (error answers the
@@ -144,6 +145,8 @@ export const ptBR = {
   obs: ptBRObs,
   // Triggers: refusals, and why one did not fire (BAJAOVRLAY-48); see ptBRTriggers.ts.
   triggers: ptBRTriggers,
+  // The YouTube live chat source's poll errors (BAJAOVRLAY-35); see ptBRYouTube.ts.
+  youTube: ptBRYouTube,
   // The operator login (BAJAOVRLAY-29): PINs, the lockout, a missing session.
   operatorLoginErrors: ptBROperatorLoginErrors,
   // "Acertar relógio agora" when it could not set the clock (BAJAOVRLAY-62).

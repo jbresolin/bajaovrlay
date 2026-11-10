@@ -10,8 +10,8 @@
  *   only through an event.
  *
  * What these tests prove:
- *   - "Evento" is offered on the race clock's title (a text), with the six text fields of
- *     an event and no number; it is not offered on the running switch (no payload field
+ *   - "Evento" is offered on the race clock's title (a text), with the nine text fields of
+ *     an event (the last three a Super Chat's, BAJAOVRLAY-35) and no number; it is not offered on the running switch (no payload field
  *     is a yes or no).
  *   - Saving stores the title as an event field reading the team.
  *   - Saving "Evento" with no payload field chosen is refused on the page, naming the
@@ -74,7 +74,8 @@ describe('"Evento" in the kind selector of the item editor', () => {
     chooseOptionInDropdown('Como preencher Título', 'Evento');
     const payloadFieldsOffered = readOptionsOfDropdown('O que Título lê do evento');
 
-    // Assert: "Evento" is among the kinds, and only the six text fields are offered.
+    // Assert: "Evento" is among the kinds, and only the nine text fields are offered, a
+    // Super Chat's three among them.
     expect(kindsOfTheTitle, 'a text field may be filled by an event').toContain('Evento');
     expect(payloadFieldsOffered, 'only the text fields of an event fit a text').toEqual([
       'Equipe',
@@ -83,6 +84,9 @@ describe('"Evento" in the kind selector of the item editor', () => {
       'Motivo',
       'Punição',
       'Tempo da volta (texto)',
+      'Autor (Super Chat)',
+      'Valor (Super Chat)',
+      'Mensagem (Super Chat)',
     ]);
   });
 

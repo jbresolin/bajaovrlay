@@ -4,6 +4,7 @@ import {
   type DataSnapshotShapes,
   type DataSource,
   type RecordDataSourcePollCommand,
+  type YouTubeQuotaUsage,
 } from '@bajaovrlay/shared';
 
 import { ptBR } from '../../../core/messages/ptBR.js';
@@ -33,6 +34,8 @@ import { validatePolledShapes } from '../polledShapesValidation.js';
  *   same slices come back, so nothing is saved, logged or broadcast (D7). Its timestamps
  *   are therefore not written either: the poller judges freshness by time from its own
  *   memory of the last good poll, never from lastOkAtMs, so a quiet source never looks late.
+ * - A YouTube source's poll carries the key's quota spent today (BAJAOVRLAY-35), kept on
+ *   the status good or failed; a repeat whose quota moved changes the status only.
  * The outcome is left out of the event log when the source's health did not change (D11).
  */
 export function reduceRecordDataSourcePoll(
@@ -45,6 +48,7 @@ export function reduceRecordDataSourcePoll(
   }
 
   const pollResult = command.result;
+  const sourceWithItsQuota = keepTheQuotaOnTheStatus(source, pollResult.youTubeQuota);
   if (!pollResult.ok) {
     // An adapter that threw an Error with no message still fails the poll; the operator
     // reads a sentence instead of an empty tooltip.
@@ -52,13 +56,38 @@ export function reduceRecordDataSourcePoll(
     const error = isReasonMissing
       ? ptBR.dataSourceErrors.failedPollWithoutReason
       : pollResult.error;
-    return recordFailedPoll(slices, source, error, pollResult.attemptedAtMs);
+    return recordFailedPoll(slices, sourceWithItsQuota, error, pollResult.attemptedAtMs);
   }
   const shapesValidation = validatePolledShapes(pollResult.shapes);
   if (!shapesValidation.isValid) {
-    return recordFailedPoll(slices, source, shapesValidation.errorMessage, pollResult.receivedAtMs);
+    return recordFailedPoll(
+      slices,
+      sourceWithItsQuota,
+      shapesValidation.errorMessage,
+      pollResult.receivedAtMs,
+    );
   }
-  return recordGoodPoll(slices, source, shapesValidation.shapes, pollResult.receivedAtMs);
+  return recordGoodPoll(
+    slices,
+    sourceWithItsQuota,
+    shapesValidation.shapes,
+    pollResult.receivedAtMs,
+  );
+}
+
+/**
+ * The source with the poll's quota on its status, or the source itself when the poll
+ * carried none (every kind but YouTube) or the same one: an unchanged source stays the
+ * same object, so a repeat poll is still a no-op.
+ */
+function keepTheQuotaOnTheStatus(
+  source: DataSource,
+  youTubeQuota: YouTubeQuotaUsage | undefined,
+): DataSource {
+  if (youTubeQuota === undefined || areJsonValuesEqual(source.status.youTubeQuota, youTubeQuota)) {
+    return source;
+  }
+  return { ...source, status: { ...source.status, youTubeQuota } };
 }
 
 /** The outcome of a good poll with valid shapes; see reduceRecordDataSourcePoll. */
@@ -74,7 +103,16 @@ function recordGoodPoll(
     isSourceHealthy(source.status) &&
     areJsonValuesEqual(storedSnapshot.shapes, shapes);
   if (isRepeatOnAHealthySource) {
-    return { status: 'applied', slices };
+    const storedSource = findDataSource(slices.dataSources, source.id);
+    if (storedSource === source) {
+      return { status: 'applied', slices };
+    }
+    // The same Super Chats, a new count of quota units: the status only, never logged.
+    return {
+      status: 'applied',
+      slices: { ...slices, dataSources: replaceDataSource(slices.dataSources, source) },
+      isLeftOutOfTheEventLog: true,
+    };
   }
 
   const newSnapshot: DataSnapshot = { sourceId: source.id, receivedAtMs, shapes };

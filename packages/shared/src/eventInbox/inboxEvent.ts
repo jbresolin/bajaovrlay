@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { ptBREventInbox } from './ptBREventInbox.js';
+
 /**
  * What an inbox event is about. Each kind has one rule (eventRules), which says whether
  * its events wait for the operator, go on air by themselves, or are ignored.
@@ -34,9 +36,11 @@ export type EventNoticeKind = z.infer<typeof EventNoticeKindSchema>;
  * What a graphic needs to show the event: the car, and the fields of the kind that has
  * them. An item's event fields (kind `eventField`) read these by name, so the names are
  * the paths the item editor offers. Strict: a key no graphic can read is refused.
+ * The car is optional here only because a Super Chat has none; every other kind must
+ * carry one, checked with the kind by checkCarNumberForKind below.
  */
 export const InboxEventPayloadSchema = z.strictObject({
-  carNumber: z.number().int().positive(),
+  carNumber: z.number().int().positive().optional(),
   teamName: z.string().min(1).optional(),
   /** The university, short form ("UFPR"). */
   schoolName: z.string().min(1).optional(),
@@ -50,18 +54,41 @@ export const InboxEventPayloadSchema = z.strictObject({
   /** The fastest lap's time in ms, and the same as the timing screen writes it. */
   lapTimeMs: z.number().int().positive().optional(),
   lapTimeText: z.string().min(1).optional(),
+  /** A Super Chat's viewer, as YouTube names them (BAJAOVRLAY-35). */
+  authorName: z.string().min(1).optional(),
+  /** A Super Chat's amount as YouTube writes it: "R$ 50,00". */
+  amountText: z.string().min(1).optional(),
+  /** What the viewer wrote; empty when they paid without a message. */
+  messageText: z.string().optional(),
 });
 
 /** A payload that has passed InboxEventPayloadSchema. */
 export type InboxEventPayload = z.infer<typeof InboxEventPayloadSchema>;
 
 /**
- * One event as detected (or typed), before the inbox gives it a status.
- * `eventId` is deterministic (`<sourceId>:incident:<incidentId>`…), so the same happening
- * detected twice, before and after a restart, is one event; `sourceId` is null for a
- * manual event, which no source produced.
+ * The one place that says which kinds need a car: every kind but `superChat`, which is a
+ * viewer's message about no car in particular. Reported at `payload.carNumber`. Used by
+ * DetectedEventSchema and the slice's InboxEventSchema alike.
  */
-export const DetectedEventSchema = z.object({
+export function checkCarNumberForKind(
+  event: { kind: InboxEventKind; payload: InboxEventPayload },
+  context: z.RefinementCtx,
+): void {
+  const doesTheKindNeedACar = event.kind !== 'superChat';
+  if (doesTheKindNeedACar && event.payload.carNumber === undefined) {
+    context.addIssue({
+      code: 'custom',
+      path: ['payload', 'carNumber'],
+      message: ptBREventInbox.payloadReasons.carNumberMissing,
+    });
+  }
+}
+
+/**
+ * The fields of a detected event, before the car rule is added: InboxEventSchema extends
+ * these, and Zod cannot extend a schema that already carries a refinement.
+ */
+export const DetectedEventFieldsSchema = z.object({
   eventId: z.string().min(1),
   kind: InboxEventKindSchema,
   sourceId: z.string().min(1).nullable(),
@@ -69,6 +96,16 @@ export const DetectedEventSchema = z.object({
   detectedAtMs: z.number().int().min(0),
   payload: InboxEventPayloadSchema,
 });
+
+/**
+ * One event as detected (or typed), before the inbox gives it a status.
+ * `eventId` is deterministic (`<sourceId>:incident:<incidentId>`…), so the same happening
+ * detected twice, before and after a restart, is one event; `sourceId` is null for a
+ * manual event, which no source produced.
+ */
+export const DetectedEventSchema = DetectedEventFieldsSchema.superRefine((event, context) =>
+  checkCarNumberForKind(event, context),
+);
 
 /** One event that has passed DetectedEventSchema. */
 export type DetectedEvent = z.infer<typeof DetectedEventSchema>;

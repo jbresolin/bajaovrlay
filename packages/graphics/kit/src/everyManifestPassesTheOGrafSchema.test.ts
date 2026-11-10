@@ -85,6 +85,7 @@ describe('the manifests under packages/graphics', () => {
       join('sponsor-bug', 'sponsor-bug.ograf.json'),
       join('sponsor-roll', 'sponsor-roll.ograf.json'),
       join('standings', 'standings.ograf.json'),
+      join('super-chat', 'super-chat.ograf.json'),
       join('team-card', 'team-card.ograf.json'),
     ];
 

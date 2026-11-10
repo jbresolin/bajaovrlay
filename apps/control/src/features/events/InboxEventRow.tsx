@@ -18,13 +18,17 @@ const texts = ptBR.events;
  * fila" when the runner will show it, then "Prévia" (the rule's item filled from this
  * event), "No ar" and "Descartar". "Prévia" and "No ar" are off, saying why, when the rule has no item;
  * "No ar" and "Descartar" are off while one of their commands waits, so a second press
- * cannot send it twice (gate 2 of PR #22). The buttons only send; what happens is the
- * server's, and the row follows the `events` slice.
+ * cannot send it twice (gate 2 of PR #22). "Descartar" is off for Dados, who may dismiss
+ * only a Super Chat (`whyTheDismissalIsOff`, BAJAOVRLAY-35). The buttons only send; what
+ * happens is the server's, and the row follows the `events` slice. A Super Chat has its own
+ * row, SuperChatRow.tsx.
  */
 export function InboxEventRow(props: {
   event: InboxEvent;
   /** The item its rule shows it with, or null when the rule has none. */
   itemIdOfItsRule: string | null;
+  /** Why "Descartar" is off for this page's role, when it is (Dados, BAJAOVRLAY-35). */
+  whyTheDismissalIsOff?: string | undefined;
   now: Date;
   sendCommand: (command: CommandInput) => Promise<boolean>;
 }) {
@@ -104,6 +108,7 @@ export function InboxEventRow(props: {
             size="xs"
             variant="ghost"
             disabled={isWaitingForTheServer}
+            disabledReason={props.whyTheDismissalIsOff}
             onClick={() =>
               void sendAndWaitForTheAnswer({ type: 'dismissEvent', eventId: event.eventId })
             }

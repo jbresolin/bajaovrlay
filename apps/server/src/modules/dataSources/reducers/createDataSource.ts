@@ -6,6 +6,7 @@ import type {
   SlicesChangedByCommands,
 } from '../../../core/store/reducers/reducerTypes.js';
 import { buildStatusOfANewSource } from '../dataSourceHealth.js';
+import { findRefusalOfThePollIntervalOfTheKind } from '../dataSourceRefusals.js';
 import { checkDataSourceConfig } from '../schema.js';
 
 /**
@@ -13,7 +14,8 @@ import { checkDataSourceConfig } from '../schema.js';
  * store made and its config completed by the schema of its kind. Refused when the config
  * fails that schema (INVALID_DATA_SOURCE_CONFIG), a replay names a recording that is
  * missing or still open (RECORDING_NOT_FOUND) or a flex request goes to a host off a
- * BAJAOVRLAY_SOURCE_ALLOWED_HOSTS that is set (DATA_SOURCE_HOST_NOT_ALLOWED). A new source starts off: the operator
+ * BAJAOVRLAY_SOURCE_ALLOWED_HOSTS that is set (DATA_SOURCE_HOST_NOT_ALLOWED), and a YouTube
+ * live chat polled more often than every 10 s (INVALID_DATA_SOURCE_CONFIG). A new source starts off: the operator
  * turns it on when ready, and turning it on is what starts its timeline.
  */
 export function reduceCreateDataSource(
@@ -21,6 +23,13 @@ export function reduceCreateDataSource(
   command: CreateDataSourceCommand,
   context: ReducerContext,
 ): ReducerOutcome {
+  const intervalRefusal = findRefusalOfThePollIntervalOfTheKind(
+    command.kind,
+    command.pollIntervalMs,
+  );
+  if (intervalRefusal !== undefined) {
+    return { status: 'refused', error: intervalRefusal };
+  }
   const configCheck = checkDataSourceConfig(
     command.kind,
     command.config,

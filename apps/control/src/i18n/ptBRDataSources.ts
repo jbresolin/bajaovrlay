@@ -20,6 +20,7 @@ export const ptBRDataSources = {
     simulator: 'Simulador',
     replay: 'Reprodução',
     httpJson: 'HTTP/JSON (flexível)',
+    youtubeLiveChat: 'Chat do YouTube (Super Chats)',
   },
 
   // The status chip of each source (DataSourceStatusChip.tsx).
@@ -54,6 +55,9 @@ export const ptBRDataSources = {
     lastGoodData: (time: string) => `Último dado: ${time}`,
     noGoodDataYet: 'Ainda sem dados',
     pollInterval: (seconds: string) => `Leitura a cada ${seconds} s`,
+    // A YouTube source's quota of the server's key today (BAJAOVRLAY-35), "1.235 de 9.000".
+    youTubeQuota: (unitsSpentToday: string, dailyUnitsBudget: string) =>
+      `Cota do YouTube: ${unitsSpentToday} de ${dailyUnitsBudget} unidades hoje`,
     enabledSwitch: 'Ligada',
     pollNowButton: 'Atualizar agora',
     // Simulators only: the simulated race starts again from its green flag.
@@ -139,6 +143,9 @@ export const ptBRDataSources = {
     editSourceTitle: (sourceLabel: string) => `Editar fonte: ${sourceLabel}`,
     saveButton: 'Salvar fonte',
     cancelButton: 'Cancelar',
+    // Under the YouTube form (BAJAOVRLAY-35): where the key is, and what a reading costs.
+    youTubeKeyHint:
+      'A chave da API do YouTube fica no servidor (BAJAOVRLAY_YOUTUBE_API_KEY) e nunca aparece nesta página. Cada leitura gasta 5 unidades da cota diária.',
     fields: {
       label: 'Nome da fonte',
       pollIntervalSeconds: 'Intervalo de leitura (segundos)',
@@ -148,6 +155,8 @@ export const ptBRDataSources = {
       lapLengthKm: 'Comprimento da volta (km)',
       simulatorSpeed: 'Velocidade (vezes o tempo real)',
       isFailing: 'Falha simulada',
+      areSuperChatsSimulated: 'Simular Super Chats',
+      liveAddress: 'Endereço da transmissão no YouTube',
       recordingId: 'Gravação',
       replaySpeed: 'Velocidade da reprodução',
       isLooping: 'Recomeçar ao chegar ao fim',
@@ -163,6 +172,8 @@ export const ptBRDataSources = {
     fieldErrors: {
       labelMissing: 'Informe o nome da fonte.',
       pollIntervalOutOfRange: 'Informe de 0,5 a 60 segundos.',
+      youTubePollIntervalOutOfRange:
+        'Informe de 10 a 60 segundos: cada leitura gasta cota do YouTube.',
       seedOutOfRange: 'Informe a semente como um número inteiro de 0 a 4294967295.',
       carCountOutOfRange: 'Informe de 10 a 100 carros.',
       sessionDurationOutOfRange: 'Informe a duração em minutos, maior que zero e até 1440 (24 h).',

@@ -54,7 +54,7 @@ function buildHistoryRow(event: InboxEvent, dataSources: DataSource[]): HistoryR
     cells: {
       time: formatTimeOfDay(event.detectedAtMs),
       kind: describeKindOfEvent(event),
-      car: String(payload.carNumber),
+      car: payload.carNumber === undefined ? '' : String(payload.carNumber),
       team: payload.teamName ?? '',
       lap: payload.lapNumber === undefined ? '' : String(payload.lapNumber),
       details: describeDetailsOfEvent(event),
@@ -94,7 +94,8 @@ function compareRowsAscending(
     case 'time':
       return first.event.detectedAtMs - second.event.detectedAtMs;
     case 'car':
-      return first.event.payload.carNumber - second.event.payload.carNumber;
+      // A Super Chat has no car: it sorts as car 0, before every car.
+      return (first.event.payload.carNumber ?? 0) - (second.event.payload.carNumber ?? 0);
     case 'lap':
       return (first.event.payload.lapNumber ?? 0) - (second.event.payload.lapNumber ?? 0);
     case 'kind':

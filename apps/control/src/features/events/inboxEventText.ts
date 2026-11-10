@@ -26,6 +26,19 @@ export function describeKindOfEvent(event: InboxEvent): string {
 }
 
 /**
+ * Who an event is about: "carro 47", or a Super Chat's viewer and amount ("Torcida Pequi
+ * Off-Road · R$ 20,00", BAJAOVRLAY-35), which is about no car. Empty when it has neither,
+ * which only a database edited by hand could hold.
+ */
+export function describeSubjectOfEvent(event: InboxEvent): string {
+  const { carNumber, authorName, amountText } = event.payload;
+  if (event.kind === 'superChat' && authorName !== undefined && amountText !== undefined) {
+    return texts.superChatSubject(authorName, amountText);
+  }
+  return carNumber === undefined ? '' : texts.carSubject(carNumber);
+}
+
+/**
  * Camadas' mark on an instance an event put on air: "evento: penalidade · carro 47", or
  * "evento" alone when the event is no longer in the slice (it keeps the newest 200).
  */
@@ -33,16 +46,19 @@ export function describeEventMarkOnLayer(event: InboxEvent | undefined): string 
   if (event === undefined) {
     return texts.layerMarkerOfAnEventGone;
   }
-  return texts.layerMarker(describeKindOfEvent(event), event.payload.carNumber);
+  return texts.layerMarker(describeKindOfEvent(event), describeSubjectOfEvent(event));
 }
 
 /**
  * The history's details of an event: its reason, penalty and lap time, those it has,
  * joined ("Queima de largada · +30 segundos"); empty when it has none (a leader change).
+ * A Super Chat's are its viewer, its amount and its message, so the search finds them.
  */
 export function describeDetailsOfEvent(event: InboxEvent): string {
-  const { reason, penaltyText, lapTimeText } = event.payload;
-  const details = [reason, penaltyText, lapTimeText].filter((detail) => detail !== undefined);
+  const { reason, penaltyText, lapTimeText, authorName, amountText, messageText } = event.payload;
+  const details = [reason, penaltyText, lapTimeText, authorName, amountText, messageText].filter(
+    (detail) => detail !== undefined && detail !== '',
+  );
   return details.join(texts.reviewPage.detailsSeparator);
 }
 

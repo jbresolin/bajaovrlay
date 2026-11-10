@@ -139,6 +139,18 @@ const sentenceScenarios: Array<{ name: string; command: CommandInput; expected: 
     command: { type: 'dismissEvent', eventId: 'evento-ocorrencia-47' },
     expected: 'Descartou o evento ocorrência do carro 47',
   },
+  // "Aprovar" on a Super Chat (BAJAOVRLAY-35): named by its viewer and amount, never a car.
+  {
+    name: 'approveEvent names the Super Chat by its viewer and amount',
+    command: { type: 'approveEvent', eventId: 'youtube-ao-vivo:superChat:mensagem-pequi-0001' },
+    expected: 'Aprovou o Super Chat de Torcida Pequi Off-Road (R$ 20,00)',
+  },
+  // "Descartar" on a Super Chat: the same name, since it has no car.
+  {
+    name: 'dismissEvent names a Super Chat by its viewer and amount',
+    command: { type: 'dismissEvent', eventId: 'youtube-ao-vivo:superChat:mensagem-pequi-0001' },
+    expected: 'Descartou o evento Super Chat de Torcida Pequi Off-Road (R$ 20,00)',
+  },
   // "Restaurar" in the history of the "Eventos" page.
   {
     name: 'restoreEvent names the event by its kind and car',

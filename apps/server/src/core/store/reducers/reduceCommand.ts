@@ -183,6 +183,7 @@ function reduceCommandOfItsType(
       return reduceBindingCommand(slices, command, context);
     // The event inbox (BAJAOVRLAY-44): its reducers live in the module modules/events.
     case 'showEvent':
+    case 'approveEvent':
     case 'dismissEvent':
     case 'restoreEvent':
     case 'createManualEvent':

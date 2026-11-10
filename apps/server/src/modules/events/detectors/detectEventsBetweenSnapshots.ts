@@ -6,11 +6,12 @@ import type { EventDetectionMoment } from './eventDetectionMoment.js';
 import { detectLeaderChange } from './leaderChanged.js';
 import { detectNewFastestLap } from './newFastestLap.js';
 import { detectNewIncidents } from './newIncident.js';
+import { detectNewSuperChats } from './newSuperChat.js';
 
 /**
  * The events between a source's previous accepted snapshot and its new one, in this
  * order: new incidents, then a new fastest lap, then a leader change (the runner shows
- * one layer's events in this order). Pure.
+ * one layer's events in this order), then new Super Chats (BAJAOVRLAY-35). Pure.
  * Each shape is compared only when both snapshots have it and both belong to the same
  * session. Otherwise the new shape is a baseline and fires nothing:
  * - a shape the previous snapshot did not have (a mapping just added, a source that sent
@@ -47,5 +48,27 @@ export function detectEventsBetweenSnapshots(
     events.push(...detectLeaderChange(previousPositions, nextPositions, moment));
   }
 
+  // Super Chats have no session, and a missing previous answer is not a plain baseline:
+  // the detector's own first-poll window decides (newSuperChat.ts).
+  const nextSuperChats = nextShapes.superChats;
+  if (nextSuperChats !== undefined) {
+    events.push(...detectNewSuperChats(previousShapes.superChats, nextSuperChats, moment));
+  }
+
   return events;
+}
+
+/**
+ * The events of a source's first snapshot, which is otherwise a baseline (see
+ * eventDetection.ts): only the Super Chats of the last 15 minutes, so a viewer who paid
+ * just before the source was switched on is not lost. Every race shape fires nothing. Pure.
+ */
+export function detectEventsInAFirstSnapshot(
+  firstShapes: DataSnapshotShapes,
+  moment: EventDetectionMoment,
+): DetectedEvent[] {
+  if (firstShapes.superChats === undefined) {
+    return [];
+  }
+  return detectNewSuperChats(undefined, firstShapes.superChats, moment);
 }

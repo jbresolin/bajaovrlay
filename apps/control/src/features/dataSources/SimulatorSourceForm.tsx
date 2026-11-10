@@ -20,7 +20,10 @@ import { useSaveDataSource } from './useSaveDataSource';
 const texts = ptBR.dataSources.form;
 
 // The typed fields, in the order the form shows them, each with its label.
-const typedFields: { name: keyof Omit<SimulatorSourceFormValues, 'isFailing'>; label: string }[] = [
+const typedFields: {
+  name: keyof Omit<SimulatorSourceFormValues, 'isFailing' | 'areSuperChatsSimulated'>;
+  label: string;
+}[] = [
   { name: 'label', label: texts.fields.label },
   { name: 'pollIntervalSeconds', label: texts.fields.pollIntervalSeconds },
   { name: 'seed', label: texts.fields.seed },
@@ -43,7 +46,8 @@ export type SimulatorSourceFormProps = {
  * graphics). Its fields are text in the operator's units; "Salvar fonte" reads them
  * (simulatorSourceForm.ts, the shared SimulatorConfigSchema) and shows a message under
  * each wrong field, or sends the source. "Falha simulada" makes every poll fail on
- * purpose, to rehearse a late source.
+ * purpose, to rehearse a late source; "Simular Super Chats" adds a fictional viewer's paid
+ * message now and then, to rehearse their approval (BAJAOVRLAY-35).
  */
 export function SimulatorSourceForm(props: SimulatorSourceFormProps) {
   // The source as opened: "what changed" is judged against it, never a newer copy.
@@ -60,6 +64,7 @@ export function SimulatorSourceForm(props: SimulatorSourceFormProps) {
   const errors = form.formState.errors;
   const controlIdPrefix = `fonte-simulador-${sourceAsOpened?.id ?? 'nova'}`;
   const isFailingControlId = `${controlIdPrefix}-isFailing`;
+  const areSuperChatsSimulatedControlId = `${controlIdPrefix}-areSuperChatsSimulated`;
 
   const save = form.handleSubmit(async (values) => {
     const reading = readSimulatorSourceForm(values);
@@ -111,6 +116,22 @@ export function SimulatorSourceForm(props: SimulatorSourceFormProps) {
               onCheckedChange={field.onChange}
             />
             <Label htmlFor={isFailingControlId}>{texts.fields.isFailing}</Label>
+          </div>
+        )}
+      />
+      <Controller
+        control={form.control}
+        name="areSuperChatsSimulated"
+        render={({ field }) => (
+          <div className="flex items-center gap-2">
+            <Switch
+              id={areSuperChatsSimulatedControlId}
+              checked={field.value}
+              onCheckedChange={field.onChange}
+            />
+            <Label htmlFor={areSuperChatsSimulatedControlId}>
+              {texts.fields.areSuperChatsSimulated}
+            </Label>
           </div>
         )}
       />

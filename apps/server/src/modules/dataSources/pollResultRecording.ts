@@ -11,6 +11,7 @@ import type { StateStore } from '../../core/store/createStateStore.js';
 import {
   type DataSourceAdapters,
   pollDataSourceWithTheAdapterOfItsKind,
+  readYouTubeQuotaUsageForTheSource,
 } from './adapters/createDataSourceAdapters.js';
 import { StillPreparingForPollingError } from './adapters/dataSourceAdapter.js';
 
@@ -34,8 +35,26 @@ export type PollTheSourceOptions = {
  * when the adapter answered anyway after the signal, except when the adapter rejected
  * with StillPreparingForPollingError: its message ("Carregando a gravação…") is recorded,
  * because the operator should read that the source is getting ready, not that it is slow.
+ * A YouTube source's result, good or failed, carries the key's quota spent today as it
+ * stands after the poll, so the source's row shows it (BAJAOVRLAY-35).
  */
 export async function pollTheSourceIntoAPollResult(
+  options: PollTheSourceOptions,
+): Promise<PollResult> {
+  const pollResult = await pollTheSourceIntoAPollResultWithoutQuota(options);
+  const youTubeQuota = readYouTubeQuotaUsageForTheSource(
+    options.source,
+    options.adapters,
+    options.readCurrentTime().getTime(),
+  );
+  if (youTubeQuota === undefined) {
+    return pollResult;
+  }
+  return { ...pollResult, youTubeQuota };
+}
+
+/** The poll result itself; see pollTheSourceIntoAPollResult. */
+async function pollTheSourceIntoAPollResultWithoutQuota(
   options: PollTheSourceOptions,
 ): Promise<PollResult> {
   const { source, adapters, readCurrentTime, signal, timeoutInMilliseconds } = options;

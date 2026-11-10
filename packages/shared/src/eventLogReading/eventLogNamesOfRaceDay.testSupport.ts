@@ -92,6 +92,24 @@ function buildWaitingEvent(eventId: string, kind: InboxEvent['kind'], carNumber:
   return inboxEvent;
 }
 
+/** A fictional viewer's Super Chat of R$ 20,00, waiting for approval (BAJAOVRLAY-35). */
+function buildWaitingSuperChat(): InboxEvent {
+  const detectedAtMs = Date.parse('2026-10-09T14:32:10.000Z');
+  return {
+    eventId: 'youtube-ao-vivo:superChat:mensagem-pequi-0001',
+    kind: 'superChat',
+    sourceId: 'youtube-ao-vivo',
+    detectedAtMs,
+    payload: {
+      authorName: 'Torcida Pequi Off-Road',
+      amountText: 'R$ 20,00',
+      messageText: 'Vai, Pequi! Abraço de Goiânia',
+    },
+    status: 'pending',
+    statusChanges: [{ status: 'pending', atMs: detectedAtMs }],
+  };
+}
+
 /** Ana Souza's lower third on the program output of "Tarja". */
 function buildAnaSouzaOnAir(): Instance {
   return {
@@ -174,6 +192,7 @@ export function buildEventLogNamesOfRaceDay(): EventLogNames {
     events: [
       buildWaitingEvent('evento-volta-31', 'fastestLap', 31),
       buildWaitingEvent('evento-ocorrencia-47', 'newIncident', 47),
+      buildWaitingSuperChat(),
     ],
     instances: [buildAnaSouzaOnAir()],
     triggers: [buildBoxEnteredTrigger()],

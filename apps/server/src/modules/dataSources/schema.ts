@@ -13,6 +13,8 @@ import {
   ReplayConfigSchema,
   type SimulatorConfig,
   SimulatorConfigSchema,
+  type YouTubeLiveChatConfig,
+  YouTubeLiveChatConfigSchema,
 } from '@bajaovrlay/shared';
 import { z } from 'zod';
 
@@ -30,7 +32,8 @@ import {
 export type DataSourceKindAndConfig =
   | { kind: 'simulator'; config: SimulatorConfig }
   | { kind: 'replay'; config: ReplayConfig }
-  | { kind: 'httpJson'; config: HttpJsonConfig };
+  | { kind: 'httpJson'; config: HttpJsonConfig }
+  | { kind: 'youtubeLiveChat'; config: YouTubeLiveChatConfig };
 
 /** The answer of checkDataSourceConfig: the parsed config, or the refusal to send. */
 export type DataSourceConfigCheck =
@@ -106,6 +109,18 @@ export function checkDataSourceConfig(
         };
       }
       return { isValid: true, kindAndConfig: { kind: 'httpJson', config: parsedConfig.data } };
+    }
+    case 'youtubeLiveChat': {
+      // The live's address only: the API key is never part of a config (BAJAOVRLAY-35).
+      const parsedConfig = YouTubeLiveChatConfigSchema.safeParse(rawConfig);
+      if (!parsedConfig.success) {
+        const badFieldPath = parsedConfig.error.issues[0]?.path ?? [];
+        return { isValid: false, error: refuseInvalidDataSourceConfig(badFieldPath) };
+      }
+      return {
+        isValid: true,
+        kindAndConfig: { kind: 'youtubeLiveChat', config: parsedConfig.data },
+      };
     }
   }
 }

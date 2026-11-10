@@ -53,7 +53,7 @@ function buildFiveEventsOfTheEnduro(): InboxEvent[] {
 }
 
 /** The car numbers of the rows listed for this search and sort, top to bottom. */
-function listCarsOfRows(searchText: string, sort: HistorySort): number[] {
+function listCarsOfRows(searchText: string, sort: HistorySort): Array<number | undefined> {
   const rows = listHistoryRows(buildFiveEventsOfTheEnduro(), [buildSimulatorThatIsOk()], {
     searchText,
     sort,

@@ -10,6 +10,8 @@ reading at its README.md, which also says how to copy it.
 the template for the next one with rows.
 `notice/` is the card under the bug for a fastest lap or a race control notice, the first
 graphic with two variants in one manifest (`variant`) and an on-air hold left to the server.
+`super-chat/` is the card in the notice's place for a viewer's approved YouTube Super Chat (BAJAOVRLAY-35):
+the amount, the author and the message, YouTube's emoji shortcodes taken out.
 `lower-strip/` is the bar along the bottom: the clock block, the running order six cars a page.
 `message-ticker/` is the same bar with an "AVISO" label and one typed announcement a page.
 `sponsor-bug/` is the card top-left all day: the mark, the event word and one sponsor's logo.

@@ -5,14 +5,40 @@
  */
 import type { InboxEvent } from '@bajaovrlay/shared';
 
-/** True while an event waits: for the operator (pending) or for the runner (queued). */
+/**
+ * True while an event waits: for the operator (pending), for the runner (queued), or, a
+ * Super Chat a person approved, for the Produtor's "No ar" (approved, BAJAOVRLAY-35).
+ */
 function isWaiting(event: InboxEvent): boolean {
-  return event.status === 'pending' || event.status === 'queued';
+  return event.status === 'pending' || event.status === 'queued' || event.status === 'approved';
 }
 
-/** The waiting events, newest first: what the operator decides about. */
+/**
+ * True for a viewer's Super Chat no person has approved yet: it must never reach the air.
+ * The server's rule (inboxEventChanges.ts): any status but approved counts as not approved,
+ * so the page never offers "No ar" on a Super Chat the server would refuse.
+ */
+export function isSuperChatAwaitingApproval(event: InboxEvent): boolean {
+  return event.kind === 'superChat' && event.status !== 'approved';
+}
+
+/**
+ * The waiting events, newest first: what the operator decides about. The Super Chats still
+ * awaiting approval are left out: they are listed apart, with "Aprovar"
+ * (listSuperChatsAwaitingApprovalNewestFirst), and only an approved one joins this list.
+ */
 export function listWaitingEventsNewestFirst(events: InboxEvent[]): InboxEvent[] {
-  return events.filter(isWaiting).reverse();
+  return events
+    .filter((event) => isWaiting(event) && !isSuperChatAwaitingApproval(event))
+    .reverse();
+}
+
+/**
+ * The Super Chats still waiting and awaiting approval, newest first: what Dados reads and
+ * approves. A discarded or expired one waits for nobody, so it is left out.
+ */
+export function listSuperChatsAwaitingApprovalNewestFirst(events: InboxEvent[]): InboxEvent[] {
+  return events.filter((event) => isWaiting(event) && isSuperChatAwaitingApproval(event)).reverse();
 }
 
 /** The ids of the events waiting for the operator: what the chime follows. */
@@ -20,9 +46,12 @@ export function listPendingEventIds(events: InboxEvent[]): string[] {
   return events.filter((event) => event.status === 'pending').map((event) => event.eventId);
 }
 
-/** How many events wait for the operator: the badge's number (queued ones need nobody). */
+/**
+ * How many events wait for a person: the badge's number. Pending ones, and approved Super
+ * Chats, which wait for the Produtor's "No ar"; queued ones need nobody.
+ */
 export function countPendingEvents(events: InboxEvent[]): number {
-  return events.filter((event) => event.status === 'pending').length;
+  return events.filter((event) => event.status === 'pending' || event.status === 'approved').length;
 }
 
 /** How long after "Descartar" the console still offers "Desfazer" (humans err). */

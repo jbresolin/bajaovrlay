@@ -73,6 +73,9 @@ export function DataSourceRow(props: DataSourceRowProps) {
     'pt-BR',
   );
 
+  // A YouTube source's quota of the server's key today, after its last poll (BAJAOVRLAY-35).
+  const youTubeQuota = source.status.youTubeQuota;
+
   const selectedCardClassName = props.isSelected ? 'border-primary' : '';
 
   // The card's click is for the mouse only: the keyboard way in is "Ver", a real button,
@@ -100,6 +103,14 @@ export function DataSourceRow(props: DataSourceRowProps) {
       <p className="flex flex-wrap gap-x-3 text-xs text-muted-foreground">
         <span>{lastGoodDataText}</span>
         <span>{texts.row.pollInterval(pollIntervalSecondsText)}</span>
+        {youTubeQuota !== undefined && (
+          <span>
+            {texts.row.youTubeQuota(
+              youTubeQuota.unitsSpentToday.toLocaleString('pt-BR'),
+              youTubeQuota.dailyUnitsBudget.toLocaleString('pt-BR'),
+            )}
+          </span>
+        )}
       </p>
       {source.status.recordingError !== null && (
         <p className="text-sm text-destructive">{source.status.recordingError}</p>

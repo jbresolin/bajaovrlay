@@ -4,6 +4,7 @@ import { HttpJsonConfigSchema } from './httpJsonConfig.js';
 import { PollIntervalMsSchema } from './pollInterval.js';
 import { ReplayConfigSchema } from './replayConfig.js';
 import { SimulatorConfigSchema } from './simulatorConfig.js';
+import { YouTubeLiveChatConfigSchema, YouTubeQuotaUsageSchema } from './youtubeLiveChatConfig.js';
 
 /**
  * How a source is doing, as its poll results left it. Only the server changes it, through
@@ -35,6 +36,11 @@ export const DataSourceStatusSchema = z.object({
    * data (D7).
    */
   failingSinceMs: z.number().int().optional(),
+  /**
+   * A YouTube source's quota units spent today against the server's budget, as its last
+   * poll left them (BAJAOVRLAY-35). Missing for every other kind, and until the first poll.
+   */
+  youTubeQuota: YouTubeQuotaUsageSchema.optional(),
 });
 
 /** A source status that has passed DataSourceStatusSchema. */
@@ -86,6 +92,15 @@ export const HttpJsonDataSourceSchema = DataSourceFieldsOfEveryKindSchema.extend
 /** A flex HTTP/JSON source that has passed HttpJsonDataSourceSchema. */
 export type HttpJsonDataSource = z.infer<typeof HttpJsonDataSourceSchema>;
 
+/** A source of kind `youtubeLiveChat`: a live's chat, read for its Super Chats. */
+export const YouTubeLiveChatDataSourceSchema = DataSourceFieldsOfEveryKindSchema.extend({
+  kind: z.literal('youtubeLiveChat'),
+  config: YouTubeLiveChatConfigSchema,
+});
+
+/** A YouTube live chat source that has passed YouTubeLiveChatDataSourceSchema. */
+export type YouTubeLiveChatDataSource = z.infer<typeof YouTubeLiveChatDataSourceSchema>;
+
 /**
  * One entry of the `dataSources` slice: a source the server polls for race data, told
  * apart by `kind`, so its config is always the one of its kind.
@@ -94,6 +109,7 @@ export const DataSourceSchema = z.discriminatedUnion('kind', [
   SimulatorDataSourceSchema,
   ReplayDataSourceSchema,
   HttpJsonDataSourceSchema,
+  YouTubeLiveChatDataSourceSchema,
 ]);
 
 /** A data source that has passed DataSourceSchema. */

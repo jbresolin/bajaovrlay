@@ -5,6 +5,7 @@ import type {
   ReducerOutcome,
   SlicesChangedByCommands,
 } from '../../../core/store/reducers/reducerTypes.js';
+import { reduceApproveEvent } from './approveEvent.js';
 import { reduceCreateManualEvent } from './createManualEvent.js';
 import { reduceDismissEvent } from './dismissEvent.js';
 import { reduceRecordDetectedEvents } from './recordDetectedEvents.js';
@@ -18,6 +19,7 @@ export type EventInboxCommand = Extract<
   {
     type:
       | 'showEvent'
+      | 'approveEvent'
       | 'dismissEvent'
       | 'restoreEvent'
       | 'createManualEvent'
@@ -35,6 +37,8 @@ export function reduceEventInboxCommand(
   switch (command.type) {
     case 'showEvent':
       return reduceShowEvent(slices, command, context);
+    case 'approveEvent':
+      return reduceApproveEvent(slices, command, context);
     case 'dismissEvent':
       return reduceDismissEvent(slices, command, context);
     case 'restoreEvent':

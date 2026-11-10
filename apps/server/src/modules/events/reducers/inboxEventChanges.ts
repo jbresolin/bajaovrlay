@@ -18,9 +18,22 @@ export function findRuleOfKind(rules: EventRule[], kind: InboxEventKind): EventR
   return rules.find((rule) => rule.kind === kind);
 }
 
-/** True while an event waits for a decision: the operator's (pending) or the runner's. */
+/**
+ * True while an event waits for a decision: the operator's (pending, or a Super Chat
+ * approved and waiting for "No ar") or the runner's (queued).
+ */
 export function isEventWaiting(event: InboxEvent): boolean {
-  return event.status === 'pending' || event.status === 'queued';
+  return event.status === 'pending' || event.status === 'approved' || event.status === 'queued';
+}
+
+/**
+ * True for a Super Chat no person has approved (BAJAOVRLAY-35): it may wait, be previewed
+ * and be discarded, but never go on air, by "No ar" or by "Tomar" on its Prévia. Every
+ * other kind needs no approval. Any status but approved counts as not approved (gate 2 of
+ * PR #54), so a queued Super Chat could never pass if the rule schema ever let one be auto.
+ */
+export function isSuperChatAwaitingApproval(event: InboxEvent): boolean {
+  return event.kind === 'superChat' && event.status !== 'approved';
 }
 
 /**

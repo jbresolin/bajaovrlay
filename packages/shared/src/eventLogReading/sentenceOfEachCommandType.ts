@@ -83,6 +83,7 @@ export const sentenceOfEachCommandType: SentenceOfEachCommandType = {
   setOverride: sentencesOfSourcesAndData.describeSetOverride,
   clearOverride: sentencesOfSourcesAndData.describeClearOverride,
   dismissEvent: sentencesOfSourcesAndData.describeDismissEvent,
+  approveEvent: sentencesOfSourcesAndData.describeApproveEvent,
   restoreEvent: sentencesOfSourcesAndData.describeRestoreEvent,
   dismissTriggerFiring: sentencesOfSourcesAndData.describeDismissTriggerFiring,
   restoreTriggerFiring: sentencesOfSourcesAndData.describeRestoreTriggerFiring,

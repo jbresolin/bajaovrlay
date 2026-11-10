@@ -38,6 +38,11 @@ const purposeNumbers = {
   incidentReason: 109,
   // Race-wide, per heat of the simulated Super Prime (the first heat, the second...).
   bracketHeatWinner: 110,
+  // Race-wide, per simulated Super Chat (BAJAOVRLAY-35: the first, the second...).
+  superChatMoment: 111,
+  superChatViewer: 112,
+  superChatAmount: 113,
+  superChatMessage: 114,
 } as const;
 
 /** The name of one purpose a draw can be for. */

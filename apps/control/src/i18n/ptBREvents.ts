@@ -37,11 +37,22 @@ export const ptBREvents = {
   previewButton: 'Prévia',
   showButton: 'No ar',
   dismissButton: 'Descartar',
+  /** A Super Chat's moderation (BAJAOVRLAY-35): Dados, or the Produtor, approves it. */
+  approveButton: 'Aprovar',
+  /** The hint and the button that opens the Super Chats waiting: "3 aguardando aprovação". */
+  superChatsAwaitingApproval: (count: number) => `${String(count)} aguardando aprovação`,
+  superChatsAwaitingApprovalListLabel: 'Super Chats aguardando aprovação',
+  /** A Super Chat paid without a message: the row says so instead of an empty line. */
+  superChatWithoutMessage: 'Sem mensagem',
+  /** Why Dados's "Descartar" is off on any event but a Super Chat. */
+  dataRoleTriagesOnlySuperChats: 'O papel Dados só pode descartar e restaurar Super Chats.',
   /** Under the console's waiting events: what was dismissed in the last 30 s. */
   recentlyDismissedListLabel: 'Descartados agora há pouco',
   /** "Penalidade · carro 47" on a recently dismissed event's row. */
-  recentlyDismissedText: (kindWord: string, carNumber: number) =>
-    `${kindWord} · carro ${String(carNumber)}`,
+  recentlyDismissedText: (kindWord: string, subject: string) => `${kindWord} · ${subject}`,
+  /** Who an event is about: "carro 47", or a Super Chat's viewer and amount. */
+  carSubject: (carNumber: number) => `carro ${String(carNumber)}`,
+  superChatSubject: (authorName: string, amountText: string) => `${authorName} · ${amountText}`,
   undoDismissButton: 'Desfazer',
 
   noticeKindWords,
@@ -54,6 +65,7 @@ export const ptBREvents = {
   /** An event's status as its row says it (a pending one says nothing). */
   statusWords: {
     pending: 'esperando',
+    approved: 'aprovado',
     queued: 'na fila',
     onAir: 'no ar',
     shown: 'exibido',
@@ -62,8 +74,10 @@ export const ptBREvents = {
   } satisfies Record<InboxEventStatus, string>,
 
   /** Camadas' mark on an instance an event put on air: "evento: penalidade · carro 47". */
-  layerMarker: (kindWord: string, carNumber: number) =>
-    `evento: ${kindWord.toLowerCase()} · carro ${String(carNumber)}`,
+  layerMarker: (kindWord: string, subject: string) =>
+    subject === ''
+      ? `evento: ${kindWord.toLowerCase()}`
+      : `evento: ${kindWord.toLowerCase()} · ${subject}`,
   layerMarkerOfAnEventGone: 'evento',
 
   /** The "Eventos" page (#/eventos): the waiting events, the forms and the history. */

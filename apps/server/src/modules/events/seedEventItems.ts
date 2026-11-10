@@ -1,4 +1,4 @@
-import type { Item, QuickFirePanel } from '@bajaovrlay/shared';
+import type { EventRule, Item, QuickFirePanel } from '@bajaovrlay/shared';
 
 import { ptBR } from '../../core/messages/ptBR.js';
 
@@ -15,12 +15,37 @@ export const fastestLapItemId = 'volta-mais-rapida';
 /** The item the default rules show a penalty, an incident or a manual event with. */
 export const penaltyItemId = 'penalidade';
 
+/** The item the default rule shows an approved Super Chat with (BAJAOVRLAY-35). */
+export const superChatItemId = 'super-chat';
+
 /**
- * The two notice items (BAJAOVRLAY-44), on the notice graphic and the notice layer, in the
+ * The "Super Chat" item: the super-chat graphic on the notice layer, its three fields read
+ * from the Super Chat's event (the amount, the viewer, the message). Coloured "warning",
+ * which the brief does not fix: a viewer's text is the one item that needs a person's care.
+ */
+const seededSuperChatItem: Item = {
+  id: superChatItemId,
+  home: { kind: 'quickFire', panelId: eventsQuickFirePanelId },
+  order: 2,
+  graphicId: 'super-chat',
+  layerId: 'notice',
+  label: ptBR.eventErrors.seededItemLabels.superChat,
+  color: 'warning',
+  notes: '',
+  fields: {
+    amountText: { kind: 'eventField', path: 'amountText' },
+    authorName: { kind: 'eventField', path: 'authorName' },
+    messageText: { kind: 'eventField', path: 'messageText' },
+  },
+};
+
+/**
+ * The three notice items: the two of BAJAOVRLAY-44 on the notice graphic and the notice layer, in the
  * "Avisos" panel. Every field the event fills is an event field, so they are templates:
  * they go on air only through an event, and Prévia shows them filled from a sample.
  * The fastest-lap variant reads the lap and its time; the penalty variant the kind of
- * notice, the reason and the penalty. Both read the car, its team and its school.
+ * notice, the reason and the penalty. Both read the car, its team and its school. Then the
+ * "Super Chat" (BAJAOVRLAY-35), seededSuperChatItem above.
  */
 const seededEventItems: Item[] = [
   {
@@ -60,10 +85,11 @@ const seededEventItems: Item[] = [
       penaltyText: { kind: 'eventField', path: 'penaltyText' },
     },
   },
+  seededSuperChatItem,
 ];
 
 /**
- * The panels and items with the "Avisos" panel (after the last panel) and its two items
+ * The panels and items with the "Avisos" panel (after the last panel) and its three items
  * (after every other item) added, each one only when no panel or item of its id exists.
  * Called once per database, when the event rules are seeded (loadEventInboxSlices.ts),
  * so a panel the operator deleted later is never brought back.
@@ -88,4 +114,37 @@ export function addSeededEventPanelAndItems(
     (seededItem) => !items.some((item) => item.id === seededItem.id),
   );
   return { quickFirePanels: panelsAfter, items: [...items, ...itemsMissing] };
+}
+
+/**
+ * The items and rules of a database seeded before BAJAOVRLAY-35, with the "Super Chat" item
+ * added to "Avisos" (after its last item) and the Super Chat rule naming it, or undefined
+ * when nothing is to change. Added only when the rule still has no item and no item of its
+ * id exists: a rule whose operator chose another item keeps it. Not added either when the
+ * operator deleted "Avisos": a deleted panel is never brought back for it. Called once per
+ * database: the boot records it in `seeds_done` as superChatItem (loadEventInboxSlices.ts),
+ * so an operator who later deletes the item and clears the rule never gets it back.
+ */
+export function addSeededSuperChatItemToAnOlderDatabase(
+  eventRules: EventRule[],
+  quickFirePanels: QuickFirePanel[],
+  items: Item[],
+): { eventRules: EventRule[]; items: Item[] } | undefined {
+  const superChatRule = eventRules.find((rule) => rule.kind === 'superChat');
+  const doesTheRuleHaveAnItem = superChatRule === undefined || superChatRule.itemId !== null;
+  const isTheItemThere = items.some((item) => item.id === superChatItemId);
+  const isThePanelThere = quickFirePanels.some((panel) => panel.id === eventsQuickFirePanelId);
+  if (doesTheRuleHaveAnItem || isTheItemThere || !isThePanelThere) {
+    return undefined;
+  }
+  const ordersInThePanel = items
+    .filter(
+      (item) => item.home.kind === 'quickFire' && item.home.panelId === eventsQuickFirePanelId,
+    )
+    .map((item) => item.order);
+  const itemAdded: Item = { ...seededSuperChatItem, order: Math.max(-1, ...ordersInThePanel) + 1 };
+  const rulesAfter = eventRules.map((rule) =>
+    rule.kind === 'superChat' ? { ...rule, itemId: superChatItemId } : rule,
+  );
+  return { eventRules: rulesAfter, items: [...items, itemAdded] };
 }

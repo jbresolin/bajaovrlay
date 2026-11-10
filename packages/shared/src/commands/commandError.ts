@@ -120,6 +120,16 @@ export const CommandErrorCodeSchema = z.enum([
    */
   'EVENT_NOT_WAITING',
   /**
+   * showEvent, or "Tomar" on a Prévia, named a Super Chat no person has approved yet
+   * (BAJAOVRLAY-35): "Super Chat ainda não aprovado".
+   */
+  'EVENT_NOT_APPROVED',
+  /**
+   * approveEvent named an event that is not a Super Chat, or a Super Chat that is not
+   * pending (already approved, on air, dismissed…). The message says which.
+   */
+  'EVENT_NOT_APPROVABLE',
+  /**
    * restoreEvent named an event that was not dismissed (waiting, on air, shown or
    * expired); only a dismissal can be undone. The message says its status.
    */

@@ -7,7 +7,11 @@ import type { InboxEventKind, InboxEventStatus } from '@bajaovrlay/shared';
 export const ptBREventErrors = {
   /** The quick-fire panel seeded with the two notice items ("Eventos" is the inbox's tab). */
   seededPanelName: 'Avisos',
-  seededItemLabels: { fastestLap: 'Volta mais rápida', penalty: 'Penalidade' },
+  seededItemLabels: {
+    fastestLap: 'Volta mais rápida',
+    penalty: 'Penalidade',
+    superChat: 'Super Chat',
+  },
   itemFilledByAnEvent: 'Este item é preenchido por um evento: ele entra no ar pela aba Eventos.',
   /** "Título: o evento não traz "Punição"." */
   eventFieldNotFilled: (fieldTitle: string, pathLabel: string) =>
@@ -27,6 +31,16 @@ export const ptBREventErrors = {
   eventNotDismissed: (status: InboxEventStatus) =>
     `Este evento não foi descartado: ${ptBREventErrors.whatItIsInstead[status]}.`,
   /** restoreEvent of a dismissed event past its rule's maximum wait. */
+  /** showEvent, or "Tomar" on a Prévia, of a Super Chat no person approved (BAJAOVRLAY-35). */
+  superChatNotApproved: 'Super Chat ainda não aprovado',
+  /** approveEvent of an event that is not a Super Chat. */
+  onlyASuperChatIsApproved: 'Só um Super Chat é aprovado; os outros eventos vão direto para o ar.',
+  /** approveEvent of a Super Chat that is not pending: "Este Super Chat não espera aprovação: já foi aprovado." */
+  superChatNotPending: (status: InboxEventStatus) =>
+    `Este Super Chat não espera aprovação: ${ptBREventErrors.whatItIsInstead[status]}.`,
+  /** dismissEvent or restoreEvent sent by Dados for a race event. */
+  dataRoleTriagesOnlySuperChats:
+    'O papel Dados só descarta e restaura Super Chats; os eventos da prova são do Produtor.',
   eventTooOldToRestore:
     'Este evento passou da espera máxima da regra e não pode mais ser restaurado.',
   /**
@@ -36,6 +50,7 @@ export const ptBREventErrors = {
    */
   whatItIsInstead: {
     pending: 'está esperando',
+    approved: 'já foi aprovado',
     queued: 'está na fila',
     onAir: 'está no ar',
     shown: 'já foi exibido',
@@ -45,6 +60,7 @@ export const ptBREventErrors = {
   /** Why an event is not waiting any more, by its status. */
   whyNotWaiting: {
     pending: 'ainda espera',
+    approved: 'foi aprovado',
     queued: 'está na fila',
     onAir: 'já está no ar',
     shown: 'já foi exibido',

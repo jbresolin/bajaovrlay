@@ -20,7 +20,23 @@ export const ShowEventCommandSchema = z.object({
 /** A showEvent command after validation. */
 export type ShowEventCommand = z.infer<typeof ShowEventCommandSchema>;
 
-/** Says no to a waiting event ("Descartar"). Operators only. */
+/**
+ * Approves a viewer's Super Chat ("Aprovar", BAJAOVRLAY-35): a pending Super Chat becomes
+ * approved and may then go on air with "No ar". Dados or the Produtor; refused for any
+ * other kind and for a Super Chat that is not pending.
+ */
+export const ApproveEventCommandSchema = z.object({
+  type: z.literal('approveEvent'),
+  eventId: z.string().min(1),
+});
+
+/** An approveEvent command after validation. */
+export type ApproveEventCommand = z.infer<typeof ApproveEventCommandSchema>;
+
+/**
+ * Says no to a waiting event ("Descartar"). The Produtor; Dados only a Super Chat, its own
+ * moderation (BAJAOVRLAY-35).
+ */
 export const DismissEventCommandSchema = z.object({
   type: z.literal('dismissEvent'),
   eventId: z.string().min(1),

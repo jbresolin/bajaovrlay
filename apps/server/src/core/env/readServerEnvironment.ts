@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-import { parseSourceHostAllowlist } from '../../modules/dataSources/index.js';
+import {
+  parseSourceHostAllowlist,
+  parseYouTubeDailyUnitsBudget,
+} from '../../modules/dataSources/index.js';
 import { parsePublicOrigins } from '../../modules/media/index.js';
 import { parseApiTokens } from '../apiAccess/apiTokens.js';
 import { serverLogLevels } from '../logger/createLogger.js';
@@ -34,6 +37,25 @@ const ServerEnvironmentSchema = z.object({
         return z.NEVER;
       }
       return parsing.allowlist;
+    }),
+  // How many of the YouTube key's 10 000 daily units the server may spend (BAJAOVRLAY-35):
+  // unset or empty is 9 000; anything but a whole number from 1 to 10 000 stops the boot,
+  // since a typo would otherwise stop the Super Chats at the first poll of race day. The
+  // key itself (BAJAOVRLAY_YOUTUBE_API_KEY) is not read here: the YouTube source reads it
+  // at each request, so it is never held in the settings a log line could print.
+  BAJAOVRLAY_YOUTUBE_DAILY_UNITS: z
+    .string()
+    .optional()
+    .transform((text, context) => {
+      const parsing = parseYouTubeDailyUnitsBudget(text);
+      if (!parsing.isValid) {
+        context.addIssue({
+          code: 'custom',
+          message: `"${String(text)}" is not a whole number of units from 1 to 10000 (leave it empty for 9000)`,
+        });
+        return z.NEVER;
+      }
+      return parsing.dailyUnitsBudget;
     }),
   // The devices that may send commands over HTTP (BAJAOVRLAY-28), read here into their
   // parsed list: unset or blank is the command API off, and an entry that cannot be used

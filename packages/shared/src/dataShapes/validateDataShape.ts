@@ -7,10 +7,11 @@ import { type PositionsShape, PositionsShapeSchema } from './positionsShape.js';
 import { ptBRDataShapes } from './ptBRDataShapes.js';
 import { type SessionShape, SessionShapeSchema } from './sessionShape.js';
 import { type StandingsShape, StandingsShapeSchema } from './standingsShape.js';
+import { type SuperChatsShape, SuperChatsShapeSchema } from './superChatsShape.js';
 
-/** Any one of the five canonical shapes, after validation. */
+/** Any one of the six canonical shapes, after validation. */
 export type DataShape =
-  SessionShape | PositionsShape | StandingsShape | BracketsShape | IncidentsShape;
+  SessionShape | PositionsShape | StandingsShape | BracketsShape | IncidentsShape | SuperChatsShape;
 
 /** The answer of validateDataShape: the parsed shape, or one pt-BR sentence saying why not. */
 export type DataShapeValidation =
@@ -56,6 +57,8 @@ function parsePayloadForShape(
       return BracketsShapeSchema.safeParse(payload, parseOptions);
     case 'incidents':
       return IncidentsShapeSchema.safeParse(payload, parseOptions);
+    case 'superChats':
+      return SuperChatsShapeSchema.safeParse(payload, parseOptions);
   }
 }
 

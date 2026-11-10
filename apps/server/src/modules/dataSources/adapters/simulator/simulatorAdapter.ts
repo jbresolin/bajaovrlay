@@ -5,6 +5,7 @@ import { type DataShapeKey, type SimulatorConfig, SimulatorConfigSchema } from '
 import { ptBR } from '../../../../core/messages/ptBR.js';
 import type { DataSourceAdapter } from '../dataSourceAdapter.js';
 import { buildShapesFromRaceState } from './shapesFromRaceState.js';
+import { buildSimulatedSuperChatsShape } from './simulatedSuperChats.js';
 import { simulateEnduroAt } from './simulateEnduro.js';
 
 // The shapes every simulator poll answers: the enduro's four, and its Super Prime's brackets.
@@ -36,12 +37,17 @@ export function convertWallTimeToSimulatedElapsedMs(
  * Builds the simulator adapter. It keeps nothing between polls: each poll turns now into
  * simulated time, asks simulateEnduroAt for the race at that moment, and builds the
  * shapes. lapLengthKm is not read: the lap times are written for the default 2 km track.
+ * With areSuperChatsSimulated on, it also answers the simulated live chat's superChats
+ * (BAJAOVRLAY-35); a race not started yet has none.
  */
 export function createSimulatorAdapter(): DataSourceAdapter<SimulatorConfig> {
   return {
     kind: 'simulator',
     configSchema: SimulatorConfigSchema,
-    listProducedShapes: () => [...simulatorShapeKeys],
+    listProducedShapes: (config) =>
+      config.areSuperChatsSimulated === true
+        ? [...simulatorShapeKeys, 'superChats']
+        : [...simulatorShapeKeys],
     // The signal is not watched: a poll is a few milliseconds of arithmetic, far under
     // the shortest timeout (500 ms), with nothing to wait on.
     pollOnce: (config, context) => {
@@ -59,6 +65,19 @@ export function createSimulatorAdapter(): DataSourceAdapter<SimulatorConfig> {
         elapsedSimulatedMs,
       );
       const shapes = buildShapesFromRaceState(raceState, nowMs, config.simulatedStartAtMs);
+      if (config.areSuperChatsSimulated === true && config.simulatedStartAtMs !== undefined) {
+        const superChatsSettings = {
+          seed: config.seed,
+          speed: config.speed,
+          simulatedStartAtMs: config.simulatedStartAtMs,
+        };
+        return Promise.resolve({
+          shapes: {
+            ...shapes,
+            superChats: buildSimulatedSuperChatsShape(superChatsSettings, elapsedSimulatedMs),
+          },
+        });
+      }
       return Promise.resolve({ shapes });
     },
   };

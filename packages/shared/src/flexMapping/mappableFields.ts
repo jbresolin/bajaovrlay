@@ -34,6 +34,9 @@ export function listMappableFieldsOfShape(shapeKey: DataShapeKey): MappableField
       return listBracketsFields();
     case 'incidents':
       return listIncidentsFields();
+    case 'superChats':
+      // None: a flex mapping may not name this shape (flexMappingConfig.ts).
+      return [];
   }
 }
 

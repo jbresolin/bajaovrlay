@@ -16,6 +16,7 @@ import { DeleteEntityCommandSchema } from '../entities/deleteEntity.js';
 import { ImportEntitiesCommandSchema } from '../entities/importEntities.js';
 import { UpsertEntityCommandSchema } from '../entities/upsertEntity.js';
 import {
+  ApproveEventCommandSchema,
   CreateManualEventCommandSchema,
   DismissEventCommandSchema,
   RecordDetectedEventsCommandSchema,
@@ -164,6 +165,7 @@ export const CommandSchema = z.discriminatedUnion('type', [
   // The event inbox (BAJAOVRLAY-44); ../eventInbox/. recordDetectedEvents is sent only by
   // the server's event detection (sistema:eventos), which may also send showEvent.
   ShowEventCommandSchema,
+  ApproveEventCommandSchema,
   DismissEventCommandSchema,
   RestoreEventCommandSchema,
   CreateManualEventCommandSchema,

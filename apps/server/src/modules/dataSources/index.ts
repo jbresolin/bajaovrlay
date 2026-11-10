@@ -36,6 +36,8 @@ export {
   sourceAllowedHostsVariableName,
   type SourceHostAllowlist,
 } from './adapters/httpJson/sourceHostAllowlist.js';
+// BAJAOVRLAY_YOUTUBE_DAILY_UNITS: how the boot reads it (unset is 9 000; 1 to 10 000).
+export { parseYouTubeDailyUnitsBudget } from './adapters/youtubeLiveChat/youTubeDailyUnitsBudget.js';
 // The payload of a logged poll row: the source, ok, the moment, the error and the shape names.
 export { type PollEventLogPayload, trimPollCommandForTheEventLog } from './pollEventLogPayload.js';
 // The payload of the failed row of a poll that did not pass validation: type and sourceId only.

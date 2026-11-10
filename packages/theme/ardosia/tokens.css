@@ -37,6 +37,10 @@
      is no flag colour, so it can never be read as the clock's flag band. */
   --notice-penalty-background: var(--brand-navy);
   --notice-penalty-text: #ffffff;
+  /* A Super Chat's amount ("R$ 50,00", BAJAOVRLAY-35): the notice's one field again, brand
+     navy, never YouTube's tier colours, which would read as a flag or as YouTube's brand. */
+  --super-chat-amount-background: var(--brand-navy);
+  --super-chat-amount-text: #ffffff;
   --cue-up: var(--brand-green);
   --cue-down: var(--brand-blue);
   --cue-text: #ffffff;
@@ -70,6 +74,10 @@
      sets its text in caps (a lowercase letter would fall back to another face). */
   --font-display: 'Bebas Neue', 'Arial Narrow', sans-serif;
   --font-text: 'Bebas Neue', 'Arial Narrow', sans-serif;
+  /* The system's colour emoji faces, for text a viewer wrote (a Super Chat, BAJAOVRLAY-35):
+     put after --font-text, so Bebas draws the letters and these the Unicode emoji. Linux
+     (OBS on the stream PC, CI's Playwright) has Noto Color Emoji; nothing is bundled. */
+  --font-emoji: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji';
   --weight-display: 400;
   --weight-number: 400;
   --weight-row: 400;
