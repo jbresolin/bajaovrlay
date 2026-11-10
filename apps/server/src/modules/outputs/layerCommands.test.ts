@@ -64,6 +64,7 @@ describe('createLayer', () => {
       'moldura-pip@pip:10',
       'channel-logo@program:15',
       'placar-pip@pip:15',
+      'bracket-match@program:17',
       'ticker@program:20',
       'legenda-pip@pip:20',
       'clock@program:30',

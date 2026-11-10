@@ -96,6 +96,7 @@ export const ptBR = {
   seededLayerNames: {
     bug: 'Logo',
     channelLogo: 'Logo do canal',
+    bracketMatch: 'Partida da chave',
     ticker: 'Letreiro',
     clock: 'Relógio',
     tower: 'Torre',
@@ -111,6 +112,10 @@ export const ptBR = {
   seededChannelLogoItemLabel: 'Logo do canal',
   // Name of the quick-fire panel that holds the channel logo item alone (BAJAOVRLAY-63).
   seededChannelLogoPanelName: 'Logo',
+  // The quick-fire panel of the Super Prime's match bug and "a seguir" card, and their two
+  // items (BAJAOVRLAY-65).
+  seededBracketMatchPanelName: 'Chave',
+  seededBracketMatchItemLabels: { now: 'Partida agora', upNext: 'Partida a seguir' },
   // Refusals of the rundown and item commands; each goes with a stable code, like
   // commandErrors above. A rundown and an item are named by what the
   // operator reads on screen (name, label) whenever the server has it, and by id when
