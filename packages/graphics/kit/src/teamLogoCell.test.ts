@@ -11,6 +11,8 @@
  *   - The cell holds one <img> with the logo's address and the pt-BR alternative text, and
  *     carries the graphic's test ids.
  *   - On the plate it carries `team-logo-cell--on-light-plate`; off the plate it does not.
+ *   - A graphic that asks is told when the logo fails to load (the "a seguir" card then
+ *     draws the car-number chip instead of a broken image).
  *
  * What these tests deliberately do not cover:
  *   - The look (the box, the plate's padding and colour): the team card's and the podium's
@@ -74,5 +76,29 @@ describe('renderTeamLogoCell', () => {
       offThePlate?.classList.contains('team-logo-cell--on-light-plate'),
       'a team that did not stays on the panel',
     ).toBe(false);
+  });
+
+  it('tells the graphic when the logo fails to load', () => {
+    // Arrange: the cell of Baja UFPR's logo, with a graphic listening for a failure.
+    const failedLogoUrls: string[] = [];
+    const container = document.createElement('div');
+    const logoUrl = `/media/${buildFakeMediaId(3)}`;
+    render(
+      renderTeamLogoCell({
+        logoUrl,
+        alternativeText: 'Logo da equipe Baja UFPR',
+        isOnLightPlate: false,
+        cellTestId: 'match-card-logo-cell-a',
+        imageTestId: 'match-card-logo-a',
+        onLogoFailed: () => failedLogoUrls.push(logoUrl),
+      }),
+      container,
+    );
+
+    // Act: the browser reports the image as broken.
+    container.querySelector('img')?.dispatchEvent(new Event('error'));
+
+    // Assert: the graphic was told, once.
+    expect(failedLogoUrls, 'a broken logo must be reported to the graphic').toEqual([logoUrl]);
   });
 });

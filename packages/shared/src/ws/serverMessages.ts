@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { InstanceBindingsSchema } from '../bindings/instanceBindings.js';
+import { BracketMatchFocusesSchema } from '../bracketMatchFocus/bracketMatchFocus.js';
 import { CommandErrorSchema } from '../commands/commandError.js';
 import { DataSnapshotSchema } from '../dataSources/dataSnapshot.js';
 import { DataSourceSchema } from '../dataSources/dataSource.js';
@@ -120,6 +121,12 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
     type: z.literal('slice'),
     name: z.literal('overrides'),
     slice: OverridesSchema,
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('bracketMatchFocuses'),
+    slice: BracketMatchFocusesSchema,
     serverNowMs: ServerNowMsSchema,
   }),
   z.object({

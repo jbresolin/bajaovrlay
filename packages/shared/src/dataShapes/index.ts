@@ -87,3 +87,6 @@ export {
   listBindablePathsOfShape,
   wholeClockBindingPath,
 } from './bindablePaths.js';
+// The first word of the brackets' paths that read the match "agora" (`matchNow.`) and the
+// match "a seguir" (`matchUpNext.`) of the match focus (BAJAOVRLAY-65).
+export { bracketMatchSlotPathPrefixes } from './bracketsBindablePaths.js';

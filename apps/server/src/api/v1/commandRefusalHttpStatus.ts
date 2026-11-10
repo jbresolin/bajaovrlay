@@ -102,6 +102,12 @@ const httpStatusOfEachRefusalCode: Record<CommandErrorCode, CommandRefusalHttpSt
   MACRO_USED_BY_TRIGGER: 409,
   TRIGGER_DATA_NOT_FILLED: 409,
   TRIGGER_NOT_FIRED: 409,
+  // The match focus (BAJAOVRLAY-65): an unknown match, or brackets that changed meanwhile.
+  BRACKET_MATCH_NOT_FOUND: 422,
+  BRACKETS_NOT_SENT: 409,
+  BRACKET_SESSION_CHANGED: 409,
+  NO_SUGGESTED_BRACKET_MATCH: 409,
+  BRACKET_PROPOSAL_CHANGED: 409,
 };
 
 /** The HTTP status the command API answers a refusal with this code with. */

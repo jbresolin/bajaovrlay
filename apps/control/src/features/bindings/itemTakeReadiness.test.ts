@@ -65,7 +65,7 @@ const readinessScenarios = [
   {
     name: 'a typed item can be taken',
     item: buildClockItemWithFields({}),
-    sources: { dataSources: [], dataSnapshots: [], overrides: [] },
+    sources: { dataSources: [], dataSnapshots: [], overrides: [], bracketMatchFocuses: [] },
     expected: undefined,
   },
   // The simulator at lap 34 sends the flag.
@@ -76,6 +76,7 @@ const readinessScenarios = [
       dataSources: [buildSimulatorThatIsOk()],
       dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
       overrides: [],
+      bracketMatchFocuses: [],
     },
     expected: undefined,
   },
@@ -83,14 +84,19 @@ const readinessScenarios = [
   {
     name: 'a bound flag whose source has no data cannot, naming the field and source',
     item: buildClockItemWithFields({ state: buildSessionBinding('state') }),
-    sources: { dataSources: [buildSimulatorThatIsOk()], dataSnapshots: [], overrides: [] },
+    sources: {
+      dataSources: [buildSimulatorThatIsOk()],
+      dataSnapshots: [],
+      overrides: [],
+      bracketMatchFocuses: [],
+    },
     expected: 'Bandeira: a fonte Simulador — Enduro ainda não tem dados.',
   },
   // The simulator was deleted after the item was saved.
   {
     name: 'a bound flag whose source was deleted cannot',
     item: buildClockItemWithFields({ state: buildSessionBinding('state') }),
-    sources: { dataSources: [], dataSnapshots: [], overrides: [] },
+    sources: { dataSources: [], dataSnapshots: [], overrides: [], bracketMatchFocuses: [] },
     expected: 'Bandeira: a fonte de dados "simulador-enduro" não existe.',
   },
   // Car 999 is in no race: the required title has nothing to read.
@@ -110,6 +116,7 @@ const readinessScenarios = [
       dataSources: [buildSimulatorThatIsOk()],
       dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
       overrides: [],
+      bracketMatchFocuses: [],
     },
     expected: 'Título: a fonte Simulador — Enduro não tem o carro 999 em Posições.',
   },
@@ -129,6 +136,7 @@ const readinessScenarios = [
       dataSources: [buildSimulatorThatIsOk()],
       dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
       overrides: [],
+      bracketMatchFocuses: [],
     },
     expected: undefined,
   },

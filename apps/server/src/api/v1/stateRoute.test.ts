@@ -73,7 +73,7 @@ describe('GET /api/v1/state', () => {
     const response = await app.request('/api/v1/state');
     const body: unknown = await response.json();
 
-    // Assert: 200, a body the shared schema accepts, and the eight layers in order.
+    // Assert: 200, a body the shared schema accepts, and the nine layers in order.
     const parsedBody = SlicesSchema.safeParse(body);
     expect(response.status, 'the state must answer 200 OK').toBe(200);
     expect(parsedBody.success, 'the body must pass the shared SlicesSchema').toBe(true);
@@ -83,6 +83,7 @@ describe('GET /api/v1/state', () => {
     ).toEqual([
       'bug',
       'channel-logo',
+      'bracket-match',
       'ticker',
       'clock',
       'tower',

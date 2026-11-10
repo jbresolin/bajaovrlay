@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { listBracketsPaths } from './bracketsBindablePaths.js';
 import type { DataShapeKey } from './dataShapeKey.js';
 import { ptBRDataShapes } from './ptBRDataShapes.js';
 
@@ -46,6 +47,12 @@ export type BindablePath = {
    * names (`carNumber`) wherever it is in the list, instead of a fixed place.
    */
   isCarChosenByNumber: boolean;
+  /**
+   * Set on the brackets' paths under `matchNow.` and `matchUpNext.` (BAJAOVRLAY-65): they
+   * read the match the operator put in that slot of the match focus ("agora" is
+   * `current`, "a seguir" `upNext`), joined with Cadastros, not a fixed place of the shape.
+   */
+  bracketMatchSlot?: 'current' | 'upNext';
 };
 
 /**
@@ -338,18 +345,6 @@ function listStandingsPaths(): BindablePath[] {
     }
   }
   return paths;
-}
-
-/** Brackets: the whole list of rounds only, which the bracket graphic draws (BAJAOVRLAY-25). */
-function listBracketsPaths(): BindablePath[] {
-  const shapeName = ptBRDataShapes.shapeNames.brackets;
-  return [
-    buildPathAtFixedPlace(
-      'rounds',
-      [shapeName, ptBRDataShapes.bracketsFieldLabels.rounds],
-      'bracketsRounds',
-    ),
-  ];
 }
 
 /**

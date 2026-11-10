@@ -69,6 +69,9 @@ describe('the manifests under packages/graphics', () => {
     // Arrange: the graphics shipped today, one manifest each.
     const shippedManifests = [
       join('battle-card', 'battle-card.ograf.json'),
+      // The sort puts "bracket-match-…/" before "bracket/": "-" comes before "/".
+      join('bracket-match-bug', 'bracket-match-bug.ograf.json'),
+      join('bracket-match-card', 'bracket-match-card.ograf.json'),
       join('bracket', 'bracket.ograf.json'),
       join('countdown', 'countdown.ograf.json'),
       join('intermission-board', 'intermission-board.ograf.json'),

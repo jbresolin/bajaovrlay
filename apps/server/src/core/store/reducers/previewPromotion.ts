@@ -185,6 +185,7 @@ function readFrozenBoundFieldsAgain(
       dataSources: slices.dataSources,
       dataSnapshots: slices.dataSnapshots,
       overrides: slices.overrides,
+      bracketMatchFocuses: slices.bracketMatchFocuses,
     },
     // Only frozen bindings are read again here; entity fields are live and go on as seen.
     entities: slices,

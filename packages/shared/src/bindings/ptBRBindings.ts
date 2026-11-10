@@ -40,6 +40,11 @@ export const ptBRBindings = {
       `a fonte ${sourceLabel} não tem o carro ${carNumber} em Posições.`,
     transformRefused: (transformLabel: string, reason: string) =>
       `a transformação "${transformLabel}" recusou o valor: ${reason}.`,
+    /** A slot of the match focus with nothing in it (BAJAOVRLAY-65): "Partida agora". */
+    noMatchInSlot: (slotName: string) => `nenhuma partida escolhida para ${slotName}.`,
+    /** A slot whose chosen match the source no longer lists. */
+    chosenMatchGone: (slotName: string, matchId: string) =>
+      `a partida escolhida para ${slotName} (${matchId}) saiu da chave.`,
   },
 
   /** Why a binding does not fit the graphic field it is stored on. */

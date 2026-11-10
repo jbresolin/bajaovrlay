@@ -8,7 +8,7 @@
  * A logo is drawn with <img> only: an <img> runs no script, even for an SVG
  * (packages/graphics/README.md).
  */
-import { html, type TemplateResult } from 'lit';
+import { html, nothing, type TemplateResult } from 'lit';
 
 /** What one logo cell shows, and the test ids it carries (the graphic's own names). */
 export type TeamLogoCellContent = {
@@ -20,6 +20,11 @@ export type TeamLogoCellContent = {
   /** The test id of the cell ("team-card-logo-cell"); the image's is `imageTestId`. */
   cellTestId: string;
   imageTestId: string;
+  /**
+   * Called when the logo fails to load (a removed media file, a bad address), for a
+   * graphic that draws something else in its place; left out, a broken logo stays as is.
+   */
+  onLogoFailed?: () => void;
 };
 
 /** The cell's markup: the box, on the light plate or not, holding the logo image. */
@@ -33,5 +38,6 @@ export function renderTeamLogoCell(content: TeamLogoCellContent): TemplateResult
       data-testid=${content.imageTestId}
       src=${content.logoUrl}
       alt=${content.alternativeText}
+      @error=${content.onLogoFailed ?? nothing}
   /></span>`;
 }

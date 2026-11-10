@@ -19,6 +19,9 @@ keep disqualified teams, unranked, at the end (`isDisqualified`, BAJAOVRLAY-24).
 hand-lists the paths a binding may point at, each with its value type (standings by row,
 "1ª linha", since tied teams share a rank; a positions car chosen by its number under
 `entryOfCar.`; the whole session clock as `clock`, the clock group; each shape's list is built
-once and kept, frozen, since every resolution looks a path up in it, BAJAOVRLAY-45);
+once and kept, frozen, since every resolution looks a path up in it, BAJAOVRLAY-45), and
+`bracketsBindablePaths.ts` the brackets' (the rounds, then the match "agora" and "a seguir"
+under `matchNow.` and `matchUpNext.`, which the resolver reads from the match focus,
+BAJAOVRLAY-65);
 `ptBRDataShapes.ts` holds the pt-BR texts;
 `samples/` holds realistic payloads, also the test fixtures. `index.ts` lists every export.

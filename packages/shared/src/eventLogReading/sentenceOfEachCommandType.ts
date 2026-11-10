@@ -2,6 +2,7 @@ import type { Command } from '../commands/command.js';
 import type { EventLogDetails } from '../slices/eventLogEntry.js';
 import type { CommandOfType } from './commandOfType.js';
 import type { EventLogNames } from './eventLogNames.js';
+import * as sentencesOfBracketMatchFocus from './sentencesOfBracketMatchFocus.js';
 import * as sentencesOfItemsAndRundown from './sentencesOfItemsAndRundown.js';
 import * as sentencesOfPreviews from './sentencesOfPreviews.js';
 import * as sentencesOfSettings from './sentencesOfSettings.js';
@@ -49,6 +50,8 @@ export const sentenceOfEachCommandType: SentenceOfEachCommandType = {
   recordObsSceneSwitchAnswer: sentencesOfTakesAndClears.describeRecordObsSceneSwitchAnswer,
   fireTrigger: sentencesOfTakesAndClears.describeFireTrigger,
   runTriggerFiring: sentencesOfTakesAndClears.describeRunTriggerFiring,
+  setBracketMatchFocus: sentencesOfBracketMatchFocus.describeSetBracketMatchFocus,
+  acceptSuggestedBracketMatches: sentencesOfBracketMatchFocus.describeAcceptSuggestedBracketMatches,
   previewItem: sentencesOfPreviews.describePreviewItem,
   stopPreview: sentencesOfPreviews.describeStopPreview,
   previewClearLayer: sentencesOfPreviews.describePreviewClearLayer,

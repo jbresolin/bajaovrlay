@@ -140,6 +140,7 @@ export function buildSlicesWithNothingOnAir(): Slices {
     instanceBindings: [],
     programHistory: [],
     overrides: [],
+    bracketMatchFocuses: [],
   };
 }
 

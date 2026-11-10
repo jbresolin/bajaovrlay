@@ -33,6 +33,7 @@ function buildEverySliceEmpty() {
     instanceBindings: [],
     programHistory: [],
     overrides: [],
+    bracketMatchFocuses: [],
     rundowns: [],
     items: [],
     quickFirePanels: [],

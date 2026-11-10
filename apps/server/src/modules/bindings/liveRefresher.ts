@@ -109,6 +109,7 @@ export function startLiveRefresher(options: LiveRefresherOptions): LiveRefresher
         dataSources: slices.dataSources,
         dataSnapshots: slices.dataSnapshots,
         overrides: slices.overrides,
+        bracketMatchFocuses: slices.bracketMatchFocuses,
       },
       sourceIdsThatChanged,
       entityFields: entry.entityFields ?? [],
@@ -150,15 +151,20 @@ export function startLiveRefresher(options: LiveRefresherOptions): LiveRefresher
   const stopWatchingTheStore = stateStore.subscribeToSliceChanges(
     (changedSliceNames, _slices, changedDataSnapshots) => {
       // A correction set or cleared changes what every source says from now on, so it
-      // refreshes every bound instance; a snapshot only those bound to its source.
+      // refreshes every bound instance; a snapshot only those bound to its source. A new
+      // "agora" or "a seguir" of a Super Prime (BAJAOVRLAY-65) is read the same way as a
+      // correction: every live binding is read again, and only the instances whose values
+      // differ get a refresh, so the bug and the card follow at once and nothing else moves.
       const haveOverridesChanged = changedSliceNames.includes('overrides');
+      const hasMatchFocusChanged = changedSliceNames.includes('bracketMatchFocuses');
+      const isEverySourceAffected = haveOverridesChanged || hasMatchFocusChanged;
       const changedSourceIds = changedDataSnapshots.map((change) => change.sourceId);
       // An edit in Cadastros refreshes every instance that reads the library.
       const haveEntitiesChanged = changedSliceNames.some((sliceName) =>
         entitySliceNames.includes(sliceName),
       );
-      if (haveOverridesChanged || changedSourceIds.length > 0 || haveEntitiesChanged) {
-        scheduleRefresh(changedSourceIds, haveOverridesChanged, haveEntitiesChanged);
+      if (isEverySourceAffected || changedSourceIds.length > 0 || haveEntitiesChanged) {
+        scheduleRefresh(changedSourceIds, isEverySourceAffected, haveEntitiesChanged);
       }
     },
   );

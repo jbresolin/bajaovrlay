@@ -84,6 +84,7 @@ export function createServerStateStore(): ServerStateStore {
     dataSources: [],
     dataSnapshots: [],
     overrides: [],
+    bracketMatchFocuses: [],
     recordings: [],
     events: [],
     eventRules: [],
@@ -118,6 +119,7 @@ export function createServerStateStore(): ServerStateStore {
         dataSources: slices.dataSources,
         dataSnapshots: slices.dataSnapshots,
         overrides: slices.overrides,
+        bracketMatchFocuses: slices.bracketMatchFocuses,
         recordings: slices.recordings,
         events: slices.events,
         eventRules: slices.eventRules,
@@ -182,6 +184,9 @@ export function createServerStateStore(): ServerStateStore {
           break;
         case 'overrides':
           set({ overrides: message.slice });
+          break;
+        case 'bracketMatchFocuses':
+          set({ bracketMatchFocuses: message.slice });
           break;
         case 'triggers':
           set({ triggers: message.slice });

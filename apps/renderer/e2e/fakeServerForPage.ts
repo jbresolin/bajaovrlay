@@ -162,6 +162,7 @@ export async function startFakeServerForPage(
     instanceBindings: [],
     programHistory: [],
     overrides: [],
+    bracketMatchFocuses: [],
     eventLog: [],
   };
   const connections: WebSocketRoute[] = [];

@@ -2,6 +2,10 @@ import { z } from 'zod';
 
 import { RecordBackupCommandSchema } from '../backup/backupCommands.js';
 import { RefreshBoundInstanceDataCommandSchema } from '../bindings/refreshBoundInstanceData.js';
+import {
+  AcceptSuggestedBracketMatchesCommandSchema,
+  SetBracketMatchFocusCommandSchema,
+} from '../bracketMatchFocus/bracketMatchFocusCommands.js';
 import { CreateDataSourceCommandSchema } from '../dataSources/createDataSource.js';
 import { DeleteDataSourceCommandSchema } from '../dataSources/deleteDataSource.js';
 import { PollDataSourceNowCommandSchema } from '../dataSources/pollDataSourceNow.js';
@@ -162,6 +166,9 @@ export const CommandSchema = z.discriminatedUnion('type', [
   // Overrides (BAJAOVRLAY-20); ../overrides/. Operators only.
   SetOverrideCommandSchema,
   ClearOverrideCommandSchema,
+  // The match focus of a Super Prime (BAJAOVRLAY-65); ../bracketMatchFocus/. The Produtor's.
+  SetBracketMatchFocusCommandSchema,
+  AcceptSuggestedBracketMatchesCommandSchema,
   // The event inbox (BAJAOVRLAY-44); ../eventInbox/. recordDetectedEvents is sent only by
   // the server's event detection (sistema:eventos), which may also send showEvent.
   ShowEventCommandSchema,

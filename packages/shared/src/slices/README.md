@@ -11,6 +11,7 @@ which lists all ten slices; five have a file here:
 - `changedSlices.ts` — the slices one state change changed (the WS `slices` message), and
   `mergeChangedSlicesIntoSlices`, how a client takes them in one step.
 
-`rundowns` and `items` live in `../rundown/`, `quickFirePanels` in `../quickFire/`, `macros`
+`bracketMatchFocuses` ("agora" and "a seguir" of each Super Prime, BAJAOVRLAY-65) lives in
+`../bracketMatchFocus/`; `rundowns` and `items` live in `../rundown/`, `quickFirePanels` in `../quickFire/`, `macros`
 and `macroRuns` in `../macros/`, `dataSources`, `dataSnapshots` and `recordings` in
 `../dataSources/`. Overrides, entities and theme arrive later in M2.

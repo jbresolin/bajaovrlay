@@ -58,6 +58,7 @@ function renderEmptyTowerFormWithTheSimulator() {
             dataSources: [simulator],
             dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
             overrides: [],
+            bracketMatchFocuses: [],
           },
           { teams: [] },
         ),

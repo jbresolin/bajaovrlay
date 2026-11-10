@@ -11,6 +11,8 @@ manifest schema, and the four clock fields found by role for the clock group);
 
 Everything here is pure and runs alike on the server (when an item is saved, and at the
 take) and in the item editor (before sending). `bindingResolution.ts` hands the transforms
-the library's teams, which every caller passes (withTeamLogos, BAJAOVRLAY-47). The paths a binding may name, with their
+the library's teams, which every caller passes (withTeamLogos, BAJAOVRLAY-47), and reads the
+brackets' `matchNow.` and `matchUpNext.` paths from the match focus, joined with those teams
+(`../bracketMatchFocus/focusedBracketMatch.ts`, BAJAOVRLAY-65). The paths a binding may name, with their
 labels and value types, live with the shapes in `../dataShapes/bindablePaths.ts`; the
 pt-BR sentences in `ptBRBindings.ts`. `index.ts` lists every export.

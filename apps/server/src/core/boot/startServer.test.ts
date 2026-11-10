@@ -55,7 +55,7 @@ describe('startServer', () => {
     const response = await fetch(`http://127.0.0.1:${runningServer.port}/api/v1/state`);
     const body = (await response.json()) as { layers: Array<{ id: string }> };
 
-    // Assert: 200 and the eight seeded layers.
+    // Assert: 200 and the nine seeded layers.
     expect(response.status, 'the booted server must answer 200 OK').toBe(200);
     expect(
       body.layers.map((layer) => layer.id),
@@ -63,6 +63,7 @@ describe('startServer', () => {
     ).toEqual([
       'bug',
       'channel-logo',
+      'bracket-match',
       'ticker',
       'clock',
       'tower',

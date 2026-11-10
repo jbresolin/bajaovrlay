@@ -90,8 +90,9 @@ function loadSlicesAtBoot(options: {
 
 /**
  * A database as the server of BAJAOVRLAY-61 left it: booted once, then the channel logo's
- * layer, item and seed mark taken out again, so it holds what an operator's database held
- * before this update. The operator had added a "Patrocínio" button to "Atalhos" there.
+ * layer, item and seed mark taken out again, and the Super Prime match graphics' too
+ * (BAJAOVRLAY-65, seeded after it), so it holds what an operator's database held before
+ * this update. The operator had added a "Patrocínio" button to "Atalhos" there.
  */
 function openDatabaseOfAServerBeforeTheChannelLogo() {
   const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
@@ -106,16 +107,23 @@ function openDatabaseOfAServerBeforeTheChannelLogo() {
     label: 'Patrocínio',
     fields: {},
   };
-  const itemsBefore = slicesOfTheOldBoot.items.filter((item) => item.id !== 'logo-do-canal');
+  const seededLaterItemIds = ['logo-do-canal', 'partida-agora', 'partida-a-seguir'];
+  const itemsBefore = slicesOfTheOldBoot.items.filter(
+    (item) => !seededLaterItemIds.includes(item.id),
+  );
   writeSliceRows(database, [
     {
       name: 'layers',
-      json: slicesOfTheOldBoot.layers.filter((layer) => layer.id !== 'channel-logo'),
+      json: slicesOfTheOldBoot.layers.filter(
+        (layer) => layer.id !== 'channel-logo' && layer.id !== 'bracket-match',
+      ),
       updatedAt: '2026-11-08T22:10:00.000Z',
     },
     {
       name: 'quickFirePanels',
-      json: slicesOfTheOldBoot.quickFirePanels.filter((panel) => panel.id !== 'logo'),
+      json: slicesOfTheOldBoot.quickFirePanels.filter(
+        (panel) => panel.id !== 'logo' && panel.id !== 'chave',
+      ),
       updatedAt: '2026-11-08T22:10:00.000Z',
     },
     {
@@ -143,9 +151,9 @@ describe('a new database', () => {
       'the layer is seeded at z 15 on program',
     ).toEqual(seededChannelLogoLayer);
     expect(
-      slices.layers.map((layer) => layer.id).slice(0, 3),
-      'the channel logo sits above the bug and under the ticker',
-    ).toEqual(['bug', 'channel-logo', 'ticker']);
+      slices.layers.map((layer) => layer.id).slice(0, 4),
+      'the channel logo sits above the bug, under the match bug (BAJAOVRLAY-65) and the ticker',
+    ).toEqual(['bug', 'channel-logo', 'bracket-match', 'ticker']);
     expect(
       slices.items.find((item) => item.id === 'logo-do-canal'),
       'the item is seeded with no image, the rest at the defaults',
@@ -157,6 +165,7 @@ describe('a new database', () => {
       ['atalhos', 'Atalhos', 0],
       ['avisos', 'Avisos', 1],
       ['logo', 'Logo', 2],
+      ['chave', 'Chave', 3],
     ]);
     expect(
       slices.items.filter(
@@ -184,16 +193,22 @@ describe('a database written before the channel logo', () => {
     // operator's button alone in "Atalhos", the three
     // rows written, and an info line.
     expect(
-      slices.layers.map((layer) => [layer.id, layer.zIndex]).slice(0, 3),
+      slices.layers.map((layer) => [layer.id, layer.zIndex]).slice(0, 4),
       'the layer is added in its z-order place',
     ).toEqual([
       ['bug', 10],
       ['channel-logo', 15],
+      ['bracket-match', 17],
       ['ticker', 20],
     ]);
     expect(
       slices.items
-        .filter((item) => item.home.kind === 'quickFire' && item.home.panelId !== 'avisos')
+        .filter(
+          (item) =>
+            item.home.kind === 'quickFire' &&
+            item.home.panelId !== 'avisos' &&
+            item.home.panelId !== 'chave',
+        )
         .map((item) => [
           item.id,
           item.home.kind === 'quickFire' ? item.home.panelId : '',
@@ -204,9 +219,10 @@ describe('a database written before the channel logo', () => {
       ['patrocinio-bosch', 'atalhos', 0],
       ['logo-do-canal', 'logo', 0],
     ]);
-    expect(slices.quickFirePanels.at(-1), 'the "Logo" panel is added after the last panel').toEqual(
-      { id: 'logo', name: 'Logo', order: 2 },
-    );
+    expect(
+      slices.quickFirePanels.find((panel) => panel.id === 'logo'),
+      'the "Logo" panel is added after the last panel ("Chave" comes after it, BAJAOVRLAY-65)',
+    ).toEqual({ id: 'logo', name: 'Logo', order: 2 });
     const storedRows = readAllSliceRows(database);
     expect(
       storedRows.find((row) => row.name === 'layers')?.json,
