@@ -236,6 +236,8 @@ const sentenceScenarios: Array<{ name: string; command: CommandInput; expected: 
       type: 'acceptSuggestedBracketMatches',
       sourceId: 'simulador-enduro',
       sessionId: 'simulador-enduro-2027-super-prime',
+      currentMatchId: 'r2-m1',
+      upNextMatchId: 'r2-m2',
     },
     expected: 'Usou a sugestão para Partida agora e Partida a seguir na fonte "Simulador — Enduro"',
   },

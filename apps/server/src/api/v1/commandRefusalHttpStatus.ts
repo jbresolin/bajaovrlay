@@ -107,6 +107,7 @@ const httpStatusOfEachRefusalCode: Record<CommandErrorCode, CommandRefusalHttpSt
   BRACKETS_NOT_SENT: 409,
   BRACKET_SESSION_CHANGED: 409,
   NO_SUGGESTED_BRACKET_MATCH: 409,
+  BRACKET_PROPOSAL_CHANGED: 409,
 };
 
 /** The HTTP status the command API answers a refusal with this code with. */

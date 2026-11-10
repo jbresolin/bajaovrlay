@@ -27,6 +27,8 @@ export {
 } from './bracketMatchPlayOrder.js';
 // The suggested "agora" and "a seguir": the first two matches without a winner.
 export { suggestBracketMatches, type SuggestedBracketMatches } from './bracketMatchSuggestions.js';
+// What "Usar sugestão" puts in the two slots: the operator's "a seguir" moved up first.
+export { proposeBracketMatches } from './bracketMatchProposal.js';
 // What a slot holds now (chosen, not chosen, gone) and the data the graphics receive of it.
 export {
   describeFocusedMatchForGraphics,

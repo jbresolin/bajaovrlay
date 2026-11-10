@@ -10,15 +10,18 @@
  * What these tests prove:
  *   - Only sources that send brackets are listed.
  *   - The list: every raced match in play order with its round, its progress (encerrada,
- *     em andamento, a definir) and the suggested ones marked.
+ *     em andamento, a definir) and the proposed ones marked, so the marks always say what
+ *     "Usar sugestão" does: a match the Produtor put "a seguir" is marked "agora".
  *   - The slots: a chosen match, an empty slot, a focus of another session (empty), and a
  *     chosen match the source stopped listing (gone, named).
  *   - The proposal: nothing while "agora" runs; once it has a winner, the winner and the
- *     suggested next match; nothing left to suggest after the final; and, with "agora"
- *     empty, the suggestion alone.
+ *     proposed next match (the Produtor's "a seguir" first); nothing left to suggest after
+ *     the final; with "agora" empty, the suggestion alone; with "agora" gone from the
+ *     source, the suggestion too. Each carries the match ids "Usar sugestão" sends.
  *
  * What these tests deliberately do not cover:
- *   - Which match is suggested in each situation: shared's bracketMatchSuggestions.test.ts.
+ *   - Which match is suggested or proposed in each situation: shared's
+ *     bracketMatchSuggestions.test.ts and bracketMatchProposal.test.ts.
  *   - The panel's buttons and the commands they send: BracketMatchFocusPanel.test.tsx.
  */
 import type { BracketMatchFocus, BracketRound, DataSnapshot } from '@bajaovrlay/shared';
@@ -109,6 +112,25 @@ describe('the list of matches', () => {
       ['qf-4', 'Piratas Cerrado × UFSC (Quartas de final)', 'notStarted', undefined],
     ]);
   });
+
+  it('marks the Produtor\'s "a seguir" as proposed "agora", as "Usar sugestão" would put it', () => {
+    // Arrange: qf-1 "agora" and decided; qf-3 put "a seguir" by hand (qf-2 not ready).
+    const rounds = [buildQuarterFinals({ 'qf-1': cars.corisco })];
+
+    // Act: read what the panel shows.
+    const simulator = describeTheSimulator(rounds, buildFocus('qf-1', 'qf-3'));
+
+    // Assert: qf-3 marked "agora", qf-2 "a seguir": the marks agree with the button.
+    expect(
+      simulator.matches.map((row) => [row.matchId, row.suggestedFor]),
+      'the marks must follow the proposal',
+    ).toEqual([
+      ['qf-1', undefined],
+      ['qf-2', 'upNext'],
+      ['qf-3', 'current'],
+      ['qf-4', undefined],
+    ]);
+  });
 });
 
 describe('the two slots', () => {
@@ -178,11 +200,34 @@ describe('the proposal', () => {
     // Act: read what the panel shows.
     const simulator = describeTheSimulator(rounds, buildFocus('qf-1', 'qf-2'));
 
-    // Assert: the winner and the suggested next match.
+    // Assert: the winner and the suggested next match, and the ids the button sends.
     expect(simulator.proposal, 'the page must propose the next match').toEqual({
       kind: 'currentDecided',
       winnerName: 'Corisco',
       suggestedMatchText: 'Pequi × Acauã (Quartas de final)',
+    });
+    expect(simulator.proposedMatches, '"Usar sugestão" must name qf-2, then qf-3').toEqual({
+      currentMatchId: 'qf-2',
+      upNextMatchId: 'qf-3',
+    });
+  });
+
+  it('proposes the match the Produtor put "a seguir" once "agora" has its winner', () => {
+    // Arrange: qf-1 "agora", qf-3 "a seguir" by hand; Corisco has just won qf-1.
+    const rounds = [buildQuarterFinals({ 'qf-1': cars.corisco })];
+
+    // Act: read what the panel shows.
+    const simulator = describeTheSimulator(rounds, buildFocus('qf-1', 'qf-3'));
+
+    // Assert: qf-3 proposed "agora" and qf-2 after it, not the play order's qf-2 first.
+    expect(simulator.proposal, 'the Produtor\'s "a seguir" must be proposed').toEqual({
+      kind: 'currentDecided',
+      winnerName: 'Corisco',
+      suggestedMatchText: 'Cactus × Baja UFMG (Quartas de final)',
+    });
+    expect(simulator.proposedMatches, '"Usar sugestão" must name qf-3, then qf-2').toEqual({
+      currentMatchId: 'qf-3',
+      upNextMatchId: 'qf-2',
     });
   });
 
@@ -200,12 +245,13 @@ describe('the proposal', () => {
     // Act: read what the panel shows.
     const simulator = describeTheSimulator(rounds, buildFocus('qf-4'));
 
-    // Assert: the winner, and no next match.
+    // Assert: the winner, and no next match: "Usar sugestão" has nothing to send.
     expect(simulator.proposal, 'nothing is left to propose').toEqual({
       kind: 'currentDecided',
       winnerName: 'UFSC',
       suggestedMatchText: undefined,
     });
+    expect(simulator.proposedMatches.currentMatchId, 'no match to put "agora"').toBeUndefined();
   });
 
   it('proposes the suggestion when nothing is "agora"', () => {
@@ -220,5 +266,41 @@ describe('the proposal', () => {
       kind: 'nothingChosen',
       suggestedMatchText: 'Corisco × Buffalo (Quartas de final)',
     });
+  });
+
+  it('proposes the suggestion when the match "agora" left the source', () => {
+    // Arrange: "agora" names qf-9, which the source stopped listing; qf-1 decided.
+    const rounds = [buildQuarterFinals({ 'qf-1': cars.corisco })];
+
+    // Act: read what the panel shows.
+    const simulator = describeTheSimulator(rounds, buildFocus('qf-9'));
+
+    // Assert: the suggestion offered, so one press puts the bug back on air.
+    expect(simulator.proposal, 'a gone "agora" is offered the suggestion').toEqual({
+      kind: 'currentGone',
+      suggestedMatchText: 'Pequi × Acauã (Quartas de final)',
+    });
+    expect(simulator.proposedMatches, '"Usar sugestão" must name qf-2, then qf-3').toEqual({
+      currentMatchId: 'qf-2',
+      upNextMatchId: 'qf-3',
+    });
+  });
+
+  it('proposes nothing when "agora" left the source and nothing is left to race', () => {
+    // Arrange: every quarter-final decided, "agora" naming qf-9, which is gone.
+    const rounds = [
+      buildQuarterFinals({
+        'qf-1': cars.corisco,
+        'qf-2': cars.pequi,
+        'qf-3': cars.cactus,
+        'qf-4': cars.ufsc,
+      }),
+    ];
+
+    // Act: read what the panel shows.
+    const simulator = describeTheSimulator(rounds, buildFocus('qf-9'));
+
+    // Assert: no proposal; the slot line already says the match went.
+    expect(simulator.proposal, 'nothing to propose').toBeUndefined();
   });
 });

@@ -37,10 +37,13 @@ function SlotLine(props: { slotName: string; slot: SlotOnThePage }) {
   );
 }
 
-/** The proposal's words: the winner and the next match, or the suggestion alone. */
+/**
+ * The proposal's words: the winner and the next match, or the suggestion alone (with
+ * "agora" empty, or gone, which its slot line already says).
+ */
 function ProposalLines(props: { proposal: MatchFocusProposal }) {
   const { proposal } = props;
-  if (proposal.kind === 'nothingChosen') {
+  if (proposal.kind === 'nothingChosen' || proposal.kind === 'currentGone') {
     return <p className="text-sm">{texts.proposal.nothingChosen(proposal.suggestedMatchText)}</p>;
   }
   return (
@@ -72,15 +75,19 @@ function MatchFocusOfOneSource(props: { source: MatchFocusOfASource; title: stri
       matchId,
     });
   };
-  const acceptTheSuggestion = () => {
+  const proposedCurrentMatchId = source.proposedMatches.currentMatchId;
+  const acceptTheSuggestion = (currentMatchId: string) => {
+    // The proposal shown goes with the press: the server refuses it if its own changed.
     void sendCommand({
       type: 'acceptSuggestedBracketMatches',
       sourceId: source.sourceId,
       sessionId: source.sessionId,
+      currentMatchId,
+      upNextMatchId: source.proposedMatches.upNextMatchId ?? null,
     });
   };
-  const isCurrentDecided = source.proposal?.kind === 'currentDecided';
-  const canUseTheSuggestion = source.proposal !== undefined && source.hasSuggestion;
+  const isCurrentOver =
+    source.proposal?.kind === 'currentDecided' || source.proposal?.kind === 'currentGone';
 
   return (
     <div className="flex flex-col gap-2 rounded-md border p-3">
@@ -89,8 +96,13 @@ function MatchFocusOfOneSource(props: { source: MatchFocusOfASource; title: stri
       <SlotLine slotName={texts.slotNames.upNext} slot={source.upNext} />
       {source.proposal === undefined ? null : <ProposalLines proposal={source.proposal} />}
       <div className="flex flex-wrap items-center gap-2">
-        {canUseTheSuggestion ? (
-          <Button type="button" size="sm" disabled={isDisabled} onClick={acceptTheSuggestion}>
+        {source.proposal !== undefined && proposedCurrentMatchId !== undefined ? (
+          <Button
+            type="button"
+            size="sm"
+            disabled={isDisabled}
+            onClick={() => acceptTheSuggestion(proposedCurrentMatchId)}
+          >
             {texts.useSuggestionButton}
           </Button>
         ) : null}
@@ -101,7 +113,7 @@ function MatchFocusOfOneSource(props: { source: MatchFocusOfASource; title: stri
           disabled={isDisabled}
           onClick={() => setIsListOpen(true)}
         >
-          {isCurrentDecided ? texts.chooseAnotherButton : texts.chooseButton}
+          {isCurrentOver ? texts.chooseAnotherButton : texts.chooseButton}
         </Button>
         {isDisabled ? (
           <span className="text-xs text-muted-foreground">{whyTheRoleCannotChoose}</span>

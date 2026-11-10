@@ -262,6 +262,11 @@ export const CommandErrorCodeSchema = z.enum([
   'BRACKET_MATCH_NOT_FOUND',
   /** "Usar sugestão" when every match of the brackets already has its winner. */
   'NO_SUGGESTED_BRACKET_MATCH',
+  /**
+   * "Usar sugestão" naming a proposal other than the server's: a winner or a poll arrived
+   * between the page showing it and the press. The message names the proposal now.
+   */
+  'BRACKET_PROPOSAL_CHANGED',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

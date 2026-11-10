@@ -2,8 +2,9 @@
 
 "Partidas da chave" on the console's right column (BAJAOVRLAY-65): for each source that sends a
 Super Prime, the match "agora" (the match bug's) and "a seguir" (the "a seguir" card's), the
-proposal of the next match once "agora" has its winner ("Partida encerrada: Corisco venceu.
-Próxima sugerida: …"), "Usar sugestão" and "Escolher partida". Start at
+proposal of the next match once "agora" has its winner or has left the source ("Partida
+encerrada: Corisco venceu. Próxima sugerida: …", the Produtor's "a seguir" first), "Usar
+sugestão" (which names the proposal it showed) and "Escolher partida". Start at
 `matchFocusOfEachSource.ts`, which reads all of it from the slices with the shared rules
 (`packages/shared/src/bracketMatchFocus`); `BracketMatchFocusPanel.tsx` draws it and sends
 setBracketMatchFocus and acceptSuggestedBracketMatches; `ChooseBracketMatchDialog.tsx` lists every

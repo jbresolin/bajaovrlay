@@ -12,10 +12,13 @@
  *   - With no source sending a Super Prime the panel is not there.
  *   - It names the match "agora" and "a seguir", and proposes nothing while "agora" runs.
  *   - A winner arriving brings the proposal ("Partida encerrada: Corisco venceu. Próxima
- *     sugerida: …"); "Usar sugestão" sends acceptSuggestedBracketMatches with the session.
+ *     sugerida: …"); "Usar sugestão" sends acceptSuggestedBracketMatches with the session
+ *     and the two matches it showed. A match the Produtor put "a seguir" is the one
+ *     proposed.
  *   - "Escolher outra" lists every match with its progress and the suggested ones; "Agora"
  *     on one sends setBracketMatchFocus for it; "Esvaziar" sends an empty slot.
- *   - A chosen match the source stopped listing is named, with the graphics showing nothing.
+ *   - A chosen match the source stopped listing is named, with the graphics showing
+ *     nothing, and "Usar sugestão" offers the suggestion in its place.
  *   - A refusal of the server is shown under the panel.
  *   - For Dados the buttons are greyed out, with the role's reason written beside them.
  *
@@ -157,6 +160,39 @@ describe('"Partidas da chave"', () => {
         type: 'acceptSuggestedBracketMatches',
         sourceId: 'simulador-enduro',
         sessionId: superPrimeSessionId,
+        currentMatchId: 'qf-2',
+        upNextMatchId: 'qf-3',
+      },
+    ]);
+  });
+
+  it('proposes the match the Produtor put "a seguir", and "Usar sugestão" names it', () => {
+    // Arrange: qf-1 "agora" and decided; qf-3 put "a seguir" by hand (qf-2 not ready).
+    const { fakeServer } = renderOnControlPageConnectedToFakeServer(
+      <BracketMatchFocusPanel />,
+      buildSlicesWithTheSuperPrime([buildQuarterFinals({ 'qf-1': cars.corisco })], {
+        sourceId: 'simulador-enduro',
+        sessionId: superPrimeSessionId,
+        currentMatchId: 'qf-1',
+        upNextMatchId: 'qf-3',
+      }),
+    );
+
+    // Act: press "Usar sugestão".
+    fireEvent.click(screen.getByRole('button', { name: 'Usar sugestão' }));
+
+    // Assert: qf-3 was proposed, and the press names qf-3 "agora" and qf-2 "a seguir".
+    expect(
+      screen.getByText('Próxima sugerida: Cactus × Baja UFMG (Quartas de final)'),
+      'the Produtor\'s "a seguir" is the next match',
+    ).toBeVisible();
+    expect(fakeServer.listCommandsReceived(), 'the press names what the page showed').toEqual([
+      {
+        type: 'acceptSuggestedBracketMatches',
+        sourceId: 'simulador-enduro',
+        sessionId: superPrimeSessionId,
+        currentMatchId: 'qf-3',
+        upNextMatchId: 'qf-2',
       },
     ]);
   });
@@ -237,6 +273,36 @@ describe('"Partidas da chave"', () => {
       ),
       'a removed match must be named',
     ).toBeVisible();
+  });
+
+  it('offers "Usar sugestão" when the match "agora" left the source', () => {
+    // Arrange: "agora" names qf-9, which the source does not list.
+    const { fakeServer } = renderOnControlPageConnectedToFakeServer(
+      <BracketMatchFocusPanel />,
+      buildSlicesWithTheSuperPrime([buildQuarterFinals()], {
+        sourceId: 'simulador-enduro',
+        sessionId: superPrimeSessionId,
+        currentMatchId: 'qf-9',
+      }),
+    );
+
+    // Act: press "Usar sugestão".
+    fireEvent.click(screen.getByRole('button', { name: 'Usar sugestão' }));
+
+    // Assert: the suggestion was shown, and the press asks for qf-1 then qf-2.
+    expect(
+      screen.getByText('Sugerida para agora: Corisco × Buffalo (Quartas de final)'),
+      'a gone "agora" is offered the suggestion',
+    ).toBeVisible();
+    expect(fakeServer.listCommandsReceived(), 'the press asks for the suggestion').toEqual([
+      {
+        type: 'acceptSuggestedBracketMatches',
+        sourceId: 'simulador-enduro',
+        sessionId: superPrimeSessionId,
+        currentMatchId: 'qf-1',
+        upNextMatchId: 'qf-2',
+      },
+    ]);
   });
 
   it("shows the server's refusal under the panel", () => {

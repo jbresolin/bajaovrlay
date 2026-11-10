@@ -12,23 +12,22 @@
  *   - A match goes in a slot, one listed after a match not yet run included; a match put
  *     in the other slot moves there; a slot is emptied with no match.
  *   - "Usar sugestão" puts the first undecided match in "agora" and the next in "a
- *     seguir", reading the brackets the server holds when the command arrives.
+ *     seguir", reading the brackets the server holds when the command arrives; a match the
+ *     Produtor put "a seguir" by hand moves up to "agora" first.
  *   - A choice in a new session starts a fresh focus: nothing of the earlier session is kept.
- *   - Each refusal, with its code and a pt-BR message: an unknown source, a source with no
- *     brackets, a page that had not heard of the new session, an unknown match, a bye,
- *     and "Usar sugestão" with nothing left to suggest.
  *   - The Produtor may send both; Dados may send neither.
- *   - Every command writes its event-log row, ok or failed.
+ *   - Every command writes its event-log row (a refusal by role included).
  *   - The focus is saved: a restart keeps it.
  *
  * What these tests deliberately do not cover:
  *   - What the bound graphics show when the focus or the brackets change, and the focus
  *     never moving when a winner arrives: liveRefreshBracketMatchFocus.test.ts
  *     (modules/bindings).
- *   - Which match is suggested in each situation: shared's bracketMatchSuggestions.test.ts.
+ *   - Which match is suggested or proposed in each situation: shared's
+ *     bracketMatchSuggestions.test.ts and bracketMatchProposal.test.ts.
+ *   - Each refusal of the brackets or the proposal: bracketMatchFocusRefusals.test.ts.
  */
 import {
-  buildBye,
   buildQuarterFinals,
   buildUndecidedMatch,
   superPrimeCars,
@@ -37,6 +36,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   applyOrThrow,
+  buildAcceptOf,
+  buildChoiceOf,
   dataOperatorActor,
   openStoreWithTheSimulatorOn,
   pollTheSimulatorWithRounds,
@@ -48,24 +49,6 @@ import {
 } from './superPrimeOnTheStore.testSupport.js';
 
 const cars = superPrimeCars;
-
-/** "Escolher partida" for a slot, as the page sends it. */
-function buildChoiceOf(slot: 'current' | 'upNext', matchId: string | null) {
-  return {
-    type: 'setBracketMatchFocus',
-    sourceId: simulatorSourceId,
-    sessionId: superPrimeSessionId,
-    slot,
-    matchId,
-  };
-}
-
-/** "Usar sugestão", as the page sends it. */
-const acceptTheSuggestion = {
-  type: 'acceptSuggestedBracketMatches',
-  sourceId: simulatorSourceId,
-  sessionId: superPrimeSessionId,
-};
 
 describe('setBracketMatchFocus', () => {
   it('puts the match chosen in "agora" and logs the command', () => {
@@ -89,8 +72,9 @@ describe('setBracketMatchFocus', () => {
     ).toEqual({ command: 'setBracketMatchFocus', actor: producerActor, result: { status: 'ok' } });
   });
 
-  it('accepts a match listed after one not yet run, for the final run after the third place', () => {
-    // Arrange: the third place listed after the final, neither run yet.
+  it('accepts a match listed after one not yet run, for the final run before the third place', () => {
+    // Arrange: the third place listed before the final, as every source lists it
+    // (contract C), neither run yet.
     const { stateStore } = openStoreWithTheSimulatorOn();
     pollTheSimulatorWithRounds(stateStore, [
       buildQuarterFinals({
@@ -106,25 +90,25 @@ describe('setBracketMatchFocus', () => {
           { ...buildUndecidedMatch('sf-2', cars.cactus, cars.ufsc), winnerCarNumber: 13 },
         ],
       },
-      { name: 'Final', matches: [buildUndecidedMatch('final', cars.corisco, cars.cactus)] },
       {
         name: 'Disputa de 3º lugar',
         isThirdPlace: true,
         matches: [buildUndecidedMatch('terceiro', cars.pequi, cars.ufsc)],
       },
+      { name: 'Final', matches: [buildUndecidedMatch('final', cars.corisco, cars.cactus)] },
     ]);
 
-    // Act: the third place is run first on the day, so the Produtor puts it "agora" and
-    // the final "a seguir", against the source's order.
-    applyOrThrow(stateStore, buildChoiceOf('current', 'terceiro'));
-    applyOrThrow(stateStore, buildChoiceOf('upNext', 'final'));
+    // Act: the final is run first on the day, so the Produtor puts it "agora" and the
+    // third place "a seguir", against the source's order.
+    applyOrThrow(stateStore, buildChoiceOf('current', 'final'));
+    applyOrThrow(stateStore, buildChoiceOf('upNext', 'terceiro'));
 
     // Assert: the slots hold what the Produtor chose.
     expect(readFocusOfTheSimulator(stateStore), 'any match may go in either slot').toEqual({
       sourceId: simulatorSourceId,
       sessionId: superPrimeSessionId,
-      currentMatchId: 'terceiro',
-      upNextMatchId: 'final',
+      currentMatchId: 'final',
+      upNextMatchId: 'terceiro',
     });
   });
 
@@ -199,8 +183,8 @@ describe('acceptSuggestedBracketMatches', () => {
     applyOrThrow(stateStore, buildChoiceOf('current', 'qf-1'));
     pollTheSimulatorWithRounds(stateStore, [buildQuarterFinals({ 'qf-1': cars.corisco })]);
 
-    // Act: "Usar sugestão".
-    applyOrThrow(stateStore, acceptTheSuggestion);
+    // Act: "Usar sugestão", as the page proposed it.
+    applyOrThrow(stateStore, buildAcceptOf('qf-2', 'qf-3'));
 
     // Assert: qf-2 "agora", qf-3 "a seguir", and the row is logged.
     expect(readFocusOfTheSimulator(stateStore), 'the suggestion must fill both slots').toEqual({
@@ -222,8 +206,8 @@ describe('acceptSuggestedBracketMatches', () => {
     ]);
     applyOrThrow(stateStore, buildChoiceOf('upNext', 'qf-1'));
 
-    // Act: "Usar sugestão".
-    applyOrThrow(stateStore, acceptTheSuggestion);
+    // Act: "Usar sugestão", as the page proposed it.
+    applyOrThrow(stateStore, buildAcceptOf('qf-4', null));
 
     // Assert: qf-4 "agora", nothing "a seguir" (qf-1, decided, is not kept there).
     expect(readFocusOfTheSimulator(stateStore), 'nothing must follow the last match').toEqual({
@@ -232,98 +216,29 @@ describe('acceptSuggestedBracketMatches', () => {
       currentMatchId: 'qf-4',
     });
   });
-});
 
-describe('the refusals of the match focus', () => {
-  const refusalScenarios = [
-    {
-      // A page or a script naming a source that was deleted.
-      name: 'refuses a source that does not exist',
-      command: { ...buildChoiceOf('current', 'qf-1'), sourceId: 'cronometragem-oficial' },
-      rounds: [buildQuarterFinals()],
-      expectedCode: 'DATA_SOURCE_NOT_FOUND',
-      expectedMessage:
-        'A fonte de dados "cronometragem-oficial" não existe; ela pode ter sido excluída.',
-    },
-    {
-      // The source has sent no brackets (yet): there is no match to choose from.
-      name: 'refuses a source that sends no brackets',
-      command: buildChoiceOf('current', 'qf-1'),
-      rounds: undefined,
-      expectedCode: 'BRACKETS_NOT_SENT',
-      expectedMessage: 'A fonte Simulador — Enduro não manda chaves agora.',
-    },
-    {
-      // The page still showed yesterday's session when the Produtor chose: the same id
-      // would land on a match of another day.
-      name: 'refuses a choice made in a session the source no longer sends',
-      command: { ...buildChoiceOf('current', 'qf-1'), sessionId: 'super-prime-29a-competicao' },
-      rounds: [buildQuarterFinals()],
-      expectedCode: 'BRACKET_SESSION_CHANGED',
-      expectedMessage:
-        'A chave mudou de sessão (agora super-prime-30a-competicao); escolha a partida de novo.',
-    },
-    {
-      // A typo in a script, or a match the source dropped since the page drew its list.
-      name: 'refuses a match the brackets do not list',
-      command: buildChoiceOf('current', 'qf-9'),
-      rounds: [buildQuarterFinals()],
-      expectedCode: 'BRACKET_MATCH_NOT_FOUND',
-      expectedMessage: 'A partida qf-9 não está entre as partidas disputadas da chave.',
-    },
-    {
-      // A bye is not raced: there is nothing to put on air.
-      name: 'refuses a bye',
-      command: buildChoiceOf('current', 'r1-m1'),
-      rounds: [
-        {
-          name: 'Oitavas de final',
-          matches: [
-            buildBye('r1-m1', cars.bajaUfmg),
-            buildUndecidedMatch('r1-m2', cars.corisco, cars.buffalo),
-          ],
-        },
-      ],
-      expectedCode: 'BRACKET_MATCH_NOT_FOUND',
-      expectedMessage: 'A partida r1-m1 não está entre as partidas disputadas da chave.',
-    },
-    {
-      // The final is decided: nothing is left to suggest.
-      name: 'refuses "Usar sugestão" with nothing left to suggest',
-      command: acceptTheSuggestion,
-      rounds: [
-        buildQuarterFinals({
-          'qf-1': cars.corisco,
-          'qf-2': cars.pequi,
-          'qf-3': cars.cactus,
-          'qf-4': cars.ufsc,
-        }),
-      ],
-      expectedCode: 'NO_SUGGESTED_BRACKET_MATCH',
-      expectedMessage: 'Não há partida a sugerir: todas as partidas da chave já têm vencedor.',
-    },
-  ];
-
-  it.each(refusalScenarios)('$name', ({ command, rounds, expectedCode, expectedMessage }) => {
-    // Arrange: the simulator with this row's brackets (or none sent yet).
+  it('moves the Produtor\'s "a seguir" up to "agora" before the play-order suggestion', () => {
+    // Arrange: qf-1 "agora"; qf-2's car is still in the pits, so the Produtor put qf-3 "a
+    // seguir" by hand. Then qf-1 is decided.
     const { stateStore } = openStoreWithTheSimulatorOn();
-    if (rounds !== undefined) {
-      pollTheSimulatorWithRounds(stateStore, rounds);
-    }
+    pollTheSimulatorWithRounds(stateStore, [buildQuarterFinals()]);
+    applyOrThrow(stateStore, buildChoiceOf('current', 'qf-1'));
+    applyOrThrow(stateStore, buildChoiceOf('upNext', 'qf-3'));
+    pollTheSimulatorWithRounds(stateStore, [buildQuarterFinals({ 'qf-1': cars.corisco })]);
 
-    // Act: send the command as the Produtor.
-    const outcome = stateStore.applyCommand(command, producerActor);
+    // Act: "Usar sugestão", as the page proposed it: qf-3, then qf-2.
+    applyOrThrow(stateStore, buildAcceptOf('qf-3', 'qf-2'));
 
-    // Assert: refused with the code and the sentence, logged as failed, the focus untouched.
-    expect(outcome, 'the command must be refused with its reason').toEqual({
-      ok: false,
-      error: { code: expectedCode, message: expectedMessage },
+    // Assert: qf-3 "agora" (the Produtor's choice moved up), qf-2 "a seguir".
+    expect(
+      readFocusOfTheSimulator(stateStore),
+      'the "a seguir" chosen by hand must go "agora"',
+    ).toEqual({
+      sourceId: simulatorSourceId,
+      sessionId: superPrimeSessionId,
+      currentMatchId: 'qf-3',
+      upNextMatchId: 'qf-2',
     });
-    expect(readNewestEventLogRow(stateStore)?.result, 'the refusal must be logged').toEqual({
-      status: 'failed',
-      error: { code: expectedCode, message: expectedMessage },
-    });
-    expect(readFocusOfTheSimulator(stateStore), 'a refusal must change nothing').toBeUndefined();
   });
 });
 
@@ -338,7 +253,10 @@ describe('who may move the match focus', () => {
       buildChoiceOf('current', 'qf-1'),
       dataOperatorActor,
     );
-    const suggestionByDados = stateStore.applyCommand(acceptTheSuggestion, dataOperatorActor);
+    const suggestionByDados = stateStore.applyCommand(
+      buildAcceptOf('qf-1', 'qf-2'),
+      dataOperatorActor,
+    );
     const choiceByTheProducer = stateStore.applyCommand(
       buildChoiceOf('current', 'qf-2'),
       producerActor,

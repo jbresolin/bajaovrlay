@@ -1,10 +1,11 @@
 /**
  * What "Partidas da chave" shows for each source that sends a Super Prime (BAJAOVRLAY-65):
  * the match "agora" and the match "a seguir", every match to choose from in play order
- * with its progress and the suggested ones marked, and the proposal of the next match once
- * "agora" has its winner. Read from the slices with the shared rules
+ * with its progress and the proposed ones marked, and the proposal of the next match once
+ * "agora" has its winner or has left the source. Read from the slices with the shared rules
  * (packages/shared/src/bracketMatchFocus), so the page shows what the server reads: the
- * same play order, the same suggestions, the same "gone". Pure.
+ * same play order, the same proposal (the Produtor's "a seguir" first), the same "gone".
+ * Pure.
  *
  * Deliberate: nothing here moves the focus. The proposal is words and a button; "agora"
  * changes only when the Produtor presses it.
@@ -19,9 +20,10 @@ import {
   type DataSource,
   findBracketMatchFocusOfSource,
   listBracketMatchesInPlayOrder,
+  proposeBracketMatches,
   readBracketMatchProgress,
   readFocusedBracketMatch,
-  suggestBracketMatches,
+  type SuggestedBracketMatches,
 } from '@bajaovrlay/shared';
 
 import { ptBR } from '@/i18n/ptBR';
@@ -32,7 +34,7 @@ export type MatchRow = {
   /** "Pequi × Acauã (Quartas de final)": the short names and the round. */
   matchText: string;
   progress: BracketMatchProgress;
-  /** The slot the system suggests it for, if any. */
+  /** The slot "Usar sugestão" would put it in, if any. */
   suggestedFor: BracketMatchSlot | undefined;
 };
 
@@ -41,12 +43,13 @@ export type SlotOnThePage =
   { kind: 'chosen'; match: MatchRow } | { kind: 'empty' } | { kind: 'gone'; matchId: string };
 
 /**
- * What the page proposes: once "agora" has its winner, the winner and the suggested next
- * match (none after the last); with "agora" empty, the suggestion.
+ * What the page proposes: once "agora" has its winner, the winner and the proposed next
+ * match (none after the last); with "agora" empty, or gone from the source, the proposal.
  */
 export type MatchFocusProposal =
   | { kind: 'currentDecided'; winnerName: string; suggestedMatchText: string | undefined }
-  | { kind: 'nothingChosen'; suggestedMatchText: string };
+  | { kind: 'nothingChosen'; suggestedMatchText: string }
+  | { kind: 'currentGone'; suggestedMatchText: string };
 
 /** Everything "Partidas da chave" shows for one source. */
 export type MatchFocusOfASource = {
@@ -57,8 +60,12 @@ export type MatchFocusOfASource = {
   current: SlotOnThePage;
   upNext: SlotOnThePage;
   proposal: MatchFocusProposal | undefined;
-  /** Whether "Usar sugestão" has anything to put "agora". */
-  hasSuggestion: boolean;
+  /**
+   * What "Usar sugestão" puts in the two slots, sent with the command so the server can
+   * refuse it if its own proposal changed meanwhile; currentMatchId undefined when there
+   * is nothing to propose.
+   */
+  proposedMatches: SuggestedBracketMatches;
   matches: MatchRow[];
 };
 
@@ -104,14 +111,14 @@ function readSlotOnThePage(
   return row === undefined ? { kind: 'empty' } : { kind: 'chosen', match: row };
 }
 
-/** The proposal of the page, or none while "agora" runs (or is gone). */
+/** The proposal of the page, or none while "agora" runs. */
 function chooseProposal(
   brackets: BracketsShape,
   focus: BracketMatchFocus | undefined,
+  proposedMatches: SuggestedBracketMatches,
   rows: MatchRow[],
 ): MatchFocusProposal | undefined {
-  const suggestion = suggestBracketMatches(brackets.rounds);
-  const suggestedRow = rows.find((row) => row.matchId === suggestion.currentMatchId);
+  const suggestedRow = rows.find((row) => row.matchId === proposedMatches.currentMatchId);
   const reading = readFocusedBracketMatch(brackets, focus, 'current');
   if (reading.status === 'notChosen') {
     return suggestedRow === undefined
@@ -119,7 +126,9 @@ function chooseProposal(
       : { kind: 'nothingChosen', suggestedMatchText: suggestedRow.matchText };
   }
   if (reading.status === 'gone') {
-    return undefined;
+    return suggestedRow === undefined
+      ? undefined
+      : { kind: 'currentGone', suggestedMatchText: suggestedRow.matchText };
   }
   const winnerName = readWinnerName(reading.matchInPlayOrder);
   if (winnerName === undefined) {
@@ -134,13 +143,15 @@ function describeOneSource(
   brackets: BracketsShape,
   focus: BracketMatchFocus | undefined,
 ): MatchFocusOfASource {
-  const suggestion = suggestBracketMatches(brackets.rounds);
+  // The marks follow the proposal, not the bare play order, so they always say what
+  // "Usar sugestão" does (a match the Produtor put "a seguir" is marked "agora").
+  const proposedMatches = proposeBracketMatches(brackets, focus);
   const rows: MatchRow[] = listBracketMatchesInPlayOrder(brackets.rounds).map((entry) => {
     const matchId = entry.match.matchId;
     let suggestedFor: BracketMatchSlot | undefined;
-    if (matchId === suggestion.currentMatchId) {
+    if (matchId === proposedMatches.currentMatchId) {
       suggestedFor = 'current';
-    } else if (matchId === suggestion.upNextMatchId) {
+    } else if (matchId === proposedMatches.upNextMatchId) {
       suggestedFor = 'upNext';
     }
     return {
@@ -156,8 +167,8 @@ function describeOneSource(
     sessionId: brackets.sessionId,
     current: readSlotOnThePage(brackets, focus, 'current', rows),
     upNext: readSlotOnThePage(brackets, focus, 'upNext', rows),
-    proposal: chooseProposal(brackets, focus, rows),
-    hasSuggestion: suggestion.currentMatchId !== undefined,
+    proposal: chooseProposal(brackets, focus, proposedMatches, rows),
+    proposedMatches,
     matches: rows,
   };
 }

@@ -1,7 +1,8 @@
 // Test support for the match focus through a real store: a store on a temporary database,
 // the seeded simulator on and polled by hand with a Super Prime of eight cars (the poller
-// is not started, so no poll arrives that the test did not send). The rounds come from
-// shared's superPrimeBrackets.testSupport. Every function builds fresh objects on each call.
+// is not started, so no poll arrives that the test did not send), and the two commands as
+// the page sends them. The rounds come from shared's superPrimeBrackets.testSupport. Every
+// function builds fresh objects on each call.
 import type { BracketRound } from '@bajaovrlay/shared';
 
 import {
@@ -66,6 +67,31 @@ export function pollTheSimulatorWithRounds(
     },
     buildDataSourcePollerActor(simulatorSourceId),
   );
+}
+
+/** "Escolher partida" for a slot, as the page sends it. */
+export function buildChoiceOf(slot: 'current' | 'upNext', matchId: string | null) {
+  return {
+    type: 'setBracketMatchFocus',
+    sourceId: simulatorSourceId,
+    sessionId: superPrimeSessionId,
+    slot,
+    matchId,
+  };
+}
+
+/**
+ * "Usar sugestão", as the page sends it: with the proposal the page showed, "agora" and "a
+ * seguir" (null when it showed nothing "a seguir").
+ */
+export function buildAcceptOf(currentMatchId: string, upNextMatchId: string | null) {
+  return {
+    type: 'acceptSuggestedBracketMatches',
+    sourceId: simulatorSourceId,
+    sessionId: superPrimeSessionId,
+    currentMatchId,
+    upNextMatchId,
+  };
 }
 
 /** The simulator's match focus now, if the operator ever chose. */

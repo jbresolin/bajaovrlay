@@ -26,15 +26,21 @@ export const SetBracketMatchFocusCommandSchema = z.object({
 export type SetBracketMatchFocusCommand = z.infer<typeof SetBracketMatchFocusCommandSchema>;
 
 /**
- * "Usar sugestão": "agora" becomes the suggested match and "a seguir" the one after it
- * (empty when there is none), worked out by the server from the brackets it holds when
- * the command arrives. Refused for the same reasons as setBracketMatchFocus, and when
- * nothing is left to suggest.
+ * "Usar sugestão": "agora" and "a seguir" become the proposal (proposeBracketMatches: the
+ * Produtor's "a seguir" moved up first, else the play-order suggestion), worked out by the
+ * server from the brackets it holds when the command arrives. The page names the
+ * proposal it showed, and the server refuses when its own differs, so a press never puts
+ * on air a match the Produtor did not see. Refused for the same reasons as
+ * setBracketMatchFocus, and when nothing is left to suggest.
  */
 export const AcceptSuggestedBracketMatchesCommandSchema = z.object({
   type: z.literal('acceptSuggestedBracketMatches'),
   sourceId: z.string().min(1),
   sessionId: z.string().min(1),
+  /** The match the page proposed for "agora". */
+  currentMatchId: z.string().min(1),
+  /** The match the page proposed for "a seguir", or null when it proposed nothing there. */
+  upNextMatchId: z.string().min(1).nullable(),
 });
 
 /** An acceptSuggestedBracketMatches command after validation. */
