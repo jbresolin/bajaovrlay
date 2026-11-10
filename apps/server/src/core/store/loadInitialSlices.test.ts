@@ -4,20 +4,19 @@
  * What this module is for:
  *   At boot the store needs its slices. Layers and instances are the operator's: they
  *   are loaded from the database as they are, or, on the very first boot (an empty
- *   database), seeded with the eight fixed layers (bug, channel-logo, ticker, clock, tower,
- *   lower-third, notice, fullscreen, bottom to top) and nothing on air. A layer seeded since a database was
- *   first written (the tower, BAJAOVRLAY-22) is added to it on the next boot, or no
- *   graphic could ever be placed there. Graphics are not the operator's: they
+ *   database), seeded with the nine fixed layers (bug, channel-logo, bracket-match,
+ *   ticker, clock, tower, lower-third, notice, fullscreen, bottom to top) and nothing on
+ *   air. A layer seeded since a database was first written (the tower, BAJAOVRLAY-22) is
+ *   added to it on the next boot, or no graphic could ever be placed there. Graphics are not the operator's: they
  *   describe what is built under packages/graphics, so they are rebuilt from the built
  *   OGraf manifests on every boot and saved. A package that is not built, or whose
  *   manifest is broken, is logged and left out; it never stops the boot.
  *
  * What these tests prove (with a real SQLite file and a stand-in graphics folder, both
  * in temporary folders):
- *   - An empty database is seeded with the eight layers in ascending z-order, each with
- *     its pt-BR name, `out-then-in` swaps, and only the logo, channel logo, clock and
- *     tower persistent;
- *     the seed is saved, stamped with the store's clock rather than the machine's.
+ *   - An empty database is seeded with the nine layers in ascending z-order, each with
+ *     its pt-BR name, `out-then-in` swaps, and only the logo, channel logo, match bug,
+ *     clock and tower persistent; the seed is saved, stamped with the store's clock.
  *   - A built race clock is registered with its manifest, under its folder name; an
  *     unbuilt one logs a warning, a broken one logs an error, and the boot carries on.
  *   - The graphics kit's folder, which holds no manifest, is passed over without a
@@ -101,7 +100,7 @@ function createRaceClockOnProgramInstance(): Instance {
 }
 
 describe('loadInitialSlices on an empty database', () => {
-  it('seeds the eight layers in ascending z-order and saves them, stamped with the store clock', () => {
+  it('seeds the nine layers in ascending z-order and saves them, stamped with the store clock', () => {
     // Arrange: a brand-new database file.
     const { database } = openTemporaryDatabase();
 
@@ -111,13 +110,10 @@ describe('loadInitialSlices on an empty database', () => {
       graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     });
 
-    // Assert: the eight layers, bottom to top, and the seed is in the slices table.
-    // Every layer swaps out-then-in (two graphics never overlap); only the logo, the
-    // channel logo, the clock and the tower are persistent, the things meant to stay on
-    // screen all day. The channel logo (BAJAOVRLAY-63) sits at 15, just above the bug;
-    // the tower at 35, between the clock it stacks under on the same right-hand column
-    // and the lower third; the notice (BAJAOVRLAY-44) at 45, above the lower third.
-    expect(slices.layers, 'the seeded layers must be exactly these eight').toEqual([
+    // Assert: the nine layers, bottom to top, and the seed in the slices table. All swap
+    // out-then-in; the logo, channel logo (15), match bug (17), clock and tower (35, under
+    // the clock) are persistent, meant to stay on screen all day; the notice sits at 45.
+    expect(slices.layers, 'the seeded layers must be exactly these nine').toEqual([
       {
         id: 'bug',
         outputId: 'program',
@@ -131,6 +127,14 @@ describe('loadInitialSlices on an empty database', () => {
         outputId: 'program',
         name: 'Logo do canal',
         zIndex: 15,
+        replacePolicy: 'out-then-in',
+        persistent: true,
+      },
+      {
+        id: 'bracket-match',
+        outputId: 'program',
+        name: 'Partida da chave',
+        zIndex: 17,
         replacePolicy: 'out-then-in',
         persistent: true,
       },
@@ -187,7 +191,7 @@ describe('loadInitialSlices on an empty database', () => {
     expect(zIndexes, 'each layer must sit above the one before').toEqual(
       [...zIndexes].sort((lower, higher) => lower - higher),
     );
-    expect(new Set(zIndexes).size, 'no two layers may share a z-index').toBe(8);
+    expect(new Set(zIndexes).size, 'no two layers may share a z-index').toBe(9);
     expect(
       readAllSliceRows(database).map((row) => [row.name, row.updatedAt]),
       'the seed must be saved, stamped with the store clock, so the next boot loads it',
@@ -242,7 +246,7 @@ describe('loadInitialSlices on an empty database', () => {
 
     // Assert: no graphics, the layers are still seeded, and a warning names the package.
     expect(slices.graphics, 'no graphic can be registered without a build').toEqual([]);
-    expect(slices.layers.length, 'the layers are seeded anyway').toBe(8);
+    expect(slices.layers.length, 'the layers are seeded anyway').toBe(9);
     expect(readRecordedLines(), 'a warning must say the package is not built').toContainEqual(
       expect.objectContaining({
         level: 'warn',
@@ -321,7 +325,7 @@ describe('loadInitialSlices on a database that already has slices', () => {
     expect(storedGraphicsRow?.json, 'the refreshed graphics must be saved').toEqual([
       raceClockGraphic,
     ]);
-    expect(slicesOnSecondBoot.layers.length, 'the saved layers must load back').toBe(8);
+    expect(slicesOnSecondBoot.layers.length, 'the saved layers must load back').toBe(9);
   });
 
   it('keeps the stored instances when it refreshes the graphics', () => {

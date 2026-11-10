@@ -34,6 +34,9 @@
     "./eventLogNamesOfRaceDay.testSupport": {
       "@bajaovrlay/source": "./src/eventLogReading/eventLogNamesOfRaceDay.testSupport.ts"
     },
+    "./superPrimeBrackets.testSupport": {
+      "@bajaovrlay/source": "./src/bracketMatchFocus/superPrimeBrackets.testSupport.ts"
+    },
     "./bracketSteps": {
       "@bajaovrlay/source": "./src/steps/bracketSteps.ts",
       "types": "./dist/steps/bracketSteps.d.ts",

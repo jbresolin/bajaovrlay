@@ -97,6 +97,7 @@ function buildRaceMorningStateWithOnePreparedItem() {
     instanceBindings: [],
     programHistory: [],
     overrides: [],
+    bracketMatchFocuses: [],
     rundowns: [buildMainSessionRundown()],
     items: [buildEnduroClockItem()],
     // The seeded panel, no macro and nothing running: quickFirePanels.test.ts and

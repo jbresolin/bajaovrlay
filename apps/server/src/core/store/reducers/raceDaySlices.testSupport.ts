@@ -128,5 +128,6 @@ export function buildRaceDaySlicesWithInstances(instances: Instance[]): SlicesCh
     instanceBindings: [],
     programHistory: [],
     overrides: [],
+    bracketMatchFocuses: [],
   };
 }

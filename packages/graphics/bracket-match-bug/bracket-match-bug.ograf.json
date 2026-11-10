@@ -1,0 +1,105 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-bracket-match-bug",
+  "version": "0.1.0",
+  "name": "Partida da chave",
+  "description": "A partida \"agora\" do Super Prime: a fase, os dois carros e o placar, pequena, num canto da tela.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "bracket-match-bug.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "bracket-match",
+    "category": "standings"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 400 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "roundName": {
+        "type": "string",
+        "title": "Fase",
+        "description": "A fase da partida, como a chave escreve: Quartas de final, Disputa de 3º lugar."
+      },
+      "bestOf": {
+        "type": "integer",
+        "title": "Melhor de",
+        "description": "Quantas baterias a série tem; acima de 1 o placar aparece, com \"MD3\" ao lado.",
+        "minimum": 1
+      },
+      "carANumber": {
+        "type": "integer",
+        "title": "Carro A — número",
+        "minimum": 1
+      },
+      "carAShortName": {
+        "type": "string",
+        "title": "Carro A — nome curto",
+        "description": "O nome da equipe como a chave escreve (Corisco)."
+      },
+      "carAWins": {
+        "type": "integer",
+        "title": "Carro A — vitórias",
+        "minimum": 0
+      },
+      "carATimeMs": {
+        "type": "integer",
+        "title": "Carro A — tempo",
+        "description": "O tempo do carro nesta partida, quando ela é por tempo.",
+        "minimum": 0,
+        "v_baja": { "unit": "ms" }
+      },
+      "carBNumber": {
+        "type": "integer",
+        "title": "Carro B — número",
+        "minimum": 1
+      },
+      "carBShortName": {
+        "type": "string",
+        "title": "Carro B — nome curto",
+        "description": "O nome da equipe como a chave escreve (Pequi)."
+      },
+      "carBWins": {
+        "type": "integer",
+        "title": "Carro B — vitórias",
+        "minimum": 0
+      },
+      "carBTimeMs": {
+        "type": "integer",
+        "title": "Carro B — tempo",
+        "description": "O tempo do carro nesta partida, quando ela é por tempo.",
+        "minimum": 0,
+        "v_baja": { "unit": "ms" }
+      },
+      "winnerCarNumber": {
+        "type": "integer",
+        "title": "Vencedor (carro)",
+        "description": "O número do carro que venceu, quando a partida termina.",
+        "minimum": 1
+      },
+      "corner": {
+        "type": "string",
+        "title": "Canto",
+        "description": "O canto da tela onde a partida fica, dentro da área segura; no superior esquerdo, ao lado do patrocinador.",
+        "enum": ["top-left", "top-right", "bottom-left", "bottom-right"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "top-left": "Superior esquerdo",
+            "top-right": "Superior direito",
+            "bottom-left": "Inferior esquerdo",
+            "bottom-right": "Inferior direito"
+          }
+        },
+        "default": "top-left"
+      }
+    },
+    "additionalProperties": false
+  }
+}

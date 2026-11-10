@@ -66,6 +66,7 @@ describe('the position of a car chosen by its number', () => {
       dataSources: [buildSimulatorSource(false)],
       dataSnapshots: [buildSnapshotWithTheLeadersInOrder([1, 2])],
       overrides: [],
+      bracketMatchFocuses: [],
     };
     const sourcesAfterThePass = {
       ...sourcesBeforeThePass,

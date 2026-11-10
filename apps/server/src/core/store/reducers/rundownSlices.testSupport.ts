@@ -304,6 +304,7 @@ export function buildRaceDaySlicesWithRundown(parts: {
     instanceBindings: [],
     programHistory: [],
     overrides: [],
+    bracketMatchFocuses: [],
   };
 }
 

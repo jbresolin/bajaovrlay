@@ -134,6 +134,16 @@ export const ptBREventLogReading = {
       `O OBS não fez a troca de cena nº ${String(switchNumber)}: ${reason}`,
   },
 
+  /** The match focus of a Super Prime (BAJAOVRLAY-65), read in "Tomadas e limpezas". */
+  bracketMatchFocus: {
+    choseMatch: (matchId: string, slotName: string, sourceName: string) =>
+      `Escolheu a partida ${matchId} para ${slotName} na fonte ${sourceName}`,
+    emptiedSlot: (slotName: string, sourceName: string) =>
+      `Esvaziou ${slotName} na fonte ${sourceName}`,
+    acceptedSuggestion: (currentSlotName: string, upNextSlotName: string, sourceName: string) =>
+      `Usou a sugestão para ${currentSlotName} e ${upNextSlotName} na fonte ${sourceName}`,
+  },
+
   /** The preview output. */
   previews: {
     previewedItem: (itemName: string, layerName: string) =>

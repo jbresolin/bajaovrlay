@@ -9,7 +9,9 @@
  * What these tests prove:
  *   - For each of the five shapes, every listed path leads to a field of the shape's Zod
  *     schema, a number stepping into a list's elements and `entryOfCar` standing for one
- *     element of `entries` (how a car chosen by number is read).
+ *     element of `entries` (how a car chosen by number is read). The brackets' paths of the
+ *     match "agora" and "a seguir" (BAJAOVRLAY-65) are left out: they read the focused
+ *     match the resolver builds, and bindingResolutionBracketMatchFocus.test.ts reads each.
  *
  * What these tests deliberately do not cover:
  *   - The labels, types and order of the paths; bindablePaths.test.ts fixes them.
@@ -32,7 +34,8 @@ const everyShapeScenarios: Array<{ name: string; shapeKey: DataShapeKey; schema:
   { name: 'the positions', shapeKey: 'positions', schema: PositionsShapeSchema },
   // The standings, with the scope, the whole list and ten rows.
   { name: 'the standings', shapeKey: 'standings', schema: StandingsShapeSchema },
-  // The brackets, with the rounds only.
+  // The brackets, with the rounds. The paths of the match focus read the focused match the
+  // resolver builds, not the shape: bindingResolutionBracketMatchFocus.test.ts reads each.
   { name: 'the brackets', shapeKey: 'brackets', schema: BracketsShapeSchema },
   // The incidents, with the whole list only.
   { name: 'the incidents', shapeKey: 'incidents', schema: IncidentsShapeSchema },
@@ -42,8 +45,10 @@ describe('listBindablePathsOfShape against the shape schemas', () => {
   it.each(everyShapeScenarios)(
     'names only fields that exist in the schema of $name',
     ({ shapeKey, schema }) => {
-      // Arrange: the paths of this row's shape.
-      const paths = listBindablePathsOfShape(shapeKey).map((bindablePath) => bindablePath.path);
+      // Arrange: the paths of this row's shape that read the shape itself.
+      const paths = listBindablePathsOfShape(shapeKey)
+        .filter((bindablePath) => bindablePath.bracketMatchSlot === undefined)
+        .map((bindablePath) => bindablePath.path);
 
       // Act: keep every path that does not lead to a field of the schema.
       const pathsLeadingNowhere = paths.filter(

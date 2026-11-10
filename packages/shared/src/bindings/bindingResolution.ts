@@ -1,8 +1,19 @@
+import type {
+  BracketMatchFocus,
+  BracketMatchSlot,
+} from '../bracketMatchFocus/bracketMatchFocus.js';
+import {
+  describeFocusedMatchForGraphics,
+  findBracketMatchFocusOfSource,
+  readFocusedBracketMatch,
+} from '../bracketMatchFocus/focusedBracketMatch.js';
 import {
   type BindablePath,
   entryOfCarPathPrefix,
   findBindablePath,
 } from '../dataShapes/bindablePaths.js';
+import { bracketMatchSlotPathPrefixes } from '../dataShapes/bracketsBindablePaths.js';
+import type { BracketsShape } from '../dataShapes/bracketsShape.js';
 import { ptBRDataShapes } from '../dataShapes/ptBRDataShapes.js';
 import { areJsonValuesEqual } from '../dataSources/areJsonValuesEqual.js';
 import type { DataSnapshot, DataSnapshotShapes } from '../dataSources/dataSnapshot.js';
@@ -17,7 +28,8 @@ import { ptBRBindings } from './ptBRBindings.js';
 
 /**
  * What a binding is read against, all plain data from the slices: the sources (for their
- * labels), each source's last good snapshot, and the operator's overrides. Nothing else
+ * labels), each source's last good snapshot, the operator's overrides, and the match
+ * focus of each source's brackets ("agora" and "a seguir", BAJAOVRLAY-65). Nothing else
  * is read, the clock included, so the server and the item editor get the same answer
  * from the same slices.
  */
@@ -25,6 +37,7 @@ export type SourcesForBindings = {
   dataSources: DataSource[];
   dataSnapshots: DataSnapshot[];
   overrides: Override[];
+  bracketMatchFocuses: BracketMatchFocus[];
 };
 
 /**
@@ -82,27 +95,26 @@ export function resolveBindingAgainstSources(
     return { status: 'unresolvable', problem: problemOfTheBinding ?? binding.path };
   }
 
-  const correctedShapes = applyOverridesToSnapshotShapes(
-    binding.sourceId,
-    snapshot.shapes,
-    sources.overrides,
-  );
-  const readingWithOverrides = readValueAtBindablePath(correctedShapes, binding, bindablePath);
-  if (!readingWithOverrides.isFound) {
-    const problem = readingWithOverrides.isCarMissing
-      ? problems.carNotListed(dataSource.label, binding.carNumber ?? 0)
-      : problems.valueNotInSnapshot(dataSource.label, bindablePath.label);
-    return { status: 'valueAbsent', problem };
+  const reading =
+    bindablePath.bracketMatchSlot === undefined
+      ? readValueOfTheShape(binding, sources, snapshot.shapes, bindablePath, dataSource.label)
+      : readValueOfTheMatchFocus({
+          binding,
+          sources,
+          shapes: snapshot.shapes,
+          bindablePath,
+          slot: bindablePath.bracketMatchSlot,
+          sourceLabel: dataSource.label,
+          teams: transformContext.teams,
+        });
+  if (reading.status !== 'found') {
+    return { status: 'valueAbsent', problem: reading.problem };
   }
-  const readingAsTheSourceSent = readValueAtBindablePath(snapshot.shapes, binding, bindablePath);
-  const isOverridden =
-    !readingAsTheSourceSent.isFound ||
-    !areJsonValuesEqual(readingAsTheSourceSent.value, readingWithOverrides.value);
 
   const firstStep = applyOneTransform(
     binding.transformId,
     binding.transformParameters,
-    readingWithOverrides.value as JsonValue,
+    reading.value,
     transformContext,
   );
   if (firstStep.status !== 'resolved') {
@@ -117,7 +129,91 @@ export function resolveBindingAgainstSources(
   if (secondStep.status !== 'resolved') {
     return secondStep;
   }
-  return { status: 'resolved', value: secondStep.value, isOverridden };
+  return { status: 'resolved', value: secondStep.value, isOverridden: reading.isOverridden };
+}
+
+/** What a binding's path held before its transforms: a value, or why it holds none. */
+type ValueBeforeTransforms =
+  | { status: 'found'; value: JsonValue; isOverridden: boolean }
+  | { status: 'absent'; problem: string };
+
+/**
+ * Reads a path of the shape itself, with the operator's overrides laid over the snapshot,
+ * and tells whether an override changed what was read.
+ */
+function readValueOfTheShape(
+  binding: BindingFieldValue,
+  sources: SourcesForBindings,
+  shapes: DataSnapshotShapes,
+  bindablePath: BindablePath,
+  sourceLabel: string,
+): ValueBeforeTransforms {
+  const problems = ptBRBindings.resolutionProblems;
+  const correctedShapes = applyOverridesToSnapshotShapes(
+    binding.sourceId,
+    shapes,
+    sources.overrides,
+  );
+  const readingWithOverrides = readValueAtBindablePath(correctedShapes, binding, bindablePath);
+  if (!readingWithOverrides.isFound) {
+    const problem = readingWithOverrides.isCarMissing
+      ? problems.carNotListed(sourceLabel, binding.carNumber ?? 0)
+      : problems.valueNotInSnapshot(sourceLabel, bindablePath.label);
+    return { status: 'absent', problem };
+  }
+  const readingAsTheSourceSent = readValueAtBindablePath(shapes, binding, bindablePath);
+  const isOverridden =
+    !readingAsTheSourceSent.isFound ||
+    !areJsonValuesEqual(readingAsTheSourceSent.value, readingWithOverrides.value);
+  return { status: 'found', value: readingWithOverrides.value as JsonValue, isOverridden };
+}
+
+/** What readValueOfTheMatchFocus reads one binding with. */
+type MatchFocusReadingRequest = {
+  binding: BindingFieldValue;
+  sources: SourcesForBindings;
+  shapes: DataSnapshotShapes;
+  bindablePath: BindablePath;
+  slot: BracketMatchSlot;
+  sourceLabel: string;
+  teams: BindingTransformContext['teams'];
+};
+
+/**
+ * Reads a path of the match "agora" or "a seguir" (BAJAOVRLAY-65): the match the
+ * operator put in that slot of the source's focus, in the brackets the source sends now,
+ * joined with Cadastros (focusedBracketMatch.ts), then the rest of the path in it. An
+ * empty slot, a focus of another session and a chosen match the source no longer lists
+ * are absent, so an optional field leaves the air: the graphics show nothing rather than
+ * a stale match. Brackets have no overrides, so nothing read here is overridden.
+ */
+function readValueOfTheMatchFocus(request: MatchFocusReadingRequest): ValueBeforeTransforms {
+  const { binding, slot } = request;
+  const problems = ptBRBindings.resolutionProblems;
+  const slotName = ptBRDataShapes.bracketMatchFocusLabels.slotNames[slot];
+  // The snapshot holds brackets that passed BracketsShapeSchema when they were recorded.
+  const brackets = request.shapes.brackets as BracketsShape;
+  const focus = findBracketMatchFocusOfSource(
+    request.sources.bracketMatchFocuses,
+    binding.sourceId,
+  );
+  const focusReading = readFocusedBracketMatch(brackets, focus, slot);
+  if (focusReading.status === 'notChosen') {
+    return { status: 'absent', problem: problems.noMatchInSlot(slotName) };
+  }
+  if (focusReading.status === 'gone') {
+    return { status: 'absent', problem: problems.chosenMatchGone(slotName, focusReading.matchId) };
+  }
+  const matchData = describeFocusedMatchForGraphics(focusReading.matchInPlayOrder, request.teams);
+  const stepsInTheMatch = binding.path.slice(bracketMatchSlotPathPrefixes[slot].length).split('.');
+  const readingInTheMatch = readStepsFrom(matchData, stepsInTheMatch);
+  if (!readingInTheMatch.isFound) {
+    return {
+      status: 'absent',
+      problem: problems.valueNotInSnapshot(request.sourceLabel, request.bindablePath.label),
+    };
+  }
+  return { status: 'found', value: readingInTheMatch.value as JsonValue, isOverridden: false };
 }
 
 /** What one transform step gives: the value, or why the binding cannot be read. */
@@ -154,9 +250,14 @@ function applyOneTransform(
 
 /**
  * Whether a binding's answer depends on the entity library's teams (one of its transforms
- * reads them: withTeamLogos), so the live refresh reads it again after a team edit.
+ * reads them: withTeamLogos; or it reads the match focus, joined with Cadastros), so the
+ * live refresh reads it again after a team edit.
  */
 export function doesBindingReadTheTeams(binding: BindingFieldValue): boolean {
+  const bindablePath = findBindablePath(binding.shapeKey, binding.path);
+  if (bindablePath?.bracketMatchSlot !== undefined) {
+    return true;
+  }
   const transformIds = [binding.transformId, binding.thenTransformId];
   return transformIds.some((transformId) => {
     const transform = transformId === undefined ? undefined : findTransform(transformId);

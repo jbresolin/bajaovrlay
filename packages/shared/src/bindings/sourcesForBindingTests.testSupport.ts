@@ -64,6 +64,7 @@ export function buildSourcesWithTheSimulatorAtLap34(overrides: Override[]): Sour
     dataSources: [buildSimulatorSource(false)],
     dataSnapshots: [readSimulatorSnapshotAtLap34()],
     overrides,
+    bracketMatchFocuses: [],
   };
 }
 

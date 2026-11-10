@@ -218,6 +218,10 @@ export * from './transforms/index.js';
 // Overrides: an operator's correction of a source's session field or of one car's field.
 export * from './overrides/index.js';
 
+// The match focus of a Super Prime (BAJAOVRLAY-65): "agora" and "a seguir" per source,
+// the suggestions, the two commands, and the focused match the graphics receive.
+export * from './bracketMatchFocus/index.js';
+
 // Bindings: item fields read from a data source, whether a binding makes sense, and
 // which graphic fields it fits.
 export * from './bindings/index.js';

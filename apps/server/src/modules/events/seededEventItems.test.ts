@@ -151,6 +151,7 @@ describe('the seeded "Avisos" panel', () => {
       { id: 'atalhos', name: 'Atalhos', order: 0 },
       { id: 'avisos', name: 'Avisos', order: 1 },
       { id: 'logo', name: 'Logo', order: 2 },
+      { id: 'chave', name: 'Chave', order: 3 },
     ]);
     expect(listItemsOfAvisos(slices.items), 'the notice items, as seeded').toEqual([
       seededFastestLapItem,
@@ -215,7 +216,7 @@ describe('the seeded "Avisos" panel', () => {
     expect(
       slices.quickFirePanels.map((panel) => panel.id),
       'a deleted panel is not seeded again',
-    ).toEqual(['atalhos', 'logo']);
+    ).toEqual(['atalhos', 'logo', 'chave']);
     expect(listItemsOfAvisos(slices.items), 'nor its items').toEqual([]);
   });
 });

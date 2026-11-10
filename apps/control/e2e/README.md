@@ -102,6 +102,11 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   output `/render/`): the simulator on seed 2027 with ten cars at 60× run until its Super Prime has a champion (~17 s), and
   left running; a "Chaveamento" whose "Fases" open on "Chaves › Todas as fases" (the manifest's suggestion), live, taken; "Próximo" on the Camadas row from
   "Passo 1 de 5" to "Passo 5 de 5", then off; the output draws the final with car 8 the winner.
+- The match bug (BAJAOVRLAY-65): `matchBugFollowsTheSuperPrime.e2e.ts` (the brief's e2e): the same Super Prime at 5×
+  (a heat every 12 s); "Usar sugestão" on "Partidas da chave" puts the first match "agora", the bug (its item made through
+  the server's command path, since the reset deletes the seeded "Chave" items) taken from the rundown shows its two cars;
+  once that match has its winner "agora" has not moved, the bug shows the winner and the page proposes the next match;
+  "Usar sugestão" again, and the bug on `/render/` shows the next match. `sendCommandToRealServer` is exported for it.
 
 - A battle for a place (BAJAOVRLAY-66): `battleCardForSecondPlace.e2e.ts` ("Disputa pela 2ª posição" chosen once, taken: on
   air with positions 2 and 3, the output shows the teams of the cars the simulator lists 2nd and 3rd).

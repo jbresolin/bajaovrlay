@@ -1,0 +1,143 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-bracket-match-card",
+  "version": "0.1.0",
+  "name": "Partida a seguir",
+  "description": "A próxima partida do Super Prime: \"A SEGUIR\", a fase, e de cada lado o logo, a equipe, a escola e a cidade, com o placar quando ela começa.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "bracket-match-card.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "lower-third",
+    "category": "standings"
+  },
+  "actionDurations": [
+    {
+      "type": "playAction",
+      "duration": 400
+    },
+    {
+      "type": "stopAction",
+      "duration": 250
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "roundName": {
+        "type": "string",
+        "title": "Fase",
+        "description": "A fase da partida, como a chave escreve: Semifinal, Disputa de 3º lugar."
+      },
+      "bestOf": {
+        "type": "integer",
+        "title": "Melhor de",
+        "description": "Quantas baterias a série tem; acima de 1 aparece \"MD3\" ao lado da fase.",
+        "minimum": 1
+      },
+      "carANumber": {
+        "type": "integer",
+        "title": "Carro A — número",
+        "minimum": 1
+      },
+      "carATeamName": {
+        "type": "string",
+        "title": "Carro A — equipe",
+        "description": "O nome da equipe nos cadastros (o nome curto da chave, sem cadastro)."
+      },
+      "carASchoolName": {
+        "type": "string",
+        "title": "Carro A — escola"
+      },
+      "carACity": {
+        "type": "string",
+        "title": "Carro A — cidade"
+      },
+      "carAState": {
+        "type": "string",
+        "title": "Carro A — UF"
+      },
+      "carALogoUrl": {
+        "type": "string",
+        "title": "Carro A — logo",
+        "description": "Opcional; ausente, o número do carro aparece no lugar do logo.",
+        "v_baja": {
+          "role": "imageUrl"
+        }
+      },
+      "carALogoOnLightPlate": {
+        "type": "boolean",
+        "title": "Carro A — logo sobre placa clara",
+        "description": "Para um logo escuro, ou que vem num fundo branco próprio."
+      },
+      "carAWins": {
+        "type": "integer",
+        "title": "Carro A — vitórias",
+        "minimum": 0
+      },
+      "carATimeMs": {
+        "type": "integer",
+        "title": "Carro A — tempo",
+        "description": "O tempo do carro nesta partida, quando ela é por tempo.",
+        "minimum": 0,
+        "v_baja": {
+          "unit": "ms"
+        }
+      },
+      "carBNumber": {
+        "type": "integer",
+        "title": "Carro B — número",
+        "minimum": 1
+      },
+      "carBTeamName": {
+        "type": "string",
+        "title": "Carro B — equipe",
+        "description": "O nome da equipe nos cadastros (o nome curto da chave, sem cadastro)."
+      },
+      "carBSchoolName": {
+        "type": "string",
+        "title": "Carro B — escola"
+      },
+      "carBCity": {
+        "type": "string",
+        "title": "Carro B — cidade"
+      },
+      "carBState": {
+        "type": "string",
+        "title": "Carro B — UF"
+      },
+      "carBLogoUrl": {
+        "type": "string",
+        "title": "Carro B — logo",
+        "description": "Opcional; ausente, o número do carro aparece no lugar do logo.",
+        "v_baja": {
+          "role": "imageUrl"
+        }
+      },
+      "carBLogoOnLightPlate": {
+        "type": "boolean",
+        "title": "Carro B — logo sobre placa clara",
+        "description": "Para um logo escuro, ou que vem num fundo branco próprio."
+      },
+      "carBWins": {
+        "type": "integer",
+        "title": "Carro B — vitórias",
+        "minimum": 0
+      },
+      "carBTimeMs": {
+        "type": "integer",
+        "title": "Carro B — tempo",
+        "description": "O tempo do carro nesta partida, quando ela é por tempo.",
+        "minimum": 0,
+        "v_baja": {
+          "unit": "ms"
+        }
+      }
+    },
+    "additionalProperties": false
+  }
+}

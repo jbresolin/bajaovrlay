@@ -1,3 +1,4 @@
+import { BracketMatchFocusPanel } from '@/features/bracketMatchFocus/BracketMatchFocusPanel';
 import { LayerStatusPanel } from '@/features/layers/LayerStatusPanel';
 import { PreviewAndProgramMonitors } from '@/features/outputMonitors/PreviewAndProgramMonitors';
 import { useBackspaceToStopPreview } from '@/features/outputMonitors/useBackspaceToStopPreview';
@@ -14,8 +15,9 @@ import { ptBR } from '@/i18n/ptBR';
  * (docs/00-concept.md §3.4) — rundown on the left; in the centre the two monitors stacked
  * ("Prévia" with what is previewed and its "Tomar"/"Descartar", then "Programa") above
  * "Edição rápida" (the take, preview and update panel for any graphic); on the right the
- * quick-fire strip (a tab per panel of buttons, "Macros" and "Eventos") above the layer
- * status, clear all and "Desfazer última" (Ctrl+Z, BAJAOVRLAY-30). Layout only; each
+ * quick-fire strip (a tab per panel of buttons, "Macros" and "Eventos"), "Partidas da
+ * chave" while a source sends a Super Prime (BAJAOVRLAY-65), then the layer status, clear
+ * all and "Desfazer última" (Ctrl+Z, BAJAOVRLAY-30). Layout only; each
  * area's behaviour lives in its feature folder, and nothing here knows any graphic by name.
  *
  * The columns (BAJAOVRLAY-59): the right column, where the operator works most, takes
@@ -57,6 +59,8 @@ export function ConsoleView() {
 
       <div className="flex min-w-0 flex-col gap-4">
         <QuickFireStrip />
+        {/* "Partidas da chave": only while a source sends a Super Prime (BAJAOVRLAY-65). */}
+        <BracketMatchFocusPanel />
         <section aria-label={ptBR.app.layersAreaTitle} className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold">{ptBR.app.layersAreaTitle}</h2>
           <LayerStatusPanel />

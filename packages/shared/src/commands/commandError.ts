@@ -251,6 +251,22 @@ export const CommandErrorCodeSchema = z.enum([
    * within its minimum interval. Only ever an HTTP answer (409); the message says which.
    */
   'TRIGGER_NOT_FIRED',
+  /** A match focus command names a source that sends no brackets now (BAJAOVRLAY-65). */
+  'BRACKETS_NOT_SENT',
+  /**
+   * A match focus command names a session the source no longer sends: the page chose
+   * before it heard of the new one. The message names the session sent now.
+   */
+  'BRACKET_SESSION_CHANGED',
+  /** A match focus command names a match the brackets do not list as raced (a bye is not). */
+  'BRACKET_MATCH_NOT_FOUND',
+  /** "Usar sugestão" when every match of the brackets already has its winner. */
+  'NO_SUGGESTED_BRACKET_MATCH',
+  /**
+   * "Usar sugestão" naming a proposal other than the server's: a winner or a poll arrived
+   * between the page showing it and the press. The message names the proposal now.
+   */
+  'BRACKET_PROPOSAL_CHANGED',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

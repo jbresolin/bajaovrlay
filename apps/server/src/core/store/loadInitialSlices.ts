@@ -30,14 +30,10 @@ import type { ServerLogger } from '../logger/createLogger.js';
 import { discoverBuiltGraphics } from './discoverBuiltGraphics.js';
 import { loadOrSeedQuickFireAndMacroSlices } from './loadQuickFireAndMacroSlices.js';
 import { loadOrSeedRundownSlices } from './loadRundownSlices.js';
+import { applyOneOffSeedsOfLayersAndItems } from './oneOffSeedsOfLayersAndItems.js';
 import { forgetChangesThatCannotComeBack } from './programHistory/forgetChangesThatCannotComeBack.js';
 import { bringStepsWithinTheirCount } from './reducers/instanceStepsWithinTheirCount.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
-import {
-  addChannelLogoLayerAndItemOnce,
-  channelLogoSeedName,
-  type ChannelLogoSeedOutcome,
-} from './seedChannelLogo.js';
 
 /** What loadInitialSlices needs: the open database, the graphics folder and a clock. */
 export type LoadInitialSlicesOptions = {
@@ -108,7 +104,8 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   // their row is missing; see modules/events/loadEventInboxSlices.ts.
   // Seeding the rules also seeds the "Avisos" panel and its two items, once per database,
   // so the panels and items go through it.
-  // The one-off seeds this database has had (seeds_done): the inbox's and the logo's.
+  // The one-off seeds this database has had (seeds_done): the inbox's, the logo's and the
+  // Super Prime match graphics'.
   const seedNamesDone = readSeedNamesDone(options.database);
   const eventInboxSlices = loadOrSeedEventInboxSlices(
     storedRows,
@@ -117,18 +114,20 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     updatedAt,
     options.logger,
   );
-  // The channel logo's layer, panel and item (BAJAOVRLAY-63), once per database (seeds_done).
-  // Before the graphics are discovered: the logo bug's manifest names the layer, and a
-  // graphic whose default layer is unknown falls back to fullscreen.
-  const channelLogoSeed = addChannelLogoLayerAndItemOnce({
+  // The channel logo's layer, panel and item (BAJAOVRLAY-63) and the Super Prime's match
+  // bug layer with its "Chave" panel (BAJAOVRLAY-65), each once per database (seeds_done).
+  // Before the graphics are discovered: the logo bug's and the match bug's manifests name
+  // their layers, and a graphic whose default layer is unknown falls back to fullscreen.
+  const oneOffSeeds = applyOneOffSeedsOfLayersAndItems({
     seedNamesDone,
     layers: outputAndLayerSlices.layers,
     quickFirePanels: eventInboxSlices.quickFirePanels,
     items: eventInboxSlices.items,
+    updatedAt,
+    logger: options.logger,
   });
-  logChannelLogoSeed(channelLogoSeed, options.logger);
-  const layers = channelLogoSeed.layers;
-  const items = channelLogoSeed.items;
+  const layers = oneOffSeeds.layers;
+  const items = oneOffSeeds.items;
   const graphics = discoverBuiltGraphics({
     graphicPackagesFolder: options.graphicPackagesFolder,
     existingLayerIds: layers.map((layer) => layer.id),
@@ -198,14 +197,11 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
       ...dataSourceSlices.rowsToSaveAtBoot,
       ...eventInboxSlices.rowsToSaveAtBoot,
       // Last, so these rows win over any earlier layers, panels or items row of this boot.
-      ...listRowsOfTheChannelLogoSeed(channelLogoSeed, updatedAt),
+      ...oneOffSeeds.rowsToWrite,
     ],
     sliceRowNamesToDelete: dataSourceSlices.sliceRowNamesToDeleteAtBoot,
     dataSnapshotRowChanges: dataSourceSlices.dataSnapshotRowChangesAtBoot,
-    seedNamesDone: [
-      ...eventInboxSlices.seedNamesDoneAtBoot,
-      ...(channelLogoSeed.isSeedApplied ? [channelLogoSeedName] : []),
-    ],
+    seedNamesDone: [...eventInboxSlices.seedNamesDoneAtBoot, ...oneOffSeeds.seedNamesApplied],
     bootedAt: updatedAt,
   });
   if (isFirstBoot) {
@@ -261,7 +257,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     eventLog,
     rundowns: rundownSlices.rundowns,
     items,
-    quickFirePanels: channelLogoSeed.quickFirePanels,
+    quickFirePanels: oneOffSeeds.quickFirePanels,
     macros: quickFireAndMacroSlices.macros,
     macroRuns: [],
     // Memory only too (BAJAOVRLAY-27): where a run stopped short means nothing after a
@@ -282,6 +278,12 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     // fails its schema stops the boot, as the items row does.
     overrides: SlicesSchema.shape.overrides.parse(
       storedRows.find((row) => row.name === 'overrides')?.json ?? [],
+    ),
+    // "agora" and "a seguir" of each Super Prime are saved (BAJAOVRLAY-65), so a restart
+    // keeps the match bug on the same match. A database written before them has no row and
+    // starts with none; a row that fails its schema stops the boot, as the overrides row does.
+    bracketMatchFocuses: SlicesSchema.shape.bracketMatchFocuses.parse(
+      storedRows.find((row) => row.name === 'bracketMatchFocuses')?.json ?? [],
     ),
     // Rebuilt from the recordings folder at every boot, every recording closed (D13);
     // never saved in the database: the files are the truth.
@@ -335,37 +337,4 @@ function readInstanceBindingsKeptAcrossTheRestart(
 function readStoredOperatorSlices(storedRows: SliceRow[]): OperatorSlices {
   const instancesRow = storedRows.find((row) => row.name === 'instances');
   return { instances: SlicesSchema.shape.instances.parse(instancesRow?.json ?? []) };
-}
-
-/**
- * The layers and items rows the channel logo's seed must write: both when it was applied
- * (one of them may be unchanged, which costs one row), none otherwise.
- */
-function listRowsOfTheChannelLogoSeed(
-  channelLogoSeed: ChannelLogoSeedOutcome,
-  updatedAt: string,
-): SliceRow[] {
-  if (!channelLogoSeed.isSeedApplied) {
-    return [];
-  }
-  return [
-    { name: 'layers', json: channelLogoSeed.layers, updatedAt },
-    { name: 'quickFirePanels', json: channelLogoSeed.quickFirePanels, updatedAt },
-    { name: 'items', json: channelLogoSeed.items, updatedAt },
-  ];
-}
-
-/** Says in the log what the channel logo's seed did, when it ran at this boot. */
-function logChannelLogoSeed(channelLogoSeed: ChannelLogoSeedOutcome, logger: ServerLogger): void {
-  if (!channelLogoSeed.isSeedApplied) {
-    return;
-  }
-  if (channelLogoSeed.zIndexTakenByTheOperator !== undefined) {
-    logger.warn(
-      { z_index: channelLogoSeed.zIndexTakenByTheOperator },
-      'the "Logo do canal" layer and item were not seeded: a layer of the operator holds their height',
-    );
-    return;
-  }
-  logger.info('seeded the "Logo do canal" layer and item');
 }

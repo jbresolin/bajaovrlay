@@ -247,6 +247,7 @@ describe('resolveItemFieldsIntoGraphicData with bindings that resolve', () => {
       dataSources: [staleSimulator],
       dataSnapshots: [readSimulatorSnapshotAtLap34()],
       overrides: [],
+      bracketMatchFocuses: [],
     };
 
     // Act: resolve the bound flag.
