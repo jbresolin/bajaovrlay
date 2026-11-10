@@ -75,9 +75,14 @@ export function describeBoundFieldsOfInstance(
     const snapshot = slices.dataSnapshots.find(
       (candidate) => candidate.sourceId === binding.sourceId,
     );
-    // Only whether a correction changed the value is read here, and the teams a transform
-    // reads (withTeamLogos) never change that, so none are handed in.
-    const resolution = resolveBindingAgainstSources(binding, slices, { teams: [] });
+    // Only whether a correction changed the value is read here. The teams a transform
+    // reads (withTeamLogos) never change that, and a binding to "agora" or "a seguir" of a
+    // Super Prime is never corrected (brackets take no overrides), so neither is handed in.
+    const resolution = resolveBindingAgainstSources(
+      binding,
+      { ...slices, bracketMatchFocuses: [] },
+      { teams: [] },
+    );
     const overrideKey = findOverrideKeyOfBinding(binding, snapshot?.shapes);
     const overrideInForce =
       overrideKey === undefined ? undefined : findOverrideInForce(slices.overrides, overrideKey);

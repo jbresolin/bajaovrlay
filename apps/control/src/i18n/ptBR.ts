@@ -1,5 +1,6 @@
 import { ptBRBackup } from './ptBRBackup';
 import { ptBRBindings } from './ptBRBindings';
+import { ptBRBracketMatchFocus } from './ptBRBracketMatchFocus';
 import { ptBRCarGroups } from './ptBRCarGroups';
 import { ptBRDataSources } from './ptBRDataSources';
 import { ptBREntityLibrary } from './ptBREntityLibrary';
@@ -109,6 +110,8 @@ export const ptBR = {
   // Triggers (features/triggers, BAJAOVRLAY-48): "Gatilhos", the firings that ask, the
   // header's pause and a take step's "Dado do gatilho", in ptBRTriggers.ts.
   triggers: ptBRTriggers,
+  // "Partidas da chave": the match "agora" and "a seguir" of a Super Prime (BAJAOVRLAY-65).
+  bracketMatchFocus: ptBRBracketMatchFocus,
   // The "Fontes de dados" page and the header chip (features/dataSources), in ptBRDataSources.ts.
   dataSources: ptBRDataSources,
   // The "Cadastros" page (features/entityLibrary), in ptBREntityLibrary.ts.
