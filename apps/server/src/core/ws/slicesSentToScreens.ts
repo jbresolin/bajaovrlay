@@ -74,6 +74,8 @@ export function buildSlicesForAScreen(slices: Slices, outputId: string): Slices 
     dataSources: [],
     dataSnapshots: [],
     overrides: [],
+    // Which match is "agora": the bound graphics already received it, resolved.
+    bracketMatchFocuses: [],
     recordings: [],
     events: [],
     eventRules: [],

@@ -92,6 +92,13 @@ export function buildSliceMessage(
       return { type: 'slice', name: 'dataSources', slice: slices.dataSources, serverNowMs };
     case 'overrides':
       return { type: 'slice', name: 'overrides', slice: slices.overrides, serverNowMs };
+    case 'bracketMatchFocuses':
+      return {
+        type: 'slice',
+        name: 'bracketMatchFocuses',
+        slice: slices.bracketMatchFocuses,
+        serverNowMs,
+      };
     case 'recordings':
       return { type: 'slice', name: 'recordings', slice: slices.recordings, serverNowMs };
     case 'events':
@@ -193,6 +200,9 @@ function copyOneSliceByName(
       break;
     case 'overrides':
       group.overrides = slices.overrides;
+      break;
+    case 'bracketMatchFocuses':
+      group.bracketMatchFocuses = slices.bracketMatchFocuses;
       break;
     case 'recordings':
       group.recordings = slices.recordings;

@@ -1,5 +1,6 @@
 import { ptBRBackup } from './ptBRBackup.js';
 import { ptBRBindingErrors } from './ptBRBindings.js';
+import { ptBRBracketMatchFocus } from './ptBRBracketMatchFocus.js';
 import { ptBREventErrors } from './ptBREvents.js';
 import { ptBRMediaErrors } from './ptBRMedia.js';
 import { ptBRObs } from './ptBRObs.js';
@@ -145,6 +146,8 @@ export const ptBR = {
   obs: ptBRObs,
   // Triggers: refusals, and why one did not fire (BAJAOVRLAY-48); see ptBRTriggers.ts.
   triggers: ptBRTriggers,
+  // The match focus of a Super Prime (BAJAOVRLAY-65); see ptBRBracketMatchFocus.ts.
+  bracketMatchFocus: ptBRBracketMatchFocus,
   // The YouTube live chat source's poll errors (BAJAOVRLAY-35); see ptBRYouTube.ts.
   youTube: ptBRYouTube,
   // The operator login (BAJAOVRLAY-29): PINs, the lockout, a missing session.

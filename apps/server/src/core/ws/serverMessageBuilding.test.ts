@@ -53,6 +53,7 @@ function buildSlicesEachAListOfItsOwn(): Slices {
     dataSources: [],
     dataSnapshots: [],
     overrides: [],
+    bracketMatchFocuses: [],
     recordings: [],
     events: [],
     eventRules: [],

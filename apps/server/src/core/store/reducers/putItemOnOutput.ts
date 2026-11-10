@@ -112,6 +112,7 @@ export function putThisItemOnOutput(
       dataSources: slices.dataSources,
       dataSnapshots: slices.dataSnapshots,
       overrides: slices.overrides,
+      bracketMatchFocuses: slices.bracketMatchFocuses,
     },
     eventPayload: eventFill?.payload,
     entities: slices,

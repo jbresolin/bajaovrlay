@@ -41,7 +41,7 @@ function resolveFieldsWithoutSources(fields: ItemFields, momentOfTheTake: string
     fields,
     graphic: undefined,
     momentOfTheTake,
-    sources: { dataSources: [], dataSnapshots: [], overrides: [] },
+    sources: { dataSources: [], dataSnapshots: [], overrides: [], bracketMatchFocuses: [] },
     entities: buildEmptyLibrary(),
   });
 }

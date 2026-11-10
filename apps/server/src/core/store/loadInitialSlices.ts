@@ -283,6 +283,12 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     overrides: SlicesSchema.shape.overrides.parse(
       storedRows.find((row) => row.name === 'overrides')?.json ?? [],
     ),
+    // "agora" and "a seguir" of each Super Prime are saved (BAJAOVRLAY-65), so a restart
+    // keeps the match bug on the same match. A database written before them has no row and
+    // starts with none; a row that fails its schema stops the boot, as the overrides row does.
+    bracketMatchFocuses: SlicesSchema.shape.bracketMatchFocuses.parse(
+      storedRows.find((row) => row.name === 'bracketMatchFocuses')?.json ?? [],
+    ),
     // Rebuilt from the recordings folder at every boot, every recording closed (D13);
     // never saved in the database: the files are the truth.
     recordings: readRecordingsAtBoot(options, dataSourceSlices.dataSources),

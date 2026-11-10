@@ -2,6 +2,7 @@ import type { Command } from '@bajaovrlay/shared';
 
 import { reduceRecordBackup } from '../../../modules/backup/index.js';
 import { reduceBindingCommand } from '../../../modules/bindings/index.js';
+import { reduceBracketMatchFocusCommand } from '../../../modules/bracketMatchFocus/index.js';
 import { reduceDataSourceCommand } from '../../../modules/dataSources/index.js';
 import { reduceEntityCommand } from '../../../modules/entities/index.js';
 import {
@@ -181,6 +182,10 @@ function reduceCommandOfItsType(
     case 'setOverride':
     case 'clearOverride':
       return reduceBindingCommand(slices, command, context);
+    // The match focus of a Super Prime (BAJAOVRLAY-65): modules/bracketMatchFocus.
+    case 'setBracketMatchFocus':
+    case 'acceptSuggestedBracketMatches':
+      return reduceBracketMatchFocusCommand(slices, command);
     // The event inbox (BAJAOVRLAY-44): its reducers live in the module modules/events.
     case 'showEvent':
     case 'approveEvent':

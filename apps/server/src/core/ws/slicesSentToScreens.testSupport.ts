@@ -50,6 +50,7 @@ export function buildTheCopyAScreenShouldGet(slicesOnTheServer: Slices): Slices 
     instanceBindings: [],
     programHistory: [],
     overrides: [],
+    bracketMatchFocuses: [],
     eventLog: [],
   };
 }
