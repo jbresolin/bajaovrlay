@@ -222,6 +222,10 @@ export * from './overrides/index.js';
 // which graphic fields it fits.
 export * from './bindings/index.js';
 
+// Car groups: the fields of a graphic that describe one car, declared in its manifest and
+// filled by choosing the car once in the item editor (BAJAOVRLAY-66).
+export * from './carGroups/index.js';
+
 // The entity library: teams by car number, people, sponsors and the schedule, their
 // slices, the schedule's derived status and the upsert, delete and import commands.
 export * from './entities/index.js';

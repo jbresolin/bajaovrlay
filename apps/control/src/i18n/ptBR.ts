@@ -1,5 +1,6 @@
 import { ptBRBackup } from './ptBRBackup';
 import { ptBRBindings } from './ptBRBindings';
+import { ptBRCarGroups } from './ptBRCarGroups';
 import { ptBRDataSources } from './ptBRDataSources';
 import { ptBREntityLibrary } from './ptBREntityLibrary';
 import { ptBREvents } from './ptBREvents';
@@ -32,6 +33,8 @@ import { ptBRUndo } from './ptBRUndo';
 export const ptBR = {
   keyboard: ptBRKeyboard,
   bindings: ptBRBindings,
+  // One picker per car of a graphic in the item editor (BAJAOVRLAY-66), in ptBRCarGroups.ts.
+  carGroups: ptBRCarGroups,
   quickFire: ptBRQuickFire,
   events: ptBREvents,
   // The "Histórico" page, #/historico (features/history), in ptBRHistory.ts.

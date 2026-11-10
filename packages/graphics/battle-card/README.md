@@ -18,24 +18,24 @@ Playwright on the built `dist/`, with the 6 screenshots: `pnpm --filter @bajaovr
 
 ## A typical item: car 8 against car 1, live
 
-Each field reads its own value from the positions, every one "Ao vivo" (live), the cars chosen by
-number (Posições › Carro escolhido pelo número › …), car 8 ahead and car 1 behind:
+Each car is chosen once (BAJAOVRLAY-66): the manifest groups each car's five fields
+(`v_baja.carGroups`), the gap with the car behind, so the item editor shows two pickers in
+place of eleven fields, each filling its car's fields alike:
 
-| Field (form label)             | Value in the item editor                                                             |
-| ------------------------------ | ------------------------------------------------------------------------------------ |
-| Posição do carro da frente     | Fonte › Posições › Carro escolhido pelo número (8) › Posição                         |
-| Número do carro da frente      | Fonte › Posições › Carro escolhido pelo número (8) › Carro                           |
-| Equipe do carro da frente      | Fonte › Posições › Carro escolhido pelo número (8) › Equipe                          |
-| Escola do carro da frente      | Fonte › Posições › Carro escolhido pelo número (8) › Escola                          |
-| Voltas do carro da frente      | Fonte › Posições › Carro escolhido pelo número (8) › Voltas                          |
-| Posição do carro de trás       | Fonte › Posições › Carro escolhido pelo número (1) › Posição                         |
-| Número do carro de trás        | Fonte › Posições › Carro escolhido pelo número (1) › Carro                           |
-| Equipe do carro de trás        | Fonte › Posições › Carro escolhido pelo número (1) › Equipe                          |
-| Escola do carro de trás        | Fonte › Posições › Carro escolhido pelo número (1) › Escola                          |
-| Voltas do carro de trás        | Fonte › Posições › Carro escolhido pelo número (1) › Voltas                          |
-| Diferença entre os carros (ms) | Fonte › Posições › Carro escolhido pelo número (1) › Intervalo para o carro à frente |
-| Tendência à mão                | left empty: the card works the trend out at each lap of car 1                        |
-| Variação à mão (ms)            | left empty                                                                           |
+| Picker (item editor) | Choice                                                        | Fields it fills                               |
+| -------------------- | ------------------------------------------------------------- | --------------------------------------------- |
+| Carro da frente      | Pelo número do carro › Simulador — Enduro › 8 › Ao vivo       | position, number, team, school, laps of car 8 |
+| Carro de trás        | Pelo número do carro › Simulador — Enduro › 1 › Ao vivo       | the same of car 1, and the gap (its interval) |
+| Tendência à mão      | left empty: the card works the trend out at each lap of car 1 |                                               |
+| Variação à mão (ms)  | left empty                                                    |                                               |
+
+Each field is stored as its own binding, as before the pickers: "Posição do carro da frente"
+reads Posições › Carro escolhido pelo número (8) › Posição, and so on. For a battle for a
+place rather than two given cars, "Disputa pela posição" › "Disputa pela 2ª posição" picks
+the car ahead at the 2nd place and the car behind at the 3rd, so the card follows whichever
+cars run there ("Pelo lugar na corrida" does the same for one car). "Campos separados" under a
+car shows its fields one by one again; an item whose car's fields follow two cars stays that way
+until a way is chosen for the car.
 
 The trend is remembered by the graphic itself, so a renderer reload or a new take starts it again:
 the first lap after that shows "ESTÁVEL" with no number. Choose a "Tendência à mão" (and its change

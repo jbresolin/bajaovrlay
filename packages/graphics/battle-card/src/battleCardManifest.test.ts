@@ -106,7 +106,12 @@ describe('battle-card.ograf.json settings', () => {
       supportsRealTime: battleCardManifest.supportsRealTime,
       supportsNonRealTime: battleCardManifest.supportsNonRealTime,
       stepCount: battleCardManifest.stepCount,
-      v_baja: battleCardManifest.v_baja,
+      // Its car groups are checked with every graphic's in the kit's everyManifestCarGroups.test.ts.
+      v_baja: {
+        defaultLayerId: battleCardManifest.v_baja.defaultLayerId,
+        category: battleCardManifest.v_baja.category,
+        updateRule: (battleCardManifest.v_baja as { updateRule?: string }).updateRule,
+      },
     };
 
     // Assert: "main" names the built module, the card asks for the lower-third layer.
@@ -117,7 +122,7 @@ describe('battle-card.ograf.json settings', () => {
       supportsRealTime: true,
       supportsNonRealTime: false,
       stepCount: 1,
-      v_baja: { defaultLayerId: 'lower-third', category: 'positions' },
+      v_baja: { defaultLayerId: 'lower-third', category: 'positions', updateRule: undefined },
     });
   });
 

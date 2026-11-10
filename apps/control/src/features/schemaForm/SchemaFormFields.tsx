@@ -1,4 +1,4 @@
-import type { EntityLibrary } from '@bajaovrlay/shared';
+import type { CarGroup, EntityLibrary } from '@bajaovrlay/shared';
 import type { ReactNode } from 'react';
 import { type UseFormReturn, useWatch } from 'react-hook-form';
 
@@ -8,6 +8,7 @@ import {
   canFieldTakeTheWholeClock,
   listClockFieldKeysFilledByTheWholeClock,
 } from './bindingChoices';
+import { CarGroupFields, type FieldOfCarGroup } from './CarGroupFields';
 import { doesListFieldOfferAChoice, ListFieldWithSourceChoice } from './ListFieldWithSourceChoice';
 import type { SchemaFormBindingOptions } from './schemaFormBindingOptions';
 import type { SchemaFormDescription, SchemaFormFieldDescription } from './schemaFormDescription';
@@ -53,6 +54,24 @@ function chooseWidthClassOfField(field: SchemaFormFieldDescription): string {
 }
 
 /**
+ * The fields of one car group in the manifest's order, each with the element id its row
+ * has in the form (made from its position, as every row's is).
+ */
+function listFieldsOfCarGroup(
+  description: SchemaFormDescription,
+  carGroup: CarGroup,
+  controlIdPrefix: string,
+): FieldOfCarGroup[] {
+  const fieldsOfTheGroup: FieldOfCarGroup[] = [];
+  description.fields.forEach((field, positionInTheForm) => {
+    if (Object.hasOwn(carGroup.fields, field.key)) {
+      fieldsOfTheGroup.push({ field, controlId: `${controlIdPrefix}-field-${positionInTheForm}` });
+    }
+  });
+  return fieldsOfTheGroup;
+}
+
+/**
  * Draws the fields of a generated form, in the manifest's order, for a
  * `useForm<SchemaFormValues>()` whose values came from buildSchemaFormValues.ts and whose
  * resolver came from buildSchemaFormResolver. It draws no buttons and sends nothing: the
@@ -70,6 +89,9 @@ function chooseWidthClassOfField(field: SchemaFormFieldDescription): string {
  * `entityLibrary` (the item editor only) lets a field read the library: "Cadastro" where
  * an attribute fits it (BAJAOVRLAY-19), and a list field "Lista dos cadastros" where every
  * sponsor or every slot fits it (BAJAOVRLAY-46).
+ * `carGroups` (the item editor only, with `bindingOptions`) draws one car picker per group
+ * where the group's first field would be, and none of its fields on their own
+ * (CarGroupFields.tsx, BAJAOVRLAY-66).
  */
 export function SchemaFormFields(props: {
   form: UseFormReturn<SchemaFormValues>;
@@ -95,6 +117,11 @@ export function SchemaFormFields(props: {
    * next, or every row redraws at each keystroke (SchemaFormFieldRow.tsx).
    */
   onImageUploadingChange?: (fieldKey: string, isUploading: boolean) => void;
+  /**
+   * The graphic's car groups, read from its manifest; each is drawn as one car picker.
+   * Ignored without `bindingOptions`: a pick reads a source. Default: none.
+   */
+  carGroups?: CarGroup[];
 }) {
   const { form, description, controlIdPrefix, textShownInUntouchedField, bindingOptions } = props;
   const isDisabled = props.isDisabled ?? false;
@@ -132,6 +159,16 @@ export function SchemaFormFields(props: {
     return null;
   }
 
+  // Which group each grouped field belongs to; a field in no group is drawn on its own.
+  const carGroupsDrawn = bindingOptions === undefined ? [] : (props.carGroups ?? []);
+  const carGroupOfEachField = new Map<string, CarGroup>();
+  for (const carGroup of carGroupsDrawn) {
+    for (const fieldKey of Object.keys(carGroup.fields)) {
+      carGroupOfEachField.set(fieldKey, carGroup);
+    }
+  }
+  const carGroupIdsDrawnSoFar = new Set<string>();
+
   return (
     <GeneratedFieldsGroup>
       <div className="grid grid-cols-2 gap-4">
@@ -140,6 +177,32 @@ export function SchemaFormFields(props: {
           // the graphic's author wrote: one with a space would break `aria-describedby`
           // (a list of ids separated by spaces), and "titulo-help" next to "titulo" would
           // give two elements the id of the first one's help text.
+          const carGroup = carGroupOfEachField.get(field.key);
+          if (carGroup !== undefined && bindingOptions !== undefined) {
+            // The group is drawn once, where its first field is; its other fields not at all.
+            if (carGroupIdsDrawnSoFar.has(carGroup.id)) {
+              return null;
+            }
+            carGroupIdsDrawnSoFar.add(carGroup.id);
+            return (
+              <div key={`car-group-${carGroup.id}`} className="col-span-2">
+                <CarGroupFields
+                  form={form}
+                  carGroup={carGroup}
+                  carGroupRightBehind={carGroupsDrawn.find(
+                    (candidate) => candidate.rightBehindGroup === carGroup.id,
+                  )}
+                  fieldsOfTheGroup={listFieldsOfCarGroup(description, carGroup, controlIdPrefix)}
+                  dataSchema={description.dataSchema}
+                  bindingOptions={bindingOptions}
+                  entityLibrary={props.entityLibrary}
+                  controlIdPrefix={controlIdPrefix}
+                  isDisabled={isDisabled}
+                  onImageUploadingChange={props.onImageUploadingChange}
+                />
+              </div>
+            );
+          }
           if (field.control === 'unsupported') {
             const keptValue = unsupportedValuesAsJson.find((entry) => entry.key === field.key);
             const offersAChoice = doesListFieldOfferAChoice(

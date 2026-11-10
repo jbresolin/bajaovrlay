@@ -112,8 +112,25 @@ export type SchemaFormValues = {
    * schedule. Left out until a list field holds one, as `entityReferences` is.
    */
   entityLists?: Record<string, EntityListType>;
+  /**
+   * How each car group of the graphic is chosen, by group id (BAJAOVRLAY-66). Only the
+   * way lives here: the car picked is written into each field's own kind and binding, so
+   * every file that builds commands reads the fields as before and never this. Left out
+   * by a form drawn without groups (Edição rápida, a graphic that declares none).
+   */
+  carGroupWays?: Record<string, CarGroupWay>;
   unsupportedValuesAsJson: UnsupportedValueAsJson[];
 };
+
+/**
+ * How a car group is chosen in the item editor (BAJAOVRLAY-66):
+ * - `notChosen`: nothing yet (a new item); the group's fields stay hidden;
+ * - `carNumber`: one car by its number, wherever it runs ("Carro 47");
+ * - `place`: whichever car runs at one place ("2º lugar");
+ * - `typed`: typed by hand, the group's fields shown together, typed only;
+ * - `separate`: "Campos separados", each field edited on its own as before.
+ */
+export type CarGroupWay = 'notChosen' | 'carNumber' | 'place' | 'typed' | 'separate';
 
 /**
  * Which fields the operator changed since the form was last filled: the part of

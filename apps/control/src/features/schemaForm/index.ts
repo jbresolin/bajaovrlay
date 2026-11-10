@@ -47,6 +47,8 @@ export {
 } from './buildSchemaFormValues';
 // The values of a form showing the stored fields of an item.
 export { buildSchemaFormValuesFromItemFields } from './buildSchemaFormValuesFromItemFields';
+// How each car group of a graphic opens: by number, by place, typed, nothing yet or separate.
+export { buildCarGroupWaysAtOpening } from './carGroupChoice';
 export type {
   // One field of a form that passed the check: its value, "cleared", or "filled at the take".
   CheckedSchemaFormField,

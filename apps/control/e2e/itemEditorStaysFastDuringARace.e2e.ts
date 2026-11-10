@@ -11,7 +11,9 @@
  *
  * What these tests prove:
  *   - With the simulator at 60×, read every 0,5 s, and a battle card on air whose eleven
- *     fields read cars 1 and 2 by number, live, opened in the item editor:
+ *     fields read cars 1 and 2 by number, live, opened in the item editor with both cars'
+ *     fields in rows of their own ("Campos separados", BAJAOVRLAY-66: the most the editor
+ *     draws for this card; picked once, each car draws one picker instead of five rows):
  *     - a click on a bound field's "O que … lê da fonte" shows its options within 5 s;
  *     - "Salvar item" after a new label is accepted, and the editor closed, within 5 s.
  *
@@ -144,6 +146,11 @@ test.describe('the item editor on a battle card read live while the race runs at
       .toBeDefined();
     await openControlPageAndWaitUntilConnected(page);
     const itemEditor = await openStoredItemInTheEditor(page, battleCardItemLabel);
+    for (const carLabel of ['Carro da frente', 'Carro de trás']) {
+      await itemEditor
+        .getByRole('switch', { name: `Campos separados — ${carLabel}`, exact: true })
+        .click();
+    }
     const pathDropdown = itemEditor.getByRole('combobox', {
       name: 'O que Equipe do carro da frente lê da fonte',
       exact: true,

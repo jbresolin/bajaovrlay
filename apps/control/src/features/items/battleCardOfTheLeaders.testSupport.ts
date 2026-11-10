@@ -155,15 +155,37 @@ export function buildNextPollWhereTheSecondCarCloses(): ServerMessage {
 
 /**
  * The row of one field of the editor, found from its label up to the row's own box, so a
- * test can read that row's "Valor agora" and nobody else's.
+ * test can read that row's "Valor agora" and nobody else's. A field of a car picked once
+ * (BAJAOVRLAY-66) has no row of its own: its line in the car's "Valores agora" list is
+ * found instead, by the field's name at its start.
  */
 export function findRowOfField(fieldLabel: string): HTMLElement {
-  const label = screen.getByText(fieldLabel, { selector: 'label' });
-  const row = label.closest<HTMLElement>('.flex.flex-col.gap-2');
+  const label = screen.getByText(fieldLabel, { selector: 'label, li > span' });
+  const row = label.closest<HTMLElement>('li, .flex.flex-col.gap-2');
   if (row === null) {
     throw new Error(`the row of ${fieldLabel} is not on the page`);
   }
   return row;
+}
+
+/**
+ * The same card with each car's position frozen at the take and its other fields live, as
+ * an item saved field by field may be: each car's fields are then no single pick, so the
+ * editor opens both cars with "Campos separados" on and every field in its own row
+ * (BAJAOVRLAY-66). The rows still follow the polls: "Valor agora" does not depend on
+ * "Ao vivo".
+ */
+export function buildBattleCardOfTheLeadersItemThatOpensSplit(): Item {
+  const item = buildBattleCardOfTheLeadersItem();
+  item.fields.aheadPosition = {
+    ...buildLiveBindingToCar('position', leaderCarNumber),
+    isLive: false,
+  };
+  item.fields.behindPosition = {
+    ...buildLiveBindingToCar('position', secondCarNumber),
+    isLive: false,
+  };
+  return item;
 }
 
 /** The operator's correction of car 38's team name, as the inscription spells it. */
