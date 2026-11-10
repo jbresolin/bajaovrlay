@@ -12,5 +12,7 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Checked by tsconfig.node.json, with Node's types: it reads files from the disk.
+  "exclude": ["src/fonts/controlPageFontCoversPtBR.test.ts"]
 }
