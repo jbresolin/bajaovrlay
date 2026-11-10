@@ -2,12 +2,16 @@
 // own index.ts re-exports this file with one line; other packages import from
 // '@bajaovrlay/shared', never from here.
 
-// One trigger: what it waits for (kind and filter), its macro, mode and minimum interval.
+// One trigger: what it waits for (kind and filter), its macro, mode and minimum interval;
+// a schedule every N minutes within its limits, and the part of the day it may fire in.
 export {
   defaultTriggerMinimumIntervalMs,
   type Trigger,
   type TriggerDataEventKind,
   TriggerDataEventKindSchema,
+  type TriggerDayWindow,
+  TriggerDayWindowSchema,
+  triggerEveryMinutesLimits,
   triggerMinimumIntervalLimitsMs,
   TriggerMinimumIntervalMsSchema,
   type TriggerMode,

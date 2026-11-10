@@ -193,8 +193,8 @@ describe('the rehearsal macro across a restart', () => {
     // undone), and the macro can be pressed again at once.
     expect(
       restartedStore.readAllSlices().macros.map((macro) => macro.label),
-      'the saved macro must come back after a restart',
-    ).toEqual(['Abrir a sessão']);
+      'the saved macro must come back after a restart, after the seeded sponsor roll’s',
+    ).toEqual(['Patrocinadores (simples)', 'Abrir a sessão']);
     expect(restartedStore.readAllSlices().macroRuns, 'a restart must start with no run').toEqual(
       [],
     );

@@ -9,6 +9,7 @@ import {
   defaultTriggerMinimumIntervalMs,
   type Trigger,
   type TriggerDataEventKind,
+  triggerEveryMinutesLimits,
   triggerMinimumIntervalLimitsMs,
   type TriggerMode,
   type TriggerWhen,
@@ -37,8 +38,14 @@ export type TriggerFormValues = {
   sceneChange: 'entered' | 'left';
   sceneName: string;
   dataEventKind: TriggerDataEventKind;
-  scheduleMomentKind: 'timeOfDay' | 'slotStart';
+  scheduleMomentKind: 'timeOfDay' | 'slotStart' | 'everyMinutes';
   timeOfDay: string;
+  /** Every N minutes (BAJAOVRLAY-64), as typed. */
+  everyMinutesText: string;
+  /** "Só entre dois horários": the window's times are sent only when it is on. */
+  isDayWindowOn: boolean;
+  windowFromText: string;
+  windowToText: string;
   /** A slot's id, or everySlotChoice. */
   slotChoice: string;
   minutesText: string;
@@ -64,6 +71,10 @@ export function buildEmptyTriggerFormValues(): TriggerFormValues {
     dataEventKind: 'penalty',
     scheduleMomentKind: 'slotStart',
     timeOfDay: '',
+    everyMinutesText: '30',
+    isDayWindowOn: false,
+    windowFromText: '',
+    windowToText: '',
     slotChoice: everySlotChoice,
     minutesText: '10',
     slotDirection: 'before',
@@ -95,6 +106,17 @@ export function buildTriggerFormValues(trigger: Trigger): TriggerFormValues {
     case 'schedule':
       if (when.moment.kind === 'timeOfDay') {
         return { ...values, scheduleMomentKind: 'timeOfDay', timeOfDay: when.moment.timeOfDay };
+      }
+      if (when.moment.kind === 'everyMinutes') {
+        const window = when.moment.window;
+        return {
+          ...values,
+          scheduleMomentKind: 'everyMinutes',
+          everyMinutesText: String(when.moment.everyMinutes),
+          isDayWindowOn: window !== null,
+          windowFromText: window?.from ?? '',
+          windowToText: window?.to ?? '',
+        };
       }
       return {
         ...values,
@@ -136,8 +158,45 @@ function readWhenFromValues(values: TriggerFormValues): WhenReading {
   }
 }
 
-/** A schedule's `when`: a time of day, or minutes before or after one slot or every slot. */
+/** Every N minutes, all day or between two times of the day (BAJAOVRLAY-64). */
+function readEveryMinutesWhenFromValues(values: TriggerFormValues): WhenReading {
+  const everyMinutesText = values.everyMinutesText.trim();
+  const everyMinutes = Number(everyMinutesText);
+  const isEveryMinutesValid =
+    /^\d+$/.test(everyMinutesText) &&
+    everyMinutes >= triggerEveryMinutesLimits.fewest &&
+    everyMinutes <= triggerEveryMinutesLimits.most;
+  if (!isEveryMinutesValid) {
+    return { status: 'problem', message: problems.everyMinutesInvalid };
+  }
+  if (!values.isDayWindowOn) {
+    return {
+      status: 'ready',
+      when: { kind: 'schedule', moment: { kind: 'everyMinutes', everyMinutes, window: null } },
+    };
+  }
+  const from = values.windowFromText.trim();
+  const to = values.windowToText.trim();
+  if (!timeOfDayPattern.test(from) || !timeOfDayPattern.test(to)) {
+    return { status: 'problem', message: problems.dayWindowInvalid };
+  }
+  return {
+    status: 'ready',
+    when: {
+      kind: 'schedule',
+      moment: { kind: 'everyMinutes', everyMinutes, window: { from, to } },
+    },
+  };
+}
+
+/**
+ * A schedule's `when`: a time of day, minutes before or after one slot or every slot, or
+ * every N minutes.
+ */
 function readScheduleWhenFromValues(values: TriggerFormValues): WhenReading {
+  if (values.scheduleMomentKind === 'everyMinutes') {
+    return readEveryMinutesWhenFromValues(values);
+  }
   if (values.scheduleMomentKind === 'timeOfDay') {
     const timeOfDay = values.timeOfDay.trim();
     if (!timeOfDayPattern.test(timeOfDay)) {

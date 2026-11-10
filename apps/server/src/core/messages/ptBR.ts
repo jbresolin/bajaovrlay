@@ -116,6 +116,14 @@ export const ptBR = {
   // items (BAJAOVRLAY-65).
   seededBracketMatchPanelName: 'Chave',
   seededBracketMatchItemLabels: { now: 'Partida agora', upNext: 'Partida a seguir' },
+  // The plain sponsor roll's panel, item, macro and trigger, seeded once per database
+  // (BAJAOVRLAY-64); the trigger off and asking until the operator switches it on.
+  seededPlainSponsorRoll: {
+    panelName: 'Patrocinadores',
+    itemLabel: 'Patrocinadores (simples)',
+    macroLabel: 'Patrocinadores (simples)',
+    triggerName: 'Patrocinadores a cada 30 min',
+  },
   // Refusals of the rundown and item commands; each goes with a stable code, like
   // commandErrors above. A rundown and an item are named by what the
   // operator reads on screen (name, label) whenever the server has it, and by id when

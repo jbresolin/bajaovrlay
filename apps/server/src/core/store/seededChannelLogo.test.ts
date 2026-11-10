@@ -90,8 +90,9 @@ function loadSlicesAtBoot(options: {
 
 /**
  * A database as the server of BAJAOVRLAY-61 left it: booted once, then the channel logo's
- * layer, item and seed mark taken out again, and the Super Prime match graphics' too
- * (BAJAOVRLAY-65, seeded after it), so it holds what an operator's database held before
+ * layer, item and seed mark taken out again, and the Super Prime match graphics' and the
+ * plain sponsor roll's panels and items too (BAJAOVRLAY-65 and -64, seeded after it), so it
+ * holds what an operator's database held before
  * this update. The operator had added a "Patrocínio" button to "Atalhos" there.
  */
 function openDatabaseOfAServerBeforeTheChannelLogo() {
@@ -107,9 +108,15 @@ function openDatabaseOfAServerBeforeTheChannelLogo() {
     label: 'Patrocínio',
     fields: {},
   };
-  const seededLaterItemIds = ['logo-do-canal', 'partida-agora', 'partida-a-seguir'];
+  const laterSeededPanelIds = ['logo', 'chave', 'patrocinadores'];
+  const laterSeededItemIds = [
+    'logo-do-canal',
+    'partida-agora',
+    'partida-a-seguir',
+    'patrocinadores-simples',
+  ];
   const itemsBefore = slicesOfTheOldBoot.items.filter(
-    (item) => !seededLaterItemIds.includes(item.id),
+    (item) => !laterSeededItemIds.includes(item.id),
   );
   writeSliceRows(database, [
     {
@@ -122,7 +129,7 @@ function openDatabaseOfAServerBeforeTheChannelLogo() {
     {
       name: 'quickFirePanels',
       json: slicesOfTheOldBoot.quickFirePanels.filter(
-        (panel) => panel.id !== 'logo' && panel.id !== 'chave',
+        (panel) => !laterSeededPanelIds.includes(panel.id),
       ),
       updatedAt: '2026-11-08T22:10:00.000Z',
     },
@@ -160,12 +167,13 @@ describe('a new database', () => {
     ).toEqual(seededChannelLogoItem);
     expect(
       slices.quickFirePanels.map((panel) => [panel.id, panel.name, panel.order]),
-      'the "Logo" panel comes after the two seeded before it',
+      'the "Logo" panel comes after the two seeded before it, the sponsor roll’s after it',
     ).toEqual([
       ['atalhos', 'Atalhos', 0],
       ['avisos', 'Avisos', 1],
       ['logo', 'Logo', 2],
       ['chave', 'Chave', 3],
+      ['patrocinadores', 'Patrocinadores', 4],
     ]);
     expect(
       slices.items.filter(
@@ -207,7 +215,8 @@ describe('a database written before the channel logo', () => {
           (item) =>
             item.home.kind === 'quickFire' &&
             item.home.panelId !== 'avisos' &&
-            item.home.panelId !== 'chave',
+            item.home.panelId !== 'chave' &&
+            item.home.panelId !== 'patrocinadores',
         )
         .map((item) => [
           item.id,
@@ -221,7 +230,7 @@ describe('a database written before the channel logo', () => {
     ]);
     expect(
       slices.quickFirePanels.find((panel) => panel.id === 'logo'),
-      'the "Logo" panel is added after the last panel ("Chave" comes after it, BAJAOVRLAY-65)',
+      'the "Logo" panel is added after the last panel ("Chave" and "Patrocinadores" come after it)',
     ).toEqual({ id: 'logo', name: 'Logo', order: 2 });
     const storedRows = readAllSliceRows(database);
     expect(

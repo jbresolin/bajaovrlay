@@ -6,7 +6,13 @@ import type { SlicesChangedByCommands } from '../../core/store/reducers/reducerT
 
 /** Why a trigger may not fire now: a short name for code, and the pt-BR reason. */
 export type ReasonNotToFire = {
-  why: 'disabled' | 'paused' | 'tooSoon' | 'causedByAMacro' | 'causedByATriggerStartedRun';
+  why:
+    | 'disabled'
+    | 'paused'
+    | 'tooSoon'
+    | 'stillOnAir'
+    | 'causedByAMacro'
+    | 'causedByATriggerStartedRun';
   message: string;
 };
 
@@ -18,6 +24,7 @@ export type ReasonNotToFire = {
  * - "Pausar gatilhos" is on;
  * - its minimum interval has not passed since its last firing (the interval counts from
  *   the last firing, whatever became of it: a firing that asked counts too);
+ * - for a schedule every N minutes, an item its macro takes is still on air (below);
  * - the two rules against loops below, which read `causedBy`, the actor behind what
  *   happened.
  */
@@ -40,6 +47,14 @@ export function findWhyTriggerMayNotFireNow(
   if (isWithinTheInterval) {
     const intervalSeconds = Math.round(trigger.minimumIntervalMs / 1000);
     return { why: 'tooSoon', message: reasons.tooSoon(trigger.name, intervalSeconds) };
+  }
+
+  const itemStillOnAir = findItemOfTheMacroStillOnAir(slices, trigger);
+  if (itemStillOnAir !== undefined) {
+    return {
+      why: 'stillOnAir',
+      message: reasons.stillOnAir(trigger.name, itemStillOnAir.label),
+    };
   }
 
   const macroIdOfTheCause = readMacroIdOfMacroRunnerActor(causedBy);
@@ -68,6 +83,42 @@ export function findWhyTriggerMayNotFireNow(
   const runOfTheCause = slices.macroRuns.find((run) => run.macroId === macroIdOfTheCause);
   if (runOfTheCause?.trigger !== undefined) {
     return { why: 'causedByATriggerStartedRun', message: reasons.causedByAMacro(trigger.name) };
+  }
+  return undefined;
+}
+
+/**
+ * For a schedule every N minutes (BAJAOVRLAY-64), the first item its macro takes that is
+ * on air now, on the program output; undefined for any other trigger, or when none is.
+ * Deliberate: a firing over the plain sponsor roll still on air would take it again, and
+ * the layer's out-then-in would cut the pass short and start it over, every N minutes
+ * while it overruns. The other kinds keep firing over what is on air, as before: a scene
+ * or an event means "now", and the operator chose that by setting the trigger.
+ */
+function findItemOfTheMacroStillOnAir(
+  slices: SlicesChangedByCommands,
+  trigger: Trigger,
+): { label: string } | undefined {
+  const isInterval =
+    trigger.when.kind === 'schedule' && trigger.when.moment.kind === 'everyMinutes';
+  if (!isInterval) {
+    return undefined;
+  }
+  const macro = slices.macros.find((candidate) => candidate.id === trigger.macroId);
+  if (macro === undefined) {
+    return undefined;
+  }
+  for (const step of macro.steps) {
+    if (step.kind !== 'takeItem') {
+      continue;
+    }
+    const isOnAir = slices.instances.some(
+      (instance) => instance.target === 'program' && instance.itemId === step.itemId,
+    );
+    if (isOnAir) {
+      const item = slices.items.find((candidate) => candidate.id === step.itemId);
+      return { label: item?.label ?? step.itemId };
+    }
   }
   return undefined;
 }

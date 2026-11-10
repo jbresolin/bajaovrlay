@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { ptBR } from '@/i18n/ptBR';
 
 import { HttpTriggerAddress } from './HttpTriggerAddress';
@@ -72,8 +73,9 @@ function EditorTextField(props: {
 /**
  * The "Quando" part of the trigger editor: the kind, then what that kind needs. A scene is
  * typed, with OBS's scenes offered as suggestions (a datalist), so a trigger can be set up
- * while OBS is closed. A schedule is a time of day, or minutes before or after one slot of
- * Programação or every slot. An HTTP trigger shows its address (HttpTriggerAddress.tsx).
+ * while OBS is closed. A schedule is a time of day, minutes before or after one slot of
+ * Programação or every slot, or every N minutes, all day or between two times of the day
+ * (BAJAOVRLAY-64). An HTTP trigger shows its address (HttpTriggerAddress.tsx).
  */
 export function TriggerWhenControls(props: {
   values: TriggerFormValues;
@@ -158,7 +160,58 @@ export function TriggerWhenControls(props: {
   );
 }
 
-/** A schedule's controls: a time of day, or minutes before or after a slot. */
+/**
+ * Every N minutes: the minutes, the hint that the count starts at the switch-on, and
+ * "Só entre dois horários" with its two times, shown only while it is on.
+ */
+function EveryMinutesControls(props: {
+  values: TriggerFormValues;
+  onValuesChanged: (changedParts: Partial<TriggerFormValues>) => void;
+}) {
+  const { values, onValuesChanged } = props;
+  return (
+    <>
+      <EditorTextField
+        id="trigger-every-minutes"
+        label={texts.everyMinutesLabel}
+        value={values.everyMinutesText}
+        inputMode="numeric"
+        onChange={(everyMinutesText) => onValuesChanged({ everyMinutesText })}
+      />
+      <p className="text-xs text-muted-foreground">{texts.everyMinutesHint}</p>
+      <div className="flex items-center gap-2">
+        <Switch
+          id="trigger-day-window"
+          checked={values.isDayWindowOn}
+          onCheckedChange={(isDayWindowOn) => onValuesChanged({ isDayWindowOn })}
+        />
+        <Label htmlFor="trigger-day-window" className="text-xs">
+          {texts.dayWindowLabel}
+        </Label>
+      </div>
+      {values.isDayWindowOn ? (
+        <div className="grid grid-cols-2 gap-2">
+          <EditorTextField
+            id="trigger-window-from"
+            label={texts.windowFromLabel}
+            value={values.windowFromText}
+            inputMode="numeric"
+            onChange={(windowFromText) => onValuesChanged({ windowFromText })}
+          />
+          <EditorTextField
+            id="trigger-window-to"
+            label={texts.windowToLabel}
+            value={values.windowToText}
+            inputMode="numeric"
+            onChange={(windowToText) => onValuesChanged({ windowToText })}
+          />
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+/** A schedule's controls: a time of day, minutes before or after a slot, or every N minutes. */
 function ScheduleControls(props: {
   values: TriggerFormValues;
   onValuesChanged: (changedParts: Partial<TriggerFormValues>) => void;
@@ -178,7 +231,11 @@ function ScheduleControls(props: {
       >
         <SelectItem value="timeOfDay">{texts.scheduleMomentKindNames.timeOfDay}</SelectItem>
         <SelectItem value="slotStart">{texts.scheduleMomentKindNames.slotStart}</SelectItem>
+        <SelectItem value="everyMinutes">{texts.scheduleMomentKindNames.everyMinutes}</SelectItem>
       </EditorDropdown>
+      {values.scheduleMomentKind === 'everyMinutes' ? (
+        <EveryMinutesControls values={values} onValuesChanged={onValuesChanged} />
+      ) : null}
       {values.scheduleMomentKind === 'timeOfDay' ? (
         <EditorTextField
           id="trigger-time-of-day"
@@ -187,7 +244,8 @@ function ScheduleControls(props: {
           inputMode="numeric"
           onChange={(timeOfDay) => onValuesChanged({ timeOfDay })}
         />
-      ) : (
+      ) : null}
+      {values.scheduleMomentKind === 'slotStart' ? (
         <div className="grid grid-cols-3 gap-2">
           <EditorTextField
             id="trigger-minutes"
@@ -221,7 +279,7 @@ function ScheduleControls(props: {
             ))}
           </EditorDropdown>
         </div>
-      )}
+      ) : null}
     </>
   );
 }

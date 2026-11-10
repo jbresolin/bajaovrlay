@@ -44,7 +44,7 @@ export function reduceTriggerCommand(
     case 'createTrigger':
       return reduceCreateTrigger(slices, command, context);
     case 'updateTrigger':
-      return reduceUpdateTrigger(slices, command);
+      return reduceUpdateTrigger(slices, command, context);
     case 'deleteTrigger':
       return reduceDeleteTrigger(slices, command);
     case 'setTriggersPaused':

@@ -11,6 +11,7 @@ import { readServerTime } from '../../core/time/serverClock.js';
 import { readTriggerDataEventOfInboxEvent } from './dataEventsOfTheInbox.js';
 import { readObsReading } from './obsSceneChanges.js';
 import { listScheduleMomentsDue } from './scheduleMoments.js';
+import { findWhyTriggerMayNotFireNow } from './whenATriggerMayFire.js';
 
 /** What the service needs; the timers default to Node's own, the clock to the server clock. */
 export type TriggerServiceOptions = {
@@ -174,16 +175,16 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
         if (trigger.when.kind !== 'schedule') {
           continue;
         }
-        const dataOfEachMoment = listScheduleMomentsDue(
-          trigger.when.moment,
-          slices.scheduleSlots,
+        const dataOfEachMoment = listScheduleMomentsDue(trigger.when.moment, slices.scheduleSlots, {
           afterMs,
-          nowMs,
-        );
+          upToMs: nowMs,
+          intervalCountedFromMs: trigger.intervalCountedFromMs,
+        });
         for (const data of dataOfEachMoment) {
           firings.push({ trigger, data, causedBy: triggerServiceActor });
         }
       }
+      logTheFiringsOverAGraphicStillOnAir(slices, firings, nowMs);
       sendFiringsNow(firings);
     } catch (scheduleError) {
       logger.error({ err: scheduleError }, 'the schedule of the triggers could not be read');
@@ -205,12 +206,11 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
       if (trigger.when.kind !== 'schedule') {
         continue;
       }
-      const momentsSkipped = listScheduleMomentsDue(
-        trigger.when.moment,
-        slices.scheduleSlots,
-        skippedFromMs,
-        skippedUpToMs,
-      );
+      const momentsSkipped = listScheduleMomentsDue(trigger.when.moment, slices.scheduleSlots, {
+        afterMs: skippedFromMs,
+        upToMs: skippedUpToMs,
+        intervalCountedFromMs: trigger.intervalCountedFromMs,
+      });
       if (momentsSkipped.length > 0) {
         logger.warn(
           {
@@ -220,6 +220,37 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
             gap_ms: skippedUpToMs - skippedFromMs,
           },
           'schedule moments skipped, not fired: the clock jumped past them',
+        );
+      }
+    }
+  }
+
+  /**
+   * Logs each schedule firing that will do nothing because a graphic its macro takes is
+   * still on air (a schedule every N minutes over the plain roll's pass, BAJAOVRLAY-64).
+   * The reducer drops it, as it drops any firing that may not fire, leaving no row; this
+   * line is where the operator reading the log learns why the roll did not come back.
+   */
+  function logTheFiringsOverAGraphicStillOnAir(
+    slices: Slices,
+    firings: FiringToSend[],
+    nowMs: number,
+  ): void {
+    for (const firing of firings) {
+      const reasonNotToFire = findWhyTriggerMayNotFireNow(
+        slices,
+        firing.trigger,
+        nowMs,
+        firing.causedBy,
+      );
+      if (reasonNotToFire?.why === 'stillOnAir') {
+        logger.info(
+          {
+            trigger_id: firing.trigger.id,
+            trigger_name: firing.trigger.name,
+            reason: reasonNotToFire.message,
+          },
+          'schedule firing not made: a graphic of its macro is still on air',
         );
       }
     }

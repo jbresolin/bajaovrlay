@@ -310,10 +310,10 @@ describe('the refusals of a shortcut', () => {
     // A pad set up for a panel that was deleted or never made.
     {
       name: 'refuses a panel that does not exist',
-      path: '/api/v1/fire-shortcut/patrocinadores/1',
+      path: '/api/v1/fire-shortcut/patrocinio-extra/1',
       expectedError: {
         code: 'QUICK_FIRE_PANEL_NOT_FOUND',
-        message: 'O painel de atalhos "patrocinadores" não existe.',
+        message: 'O painel de atalhos "patrocinio-extra" não existe.',
       },
     },
     // "Atalhos" holds two buttons; a pad's third key has nothing under it.

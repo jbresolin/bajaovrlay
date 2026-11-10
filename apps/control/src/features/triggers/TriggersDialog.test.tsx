@@ -12,7 +12,8 @@
  * What these tests prove:
  *   - The list shows each trigger's name, what it waits for in words, its macro, mode,
  *     interval and whether it is on.
- *   - Each of the four kinds is created as the operator fills it in.
+ *   - Each of the four kinds is created as the operator fills it in, a schedule every 30
+ *     minutes from 08:00 to 18:00 among them (BAJAOVRLAY-64).
  *   - A stored HTTP trigger shows its address on this server and a curl with a body; a new
  *     one says the address comes after saving.
  *   - A stored trigger switched off and set to "Automático" saves as the whole trigger.
@@ -127,6 +128,22 @@ describe('creating a trigger', () => {
       expectedWhen: {
         kind: 'schedule',
         moment: { kind: 'slotStart', slotId: enduroSlotId, minutesFromStart: -10 },
+      },
+    },
+    // The sponsors every 30 minutes, only while the cars are on track.
+    {
+      name: 'every 30 minutes from 08:00 to 18:00',
+      fillTheKind: () => {
+        chooseOptionInDropdown('Quando', 'Horário');
+        chooseOptionInDropdown('Tipo de horário', 'A cada N minutos');
+        typeInto('A cada (minutos, de 5 a 240)', '30');
+        fireEvent.click(screen.getByRole('switch', { name: 'Só entre dois horários' }));
+        typeInto('De (HH:MM)', '08:00');
+        typeInto('Até (HH:MM)', '18:00');
+      },
+      expectedWhen: {
+        kind: 'schedule',
+        moment: { kind: 'everyMinutes', everyMinutes: 30, window: { from: '08:00', to: '18:00' } },
       },
     },
   ];

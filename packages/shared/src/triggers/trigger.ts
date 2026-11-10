@@ -12,6 +12,12 @@ export const defaultTriggerMinimumIntervalMs = 10_000;
 /** How far from a slot's start a trigger may be set: twelve hours either way. */
 const furthestMinutesFromSlotStart = 12 * 60;
 
+/**
+ * The limits of a schedule every N minutes (BAJAOVRLAY-64): under 5 a roll would be on air
+ * most of the time; past 4 hours a time of day says it better.
+ */
+export const triggerEveryMinutesLimits = { fewest: 5, most: 240 };
+
 /** The limits of a trigger's minimum interval, for the page's field and the commands. */
 export const triggerMinimumIntervalLimitsMs = {
   shortest: shortestMinimumIntervalMs,
@@ -37,16 +43,30 @@ export const TriggerDataEventKindSchema = z.enum([
 /** One kind of inbox event a trigger may wait for. */
 export type TriggerDataEventKind = z.infer<typeof TriggerDataEventKindSchema>;
 
+/** A time of day, "HH:MM", as the schedule triggers write one. */
+const TimeOfDaySchema = z.string().regex(timeOfDayPattern);
+
+/**
+ * The part of the day a schedule every N minutes may fire in, both ends included, on the
+ * server's clock (America/Sao_Paulo). `from` after `to` crosses midnight (22:00 to 02:00).
+ */
+export const TriggerDayWindowSchema = z.object({ from: TimeOfDaySchema, to: TimeOfDaySchema });
+
+/** A part of the day after validation. */
+export type TriggerDayWindow = z.infer<typeof TriggerDayWindowSchema>;
+
 /**
  * When a schedule trigger fires: a time of day on the server's clock (America/Sao_Paulo),
- * or some minutes before (negative) or after (positive) the start of a Programação slot.
- * `slotId` null means every slot. The slot's start is read at each tick, never copied
- * here, so a slot moved after the trigger was set is followed.
+ * some minutes before (negative) or after (positive) the start of a Programação slot, or
+ * every N minutes (BAJAOVRLAY-64), counted from the moment the trigger was switched on
+ * (the trigger's `intervalCountedFromMs`), all day (`window` null) or only inside a part of
+ * the day. `slotId` null means every slot. The slot's start is read at each tick, never
+ * copied here, so a slot moved after the trigger was set is followed.
  */
 export const TriggerScheduleMomentSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('timeOfDay'),
-    timeOfDay: z.string().regex(timeOfDayPattern),
+    timeOfDay: TimeOfDaySchema,
   }),
   z.object({
     kind: z.literal('slotStart'),
@@ -56,6 +76,15 @@ export const TriggerScheduleMomentSchema = z.discriminatedUnion('kind', [
       .int()
       .min(-furthestMinutesFromSlotStart)
       .max(furthestMinutesFromSlotStart),
+  }),
+  z.object({
+    kind: z.literal('everyMinutes'),
+    everyMinutes: z
+      .number()
+      .int()
+      .min(triggerEveryMinutesLimits.fewest)
+      .max(triggerEveryMinutesLimits.most),
+    window: TriggerDayWindowSchema.nullable(),
   }),
 ]);
 
@@ -104,7 +133,11 @@ export const TriggerMinimumIntervalMsSchema = z
 
 /**
  * One trigger: its name, whether it is on, what it waits for, the macro it runs, how
- * (auto or ask), and the least time between two of its firings.
+ * (auto or ask), and the least time between two of its firings. A schedule every N
+ * minutes also carries `intervalCountedFromMs`, the moment (ms since 1970, server clock)
+ * the server last switched it on or changed its schedule, which its firings count from;
+ * the server writes it, never a command. Left out, the trigger has not been on since it
+ * became one, and it fires nothing.
  */
 export const TriggerSchema = z.object({
   id: z.string().min(1),
@@ -114,6 +147,7 @@ export const TriggerSchema = z.object({
   macroId: z.string().min(1),
   mode: TriggerModeSchema,
   minimumIntervalMs: TriggerMinimumIntervalMsSchema,
+  intervalCountedFromMs: z.number().int().min(0).optional(),
 });
 
 /** One trigger after validation. */

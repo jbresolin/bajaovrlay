@@ -1,0 +1,67 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-sponsor-roll-plain",
+  "version": "0.1.0",
+  "name": "Patrocinadores (simples)",
+  "description": "Cada patrocinador uma vez, só o logo e o nível, no canto escolhido; sai sozinho no fim da passada.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "sponsor-roll-plain.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "bug",
+    "category": "sponsor",
+    "autoOutRule": "onePlainSponsorRollPass"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 400 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "sponsors": {
+        "type": "array",
+        "title": "Patrocinadores",
+        "description": "Em geral a lista dos patrocinadores nos cadastros; um patrocinador sem logo fica de fora.",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "level": {
+              "type": "string",
+              "enum": ["diamante", "ouro", "prata", "bronze", "apoio", "realizacao"]
+            },
+            "logoUrl": { "type": "string" },
+            "logoOnLightPlate": { "type": "boolean" },
+            "rollWeight": { "type": "integer", "minimum": 1, "maximum": 10 }
+          },
+          "required": ["name", "level"],
+          "additionalProperties": false
+        }
+      },
+      "corner": {
+        "type": "string",
+        "title": "Canto",
+        "description": "O canto da tela onde o cartão fica, dentro da área segura.",
+        "enum": ["top-left", "top-right", "bottom-left", "bottom-right"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "top-left": "Superior esquerdo",
+            "top-right": "Superior direito",
+            "bottom-left": "Inferior esquerdo",
+            "bottom-right": "Inferior direito"
+          }
+        },
+        "default": "top-left"
+      }
+    },
+    "required": ["sponsors"],
+    "additionalProperties": false
+  }
+}

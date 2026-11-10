@@ -71,7 +71,7 @@ function buildOpenTheSessionMacro() {
 }
 
 describe('the quick-fire panels and macros on the first boot', () => {
-  it('seeds "Atalhos" (and "Avisos") and no macro, saves both rows, and starts with no run', () => {
+  it('seeds "Atalhos" (and the seeded panels after it) and only the sponsor roll’s macro, saves both rows, and starts with no run', () => {
     // Arrange: a brand-new database file.
     const { database } = openTemporaryDatabase();
 
@@ -80,15 +80,20 @@ describe('the quick-fire panels and macros on the first boot', () => {
 
     // Assert: "Atalhos", then "Avisos" (seeded with the event rules, BAJAOVRLAY-44;
     // modules/events covers it) and "Logo" (seeded with the channel logo, BAJAOVRLAY-63;
-    // store/seededChannelLogo.test.ts covers it), no macro, no run, and the two rows saved
-    // with the boot time.
+    // store/seededChannelLogo.test.ts covers it), then "Patrocinadores" with the plain sponsor
+    // roll's macro (BAJAOVRLAY-64; store/seededPlainSponsorRoll.test.ts covers them), no other
+    // macro, no run, and the two rows saved with the boot time.
     expect(slices.quickFirePanels, 'the first boot must seed exactly these panels').toEqual([
       { id: 'atalhos', name: 'Atalhos', order: 0 },
       { id: 'avisos', name: 'Avisos', order: 1 },
       { id: 'logo', name: 'Logo', order: 2 },
       { id: 'chave', name: 'Chave', order: 3 },
+      { id: 'patrocinadores', name: 'Patrocinadores', order: 4 },
     ]);
-    expect(slices.macros, 'no macro exists on the first boot').toEqual([]);
+    expect(
+      slices.macros.map((macro) => macro.id),
+      'only the sponsor roll’s macro exists on the first boot',
+    ).toEqual(['patrocinadores-simples']);
     expect(slices.macroRuns, 'no macro is running at boot').toEqual([]);
     const storedRows = readAllSliceRows(database);
     expect(
@@ -101,13 +106,14 @@ describe('the quick-fire panels and macros on the first boot', () => {
         { id: 'avisos', name: 'Avisos', order: 1 },
         { id: 'logo', name: 'Logo', order: 2 },
         { id: 'chave', name: 'Chave', order: 3 },
+        { id: 'patrocinadores', name: 'Patrocinadores', order: 4 },
       ],
       updatedAt: '2026-10-09T08:00:00.000Z',
     });
     expect(
       storedRows.find((row) => row.name === 'macros'),
-      'the empty macros list must be saved too',
-    ).toEqual({ name: 'macros', json: [], updatedAt: '2026-10-09T08:00:00.000Z' });
+      'the macros list must be saved too',
+    ).toEqual({ name: 'macros', json: slices.macros, updatedAt: '2026-10-09T08:00:00.000Z' });
     expect(
       storedRows.some((row) => row.name === 'macroRuns'),
       'the runs live in memory only and must never get a row',
@@ -150,6 +156,8 @@ describe('the quick-fire panels and macros on a database written before they exi
       dataSources: '2026-10-09T08:00:00.000Z',
       // The default event rules, seeded at the first boot too (BAJAOVRLAY-44).
       eventRules: '2026-10-09T08:00:00.000Z',
+      // The plain sponsor roll's trigger, seeded once at the first boot (BAJAOVRLAY-64).
+      triggers: '2026-10-09T08:00:00.000Z',
     });
   });
 });

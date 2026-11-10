@@ -1,5 +1,6 @@
 import type { Instance, InstanceTarget } from '@bajaovrlay/shared';
 
+import { findAutoOutByTheGraphicsRule } from '../autoOutRules.js';
 import {
   refuseFieldGraphicCannotStamp,
   refuseInvalidGraphicData,
@@ -142,8 +143,13 @@ export function putGraphicOnOutput(
   if (request.eventId !== undefined) {
     newInstance.eventId = request.eventId;
   }
-  if (request.autoOutAfterMs !== undefined) {
-    newInstance.autoOutAfterMs = request.autoOutAfterMs;
+  // An event's rule duration wins; otherwise the graphic's own auto-out rule, worked out
+  // from the data on air (the plain sponsor roll's pass, BAJAOVRLAY-64), wins over the
+  // item's delay, which the auto-out reads when the instance carries none.
+  const autoOutAfterMs =
+    request.autoOutAfterMs ?? findAutoOutByTheGraphicsRule(graphic, dataForTheGraphic);
+  if (autoOutAfterMs !== undefined) {
+    newInstance.autoOutAfterMs = autoOutAfterMs;
   }
   const instancesKept = slices.instances.filter((instance) => {
     const isOnTheSameLayerAndOutput =

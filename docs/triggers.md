@@ -17,12 +17,12 @@ fica no **Menu** (☰) no topo do console; enquanto os gatilhos estão pausados,
 Os dados de um disparo são uma lista simples de chave → texto ou número, com chaves em
 português. São eles que um passo de macro lê em **Dado do gatilho › <chave>**.
 
-| Tipo        | Quando dispara                                                                                                                                          | Dados                                                                                                                                      |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Cena do OBS | a cena escolhida entra no Programa do OBS, ou sai dele                                                                                                  | `cena`                                                                                                                                     |
-| HTTP        | uma chamada a `POST /api/v1/triggers/<id>` ([buttons.md](buttons.md), seção 10)                                                                         | o corpo da chamada, como veio                                                                                                              |
-| Evento      | a caixa de eventos registra uma penalidade, uma volta mais rápida, uma troca de líder ou um incidente                                                   | `tipo`, `carro` e, quando o evento traz, `equipe`, `escola`, `motivo`, `punicao`, `volta`, `tempo`                                         |
-| Horário     | um horário do dia (relógio do servidor, horário de Brasília), ou N minutos antes ou depois do início de uma sessão da Programação (uma sessão ou todas) | numa sessão: `sessao`, `prova` e `inicio` (o início, em ms, que preenche a largada de uma contagem regressiva); num horário do dia: nenhum |
+| Tipo        | Quando dispara                                                                                                                                                                         | Dados                                                                                                                                                         |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cena do OBS | a cena escolhida entra no Programa do OBS, ou sai dele                                                                                                                                 | `cena`                                                                                                                                                        |
+| HTTP        | uma chamada a `POST /api/v1/triggers/<id>` ([buttons.md](buttons.md), seção 10)                                                                                                        | o corpo da chamada, como veio                                                                                                                                 |
+| Evento      | a caixa de eventos registra uma penalidade, uma volta mais rápida, uma troca de líder ou um incidente                                                                                  | `tipo`, `carro` e, quando o evento traz, `equipe`, `escola`, `motivo`, `punicao`, `volta`, `tempo`                                                            |
+| Horário     | um horário do dia (relógio do servidor, horário de Brasília), N minutos antes ou depois do início de uma sessão da Programação (uma sessão ou todas), ou **a cada N minutos** (abaixo) | numa sessão: `sessao`, `prova` e `inicio` (o início, em ms, que preenche a largada de uma contagem regressiva); num horário do dia e a cada N minutos: nenhum |
 
 - **Penalidade** é qualquer evento que diga que é penalidade, vindo da fonte ou digitado em
   "+ Evento". **Incidente** é um incidente da fonte que não é penalidade. Um aviso digitado que
@@ -35,6 +35,43 @@ português. São eles que um passo de macro lê em **Dado do gatilho › <chave>
   largada passar para 13:30). Se não quiser o segundo disparo, desligue o gatilho depois do
   primeiro.
 - Um horário que passou com o servidor desligado (ou o PC dormindo) não dispara atrasado.
+
+## A cada N minutos
+
+O terceiro tipo de **Horário** (BAJAOVRLAY-64) dispara **a cada N minutos**, de 5 a 240, o dia
+todo ou só entre dois horários do dia (**Só entre dois horários**: **De** e **Até**, os dois
+incluídos, no relógio do servidor, horário de Brasília; um **De** depois do **Até** atravessa a
+meia-noite, por exemplo 22:00 a 02:00).
+
+- A contagem começa no momento em que o gatilho é **ligado**: ligado às 10:07, a cada 30 min,
+  dispara às 10:37, 11:07… Desligar e ligar de novo recomeça a contagem; salvar com outro N
+  também. O momento fica salvo, então um reinício não muda a grade (os horários que passaram
+  com o servidor desligado não disparam atrasados).
+- Fora da janela, o horário da grade passa sem disparar; a grade não se desloca.
+- Vale tudo o que vale para os outros gatilhos: auto ou perguntar, o intervalo mínimo,
+  **Pausar gatilhos** e nada de disparo atrasado depois de o PC dormir.
+- **Enquanto o gráfico da macro ainda está no ar, o disparo não acontece.** Se um item que a
+  macro põe no ar ainda está no Programa (por exemplo, a passada de patrocinadores ainda não
+  terminou), o disparo é ignorado, sem linha no log de eventos, e o log do servidor diz por quê:
+  `O gatilho "<nome>" não disparou: "<item>" ainda está no ar.` Disparar por cima reiniciaria a
+  passada no meio. Os outros tipos de gatilho continuam disparando por cima do que está no ar,
+  como antes.
+
+### Patrocinadores a cada 30 min
+
+Todo banco novo (e, uma vez, um banco que já existia) ganha:
+
+- o item **Patrocinadores (simples)**, único botão do painel **Patrocinadores** de **Atalhos e
+  macros**, no gráfico de patrocinadores simples (`sponsor-roll-plain`), na camada do bug, com a
+  lista de patrocinadores dos **Cadastros**;
+- a macro **Patrocinadores (simples)**, que põe o item no ar;
+- o gatilho **Patrocinadores a cada 30 min**, que roda a macro a cada 30 minutos, o dia todo,
+  **desligado e em perguntar**: nada vai ao ar de surpresa até o operador ligá-lo.
+
+Os patrocinadores passam uma vez cada um, cada nível pelo seu tempo, e o gráfico sai sozinho
+no fim da passada: o servidor calcula o tempo da passada pela mesma tabela do gráfico. Uma
+lista mudada no meio da passada não a encurta nem a alonga; a próxima passada já sai com a lista
+nova. O que o operador excluir não volta.
 
 ## Auto ou perguntar
 

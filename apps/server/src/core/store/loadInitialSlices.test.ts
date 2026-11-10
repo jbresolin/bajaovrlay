@@ -211,6 +211,8 @@ describe('loadInitialSlices on an empty database', () => {
       ['dataSources', '2026-10-09T08:00:00.000Z'],
       // The default event rules since BAJAOVRLAY-44; modules/events covers them.
       ['eventRules', '2026-10-09T08:00:00.000Z'],
+      // The plain sponsor roll's trigger since BAJAOVRLAY-64; seededPlainSponsorRoll.test.ts.
+      ['triggers', '2026-10-09T08:00:00.000Z'],
     ]);
     expect(slices.instances, 'nothing is on air on the first boot').toEqual([]);
   });
