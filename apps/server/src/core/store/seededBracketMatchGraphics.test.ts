@@ -140,14 +140,13 @@ describe('a new database', () => {
     ).toEqual(['bug', 'sponsor-roll-plain', 'channel-logo', 'bracket-match', 'ticker']);
     expect(
       slices.quickFirePanels.map((panel) => [panel.id, panel.name, panel.order]),
-      'the "Chave" panel comes after the panels seeded before it',
+      'the "Chave" panel comes after the panels seeded before it (no "Avisos" since BAJAOVRLAY-67)',
     ).toEqual([
       ['atalhos', 'Atalhos', 0],
-      ['avisos', 'Avisos', 1],
-      ['logo', 'Logo', 2],
-      ['chave', 'Chave', 3],
+      ['logo', 'Logo', 1],
+      ['chave', 'Chave', 2],
       // The plain sponsor roll's panel (BAJAOVRLAY-64), seeded after this one.
-      ['patrocinadores', 'Patrocinadores', 4],
+      ['patrocinadores', 'Patrocinadores', 3],
     ]);
     const itemsOfTheKeyPanel = slices.items.filter(
       (item) => item.home.kind === 'quickFire' && item.home.panelId === 'chave',
@@ -222,7 +221,7 @@ describe('a database written before the match graphics', () => {
     ).toEqual({
       id: 'chave',
       name: 'Chave',
-      order: 3,
+      order: 2,
     });
     expect(
       slices.items.filter((item) => seededItemIds.includes(item.id)).map((item) => item.id),

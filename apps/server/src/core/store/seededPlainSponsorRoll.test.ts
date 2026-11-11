@@ -174,13 +174,12 @@ describe('a new database', () => {
     ).toEqual(['bug', 'sponsor-roll-plain', 'channel-logo']);
     expect(
       slices.quickFirePanels.map((panel) => [panel.id, panel.name, panel.order]),
-      'the "Patrocinadores" panel comes after the four seeded before it',
+      'the "Patrocinadores" panel comes after the three seeded before it (no "Avisos" since BAJAOVRLAY-67)',
     ).toEqual([
       ['atalhos', 'Atalhos', 0],
-      ['avisos', 'Avisos', 1],
-      ['logo', 'Logo', 2],
-      ['chave', 'Chave', 3],
-      ['patrocinadores', 'Patrocinadores', 4],
+      ['logo', 'Logo', 1],
+      ['chave', 'Chave', 2],
+      ['patrocinadores', 'Patrocinadores', 3],
     ]);
     expect(
       slices.items.find((item) => item.id === 'patrocinadores-simples'),
@@ -234,7 +233,7 @@ describe('a database written before the plain sponsor roll', () => {
     expect(slices.quickFirePanels.at(-1), 'the panel is added after the last panel').toEqual({
       id: 'patrocinadores',
       name: 'Patrocinadores',
-      order: 4,
+      order: 3,
     });
     const storedRows = readAllSliceRows(database);
     for (const sliceName of ['layers', 'quickFirePanels', 'items', 'macros', 'triggers'] as const) {

@@ -23,7 +23,10 @@
 import type { Item, ItemFields, QuickFirePanel } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
-import { createLogger } from '../../core/logger/createLogger.js';
+import {
+  createRecordingLogger,
+  type RecordedLogLine,
+} from '../../core/logger/recordingLogger.testSupport.js';
 import { loadOrSeedEventInboxSlices, superChatItemSeedName } from './loadEventInboxSlices.js';
 import { seededEventRules } from './seedEventRules.js';
 
@@ -83,12 +86,11 @@ function buildNoticeTemplate(id: string, label: string, panelId: string, order: 
 }
 
 /** Boots the loader on these panels and items, and returns the log lines it wrote. */
-function bootAndReadTheLogLines(quickFirePanels: QuickFirePanel[], items: Item[]): unknown[] {
-  const logLines: unknown[] = [];
-  const logger = createLogger({
-    level: 'info',
-    destination: { write: (line: string) => logLines.push(JSON.parse(line)) },
-  });
+function bootAndReadTheLogLines(
+  quickFirePanels: QuickFirePanel[],
+  items: Item[],
+): RecordedLogLine[] {
+  const { logger, readRecordedLines } = createRecordingLogger();
   loadOrSeedEventInboxSlices(
     [{ name: 'eventRules', json: seededEventRules, updatedAt: '2027-08-14T13:00:00.000Z' }],
     { quickFirePanels, items },
@@ -97,18 +99,12 @@ function bootAndReadTheLogLines(quickFirePanels: QuickFirePanel[], items: Item[]
     '2027-08-14T13:00:00.000Z',
     logger,
   );
-  return logLines;
+  return readRecordedLines();
 }
 
 /** The warnings about a shifted button, as the boot logged them. */
-function readShiftedButtonWarnings(logLines: unknown[]): unknown[] {
-  return logLines.filter(
-    (line) =>
-      typeof line === 'object' &&
-      line !== null &&
-      'shifted_button' in line &&
-      (line as { level?: string }).level === 'warn',
-  );
+function readShiftedButtonWarnings(logLines: RecordedLogLine[]): RecordedLogLine[] {
+  return logLines.filter((line) => line.level === 'warn' && 'shifted_button' in line);
 }
 
 describe('the buttons shifted by the template move, at boot', () => {
@@ -130,13 +126,10 @@ describe('the buttons shifted by the template move, at boot', () => {
     // Assert: the three buttons after a template, each a pt-BR warning naming its panel and
     // both places counted from 1; "Largada", before the copy, stayed put and is not named.
     expect(
-      readShiftedButtonWarnings(logLines).map((line) => {
-        const { shifted_button: shiftedButton, message } = line as {
-          shifted_button: unknown;
-          message: string;
-        };
-        return { shiftedButton, message };
-      }),
+      readShiftedButtonWarnings(logLines).map((line) => ({
+        shiftedButton: line.shifted_button,
+        message: line.message,
+      })),
       'every shifted button must be logged once, in panel order',
     ).toEqual([
       {
