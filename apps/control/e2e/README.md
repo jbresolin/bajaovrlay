@@ -117,6 +117,11 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
 - Triggers (BAJAOVRLAY-48): `httpTriggerFillsTheLowerThird.e2e.ts` (the brief's E2E): an HTTP trigger, set up over the WebSocket, whose
   macro takes a "Tarja" with "Nome" from the trigger's `nome`; a call to `POST /api/v1/triggers/<id>` with `{ "nome": "Ana Souza" }`
   (the run's server has a made-up API token, `triggerCallsOnTheRealServer.ts`) puts "Ana Souza" on air, drawn on `/render/`.
+  `plainSponsorRollEveryFiveMinutes.e2e.ts` (BAJAOVRLAY-64, the brief's E2E): on a server of its own (5190), its clock on an
+  NTP server of the test's own (`fakeNtpServerOfTheBrowserTests.ts`), the seeded "Patrocinadores a cada 30 min" set on
+  "Gatilhos" to on, "Automático", every 5 minutes; the NTP time moved to 4 s before the 5 minutes and "Acertar relógio agora"
+  pressed: the plain roll goes on air with Bosch, drawn on `/render/`, its auto-out the 8,4 s pass, and leaves after it.
+  The own servers' start and stop are in `ownServerOfABrowserTest.ts` (moved there from the restart test).
   `triggerFieldsFitTheirBox.e2e.ts`: at 1024×768, a take step's "Dado do gatilho" with a long key stays inside the step's box,
   and the item editor's "Nome" stays inside the editor whichever way it is filled (jsdom measures no layout).
 

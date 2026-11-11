@@ -10,10 +10,13 @@
  *
  * What these tests prove:
  *   - Each kind becomes its `when`: a scene entered or left, an HTTP call, a penalty, a
- *     time of day, ten minutes before one slot, five minutes after every slot.
- *   - The seconds become ms; a stored trigger reads back into the same values.
- *   - A missing name, scene, time, macro, a bad offset and an interval outside 1 to 3600 s
- *     are refused with their pt-BR reason.
+ *     time of day, ten minutes before one slot, five minutes after every slot, every 30
+ *     minutes all day and every 30 minutes from 08:00 to 18:00 (BAJAOVRLAY-64).
+ *   - The seconds become ms; a stored trigger reads back into the same values, the
+ *     seeded "Patrocinadores a cada 30 min" too.
+ *   - A missing name, scene, time, macro, a bad offset, every N minutes outside 5 to 240,
+ *     a window with a bad time and an interval outside 1 to 3600 s are refused with their
+ *     pt-BR reason.
  *
  * What these tests deliberately do not cover:
  *   - The dialog that draws the values; TriggersDialog.test.tsx.
@@ -101,6 +104,39 @@ describe('readTriggerFormIntoCommand, a new trigger', () => {
         moment: { kind: 'slotStart', slotId: null, minutesFromStart: 5 },
       },
     },
+    // The plain sponsor roll's: every 30 minutes all day; the window's times typed before
+    // are not sent while "Só entre dois horários" is off.
+    {
+      name: 'every 30 minutes all day',
+      change: {
+        kind: 'schedule',
+        scheduleMomentKind: 'everyMinutes',
+        everyMinutesText: '30',
+        isDayWindowOn: false,
+        windowFromText: '08:00',
+        windowToText: '18:00',
+      },
+      expectedWhen: {
+        kind: 'schedule',
+        moment: { kind: 'everyMinutes', everyMinutes: 30, window: null },
+      },
+    },
+    // Only while the cars are on track.
+    {
+      name: 'every 30 minutes from 08:00 to 18:00',
+      change: {
+        kind: 'schedule',
+        scheduleMomentKind: 'everyMinutes',
+        everyMinutesText: '30',
+        isDayWindowOn: true,
+        windowFromText: '08:00',
+        windowToText: '18:00',
+      },
+      expectedWhen: {
+        kind: 'schedule',
+        moment: { kind: 'everyMinutes', everyMinutes: 30, window: { from: '08:00', to: '18:00' } },
+      },
+    },
   ];
 
   it.each(kindsAndTheirWhen)('builds $name', ({ change, expectedWhen }) => {
@@ -149,6 +185,36 @@ describe('readTriggerFormIntoCommand, a new trigger', () => {
       name: 'refuses an offset past 720 minutes',
       change: { kind: 'schedule', scheduleMomentKind: 'slotStart', minutesText: '800' },
       expected: 'Informe os minutos como um número inteiro de 0 a 720.',
+    },
+    // Every 4 minutes would have the roll on air most of the time.
+    {
+      name: 'refuses every N minutes under 5',
+      change: { kind: 'schedule', scheduleMomentKind: 'everyMinutes', everyMinutesText: '4' },
+      expected: 'Informe a cada quantos minutos como um número inteiro de 5 a 240.',
+    },
+    // "meia hora" is how people say it, not a number.
+    {
+      name: 'refuses every N minutes that is not a number',
+      change: {
+        kind: 'schedule',
+        scheduleMomentKind: 'everyMinutes',
+        everyMinutesText: 'meia hora',
+      },
+      expected: 'Informe a cada quantos minutos como um número inteiro de 5 a 240.',
+    },
+    // A window needs both ends as HH:MM.
+    {
+      name: 'refuses a window whose end is not HH:MM',
+      change: {
+        kind: 'schedule',
+        scheduleMomentKind: 'everyMinutes',
+        everyMinutesText: '30',
+        isDayWindowOn: true,
+        windowFromText: '08:00',
+        windowToText: '18h',
+      },
+      expected:
+        'Informe o começo e o fim como HH:MM, de 00:00 a 23:59 (por exemplo 08:00 e 18:00).',
     },
     // Every trigger runs a macro.
     { name: 'refuses no macro', change: { macroId: '' }, expected: 'Escolha a macro do gatilho.' },
@@ -217,5 +283,38 @@ describe('a stored trigger', () => {
         minimumIntervalMs: 30_000,
       },
     });
+  });
+});
+
+describe('the seeded "Patrocinadores a cada 30 min"', () => {
+  it('reads back as every 30 minutes all day, off and asking, and saves unchanged', () => {
+    // Arrange: the trigger as the server seeds it, never switched on.
+    const seededTrigger: Trigger = {
+      id: 'patrocinadores-a-cada-30-min',
+      name: 'Patrocinadores a cada 30 min',
+      isEnabled: false,
+      when: { kind: 'schedule', moment: { kind: 'everyMinutes', everyMinutes: 30, window: null } },
+      macroId: 'patrocinadores-simples',
+      mode: 'ask',
+      minimumIntervalMs: 10_000,
+    };
+
+    // Act: open it in the editor and save it unchanged.
+    const values = buildTriggerFormValues(seededTrigger);
+    const reading = readTriggerFormIntoCommand(values, seededTrigger.id);
+
+    // Assert: "A cada 30 minutos", no window, and the same trigger sent back.
+    expect(
+      {
+        scheduleMomentKind: values.scheduleMomentKind,
+        everyMinutesText: values.everyMinutesText,
+        isDayWindowOn: values.isDayWindowOn,
+      },
+      'the editor shows every 30 minutes, all day',
+    ).toEqual({ scheduleMomentKind: 'everyMinutes', everyMinutesText: '30', isDayWindowOn: false });
+    expect(
+      reading.status === 'ready' && reading.command.when,
+      'saving sends the same when',
+    ).toEqual(seededTrigger.when);
   });
 });

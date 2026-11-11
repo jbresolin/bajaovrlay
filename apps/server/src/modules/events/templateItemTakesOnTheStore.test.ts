@@ -103,7 +103,8 @@ describe('a take of an item filled by an event', () => {
       operatorActor,
     );
     expect(outcomeOfTheMacro.ok, 'the macro is made (its run is what must be refused)').toBe(true);
-    const macroId = inbox.stateStore.readAllSlices().macros[0]?.id ?? '';
+    // The macro just made is the last one; the seeded sponsor roll's comes first.
+    const macroId = inbox.stateStore.readAllSlices().macros.at(-1)?.id ?? '';
     const commands = buildCommandsOfTheTake('relogio-aviso').map((command) =>
       command.macroId === undefined ? command : { ...command, macroId },
     );

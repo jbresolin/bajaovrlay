@@ -9,10 +9,13 @@
  *   the brief asks for.
  *
  * What these tests prove:
- *   - Each of the four kinds is accepted with its filter, as the page writes it.
+ *   - Each of the four kinds is accepted with its filter, as the page writes it; a schedule
+ *     every N minutes (BAJAOVRLAY-64) all day or between two times of the day, and the
+ *     moment the server counts it from.
  *   - createTrigger defaults to on, "ask" and a minimum interval of 10 s.
  *   - A time of day that is not HH:MM on a 24-hour clock, an offset past twelve hours
- *     from a slot, and an interval under one second are refused.
+ *     from a slot, an interval under one second, and every N minutes under 5 or over 240
+ *     are refused.
  *
  * What these tests deliberately do not cover:
  *   - Whether the macro named exists; the server's reducers refuse an unknown one.
@@ -65,6 +68,30 @@ describe('TriggerSchema', () => {
       name: 'accepts five minutes after every slot',
       when: { kind: 'schedule', moment: { kind: 'slotStart', slotId: null, minutesFromStart: 5 } },
     },
+    // The plain sponsor roll's: every 30 minutes, all day (BAJAOVRLAY-64).
+    {
+      name: 'accepts every 30 minutes all day',
+      when: {
+        kind: 'schedule',
+        moment: { kind: 'everyMinutes', everyMinutes: 30, window: null },
+      },
+    },
+    // Only while the cars are on track: from 08:00 to 18:00.
+    {
+      name: 'accepts every 30 minutes between 08:00 and 18:00',
+      when: {
+        kind: 'schedule',
+        moment: { kind: 'everyMinutes', everyMinutes: 30, window: { from: '08:00', to: '18:00' } },
+      },
+    },
+    // A window across midnight, for a night enduro.
+    {
+      name: 'accepts a window that crosses midnight',
+      when: {
+        kind: 'schedule',
+        moment: { kind: 'everyMinutes', everyMinutes: 240, window: { from: '22:00', to: '02:00' } },
+      },
+    },
   ];
 
   it.each(acceptedFilters)('$name', ({ when }) => {
@@ -101,6 +128,33 @@ describe('TriggerSchema', () => {
     },
     // Under a second, a flickering scene would fire a macro per flicker.
     { name: 'refuses an interval under one second', change: { minimumIntervalMs: 500 } },
+    // Every 4 minutes would have the roll on air most of the time: the brief's floor is 5.
+    {
+      name: 'refuses every N minutes under 5',
+      change: {
+        when: { kind: 'schedule', moment: { kind: 'everyMinutes', everyMinutes: 4, window: null } },
+      },
+    },
+    // Past four hours, a time of day says it better.
+    {
+      name: 'refuses every N minutes over 240',
+      change: {
+        when: {
+          kind: 'schedule',
+          moment: { kind: 'everyMinutes', everyMinutes: 241, window: null },
+        },
+      },
+    },
+    // A window needs two times of the day, each HH:MM.
+    {
+      name: 'refuses a window whose end is not a time of day',
+      change: {
+        when: {
+          kind: 'schedule',
+          moment: { kind: 'everyMinutes', everyMinutes: 30, window: { from: '08:00', to: '18h' } },
+        },
+      },
+    },
   ];
 
   it.each(refusedTriggers)('$name', ({ change }) => {
@@ -112,6 +166,26 @@ describe('TriggerSchema', () => {
 
     // Assert: refused.
     expect(result.success, 'a trigger with this mistake must be refused').toBe(false);
+  });
+});
+
+describe('the moment an interval is counted from', () => {
+  it('keeps the moment the server stamped when the trigger was switched on', () => {
+    // Arrange: the seeded sponsor trigger, switched on at 08:00 in Brasília on race day.
+    const trigger = {
+      ...buildBoxSceneTrigger(),
+      name: 'Patrocinadores a cada 30 min',
+      when: { kind: 'schedule', moment: { kind: 'everyMinutes', everyMinutes: 30, window: null } },
+      intervalCountedFromMs: Date.parse('2026-11-14T11:00:00.000Z'),
+    };
+
+    // Act: check it.
+    const result = TriggerSchema.safeParse(trigger);
+
+    // Assert: accepted with the moment, which the next firings count from.
+    expect(result.data?.intervalCountedFromMs, 'the switch-on moment must be kept').toBe(
+      Date.parse('2026-11-14T11:00:00.000Z'),
+    );
   });
 });
 

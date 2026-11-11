@@ -69,7 +69,8 @@ export function fillEverySliceAScreenIsNotSent(stateStore: StateStore): void {
       { kind: 'wait', ms: 10_000 },
     ],
   });
-  const createdMacroId = stateStore.readAllSlices().macros[0]?.id ?? 'macro-nao-criada';
+  // The macro just made is the last one; the seeded sponsor roll's comes first.
+  const createdMacroId = stateStore.readAllSlices().macros.at(-1)?.id ?? 'macro-nao-criada';
   applyOrThrow(stateStore, {
     type: 'createTrigger',
     name: 'Botão do pódio',

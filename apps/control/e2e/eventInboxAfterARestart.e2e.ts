@@ -25,9 +25,6 @@
  *     (the race moves on at 60×, so whether something happens in those seconds is luck):
  *     the server's eventDetectionOnTheStore.test.ts proves both on a clock it moves by hand.
  */
-import { type ChildProcess, spawn } from 'node:child_process';
-import { once } from 'node:events';
-
 import { expect, test } from '@playwright/test';
 
 import { portOffsetOfTheBrowserTests } from './emptyTheServerState';
@@ -37,6 +34,7 @@ import {
   sendCommandOrFail,
   type StateTheInboxTestsRead,
 } from './eventInboxOnTheRealServer';
+import { type OwnServer, startOwnServer, stopOwnServer } from './ownServerOfABrowserTest';
 
 /**
  * This file's own server: away from the shared one (5187) and the page (5188), moved with
@@ -49,108 +47,16 @@ const ownServerPort = 5189 + portOffsetOfTheBrowserTests;
 const ownDatabasePath = 'apps/control/e2e-data/eventInboxAfterARestart.sqlite';
 const ownDataFolder = 'apps/control/e2e-data/eventInboxAfterARestart';
 
-// Booting from the TypeScript source takes a few seconds on CI; 30 s before a clear message.
-const waitForTheServerInMilliseconds = 30_000;
+/** Where this file's own server listens and keeps its data (ownServerOfABrowserTest.ts). */
+const ownServerSettings = {
+  port: ownServerPort,
+  databasePath: ownDatabasePath,
+  dataFolder: ownDataFolder,
+};
+
 const waitForThePenaltyInMilliseconds = 30_000;
 const waitForAPollInMilliseconds = 15_000;
 const longestThisTestMayTakeInMilliseconds = 150_000;
-
-/** A server this test started: its process, and how it ended if it has. */
-type OwnServer = { serverProcess: ChildProcess; readHowItEnded: () => string | undefined };
-
-/** Answers whether /health answers ok now; false when nothing listens yet. */
-async function isHealthAnswering(): Promise<boolean> {
-  try {
-    const response = await fetch(`http://127.0.0.1:${String(ownServerPort)}/health`);
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Starts the server from its source as `pnpm dev` does, in a process group of its own so
- * stopping it stops tsx and Node with it, and waits until /health answers. Fails at once,
- * saying so, when the process cannot be started or exits before /health answers.
- */
-async function startOwnServer(): Promise<OwnServer> {
-  let howItEnded: string | undefined;
-  const serverProcess = spawn(
-    'pnpm',
-    [
-      '--filter',
-      '@bajaovrlay/server',
-      'exec',
-      'tsx',
-      '--conditions=@bajaovrlay/source',
-      'src/main.ts',
-    ],
-    {
-      detached: true,
-      stdio: 'ignore',
-      env: {
-        ...process.env,
-        PORT: String(ownServerPort),
-        HOST: '127.0.0.1',
-        LOG_LEVEL: 'warn',
-        DATABASE_PATH: ownDatabasePath,
-        DATA_DIR: ownDataFolder,
-      },
-    },
-  );
-  serverProcess.on('error', (spawnError) => {
-    howItEnded = `it could not be started: ${spawnError.message}`;
-  });
-  serverProcess.on('exit', (exitCode, signal) => {
-    howItEnded = `it exited (code ${String(exitCode)}, signal ${String(signal)})`;
-  });
-  await expect
-    .poll(
-      async () => {
-        if (howItEnded !== undefined) {
-          return `the own server ended before /health answered: ${howItEnded}`;
-        }
-        return (await isHealthAnswering()) ? 'answering' : 'not yet';
-      },
-      { message: 'the own server must answer /health', timeout: waitForTheServerInMilliseconds },
-    )
-    .toBe('answering');
-  return { serverProcess, readHowItEnded: () => howItEnded };
-}
-
-/** Answers whether any process of a process group is still alive (signal 0 sends nothing). */
-function isAnyProcessOfTheGroupAlive(processGroupId: number): boolean {
-  try {
-    process.kill(-processGroupId, 0);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Stops the server's whole process group, as Ctrl+C does, and waits until every process of
- * it has exited. Why not only the spawned process: it is the pnpm wrapper, which can exit
- * before the Node server under tsx has closed its port and its SQLite file; the next server
- * would then start beside a server still shutting down, on the same port and file (gate 2
- * of PR #25). The group is empty only once that Node server itself is gone.
- */
-async function stopOwnServer(ownServer: OwnServer): Promise<void> {
-  const { serverProcess } = ownServer;
-  if (ownServer.readHowItEnded() !== undefined || serverProcess.pid === undefined) {
-    return;
-  }
-  const processGroupId = serverProcess.pid;
-  const wrapperExited = once(serverProcess, 'exit');
-  process.kill(-processGroupId, 'SIGTERM');
-  await wrapperExited;
-  await expect
-    .poll(() => isAnyProcessOfTheGroupAlive(processGroupId), {
-      message: 'every process of the own server (pnpm, tsx and Node) must have exited',
-      timeout: waitForTheServerInMilliseconds,
-    })
-    .toBe(false);
-}
 
 /** The moment, on the server's clock, the simulator last delivered a good poll, or 0. */
 function readLastGoodPollMomentOfState(state: StateTheInboxTestsRead): number {
@@ -197,7 +103,7 @@ test.describe('the event inbox across a restart', () => {
     try {
       // Arrange: the own server, its simulator on seed 227 at 60×, read every 0,5 s, its
       // race started now; wait for the first penalty to be listed.
-      ownServer = await startOwnServer();
+      ownServer = await startOwnServer(ownServerSettings);
       await sendCommandOrFail(ownServerPort, {
         type: 'updateDataSource',
         sourceId: 'simulador-enduro',
@@ -231,7 +137,7 @@ test.describe('the event inbox across a restart', () => {
       const eventsBeforeTheRestart = stateBeforeTheRestart.events;
       const lastPollBeforeTheStopMs = readLastGoodPollMomentOfState(stateBeforeTheRestart);
       await stopOwnServer(ownServer);
-      ownServer = await startOwnServer();
+      ownServer = await startOwnServer(ownServerSettings);
       await expect
         .poll(readLastGoodPollMoment, {
           message: 'the simulator must poll after the boot',

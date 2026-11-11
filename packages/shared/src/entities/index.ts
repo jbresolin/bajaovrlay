@@ -24,6 +24,18 @@ export {
   type SponsorLevel,
   sponsorLevelsInRoundOrder,
 } from './sponsorLevels.js';
+// Each level's hold and the plain sponsor roll's one pass (BAJAOVRLAY-64): the server's
+// auto-out and the graphic read this one table; graphics bundle it from
+// `@bajaovrlay/shared/sponsorRollPass`.
+export {
+  measurePlainSponsorRollPassMs,
+  plainSponsorRollEntranceMs,
+  type PlainSponsorRollPass,
+  planPlainSponsorRollPass,
+  sponsorHoldMsOfEachLevel,
+  type SponsorOfThePass,
+  type SponsorShownInThePass,
+} from './sponsorRollPass.js';
 // A slot of the schedule, and the scheduleSlots slice (each id once).
 export {
   type ScheduleSlot,

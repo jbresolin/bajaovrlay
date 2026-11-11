@@ -9,7 +9,10 @@ import { ptBR } from '@/i18n/ptBR';
 const texts = ptBR.triggers;
 const millisecondsPerSecond = 1_000;
 
-/** What a trigger waits for, in words: "Entrou na cena "Box"", "10 min antes de Enduro". */
+/**
+ * What a trigger waits for, in words: "Entrou na cena "Box"", "10 min antes de Enduro",
+ * "A cada 30 min, das 08:00 às 18:00".
+ */
 export function describeWhenOfTrigger(when: TriggerWhen, scheduleSlots: ScheduleSlot[]): string {
   switch (when.kind) {
     case 'obsScene':
@@ -22,6 +25,16 @@ export function describeWhenOfTrigger(when: TriggerWhen, scheduleSlots: Schedule
       const moment = when.moment;
       if (moment.kind === 'timeOfDay') {
         return texts.whenText.timeOfDay(moment.timeOfDay);
+      }
+      if (moment.kind === 'everyMinutes') {
+        if (moment.window === null) {
+          return texts.whenText.everyMinutes(moment.everyMinutes);
+        }
+        return texts.whenText.everyMinutesBetween(
+          moment.everyMinutes,
+          moment.window.from,
+          moment.window.to,
+        );
       }
       const slotName = describeSlotOfTrigger(moment.slotId, scheduleSlots);
       const minutes = Math.abs(moment.minutesFromStart);

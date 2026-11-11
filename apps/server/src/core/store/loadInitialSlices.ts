@@ -34,6 +34,12 @@ import { applyOneOffSeedsOfLayersAndItems } from './oneOffSeedsOfLayersAndItems.
 import { forgetChangesThatCannotComeBack } from './programHistory/forgetChangesThatCannotComeBack.js';
 import { bringStepsWithinTheirCount } from './reducers/instanceStepsWithinTheirCount.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
+import {
+  addPlainSponsorRollLayerItemMacroAndTriggerOnce,
+  listRowsOfThePlainSponsorRollSeed,
+  logPlainSponsorRollSeed,
+  plainSponsorRollSeedName,
+} from './seedPlainSponsorRoll.js';
 
 /** What loadInitialSlices needs: the open database, the graphics folder and a clock. */
 export type LoadInitialSlicesOptions = {
@@ -105,7 +111,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   // Seeding the rules also seeds the "Avisos" panel and its two items, once per database,
   // so the panels and items go through it.
   // The one-off seeds this database has had (seeds_done): the inbox's, the logo's and the
-  // Super Prime match graphics'.
+  // Super Prime match graphics' and the plain sponsor roll's.
   const seedNamesDone = readSeedNamesDone(options.database);
   const eventInboxSlices = loadOrSeedEventInboxSlices(
     storedRows,
@@ -126,8 +132,21 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     updatedAt,
     logger: options.logger,
   });
-  const layers = oneOffSeeds.layers;
-  const items = oneOffSeeds.items;
+  // The plain sponsor roll's layer, panel, item, macro and trigger (BAJAOVRLAY-64), once
+  // per database (seeds_done), after the one-off seeds so its panel comes after "Chave".
+  const plainSponsorRollSeed = addPlainSponsorRollLayerItemMacroAndTriggerOnce({
+    seedNamesDone,
+    layers: oneOffSeeds.layers,
+    quickFirePanels: oneOffSeeds.quickFirePanels,
+    items: oneOffSeeds.items,
+    macros: quickFireAndMacroSlices.macros,
+    triggers: SlicesSchema.shape.triggers.parse(
+      storedRows.find((row) => row.name === 'triggers')?.json ?? [],
+    ),
+  });
+  logPlainSponsorRollSeed(plainSponsorRollSeed, options.logger);
+  const layers = plainSponsorRollSeed.layers;
+  const items = plainSponsorRollSeed.items;
   const graphics = discoverBuiltGraphics({
     graphicPackagesFolder: options.graphicPackagesFolder,
     existingLayerIds: layers.map((layer) => layer.id),
@@ -138,9 +157,16 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   // the operator was looking at, not state the show depends on, and a stale one would
   // sit one "Tomar" away from air with nobody remembering why. Program instances stay,
   // except an event's notice (BAJAOVRLAY-44, gate 2 of PR #22): its auto-out is lost at a
-  // restart, so it would stay up for good; its event is marked shown below.
+  // restart, so it would stay up for good; its event is marked shown below. For the same
+  // reason, any instance that carries an auto-out of its own (the plain sponsor roll's pass,
+  // BAJAOVRLAY-64, gate 2 of PR #59): kept, it would sit on its last sponsor for good and
+  // its layer would stay busy, so its trigger would never take it again. An item's own delay
+  // is not on its instance, and those instances stay, as autoOut.ts explains.
   const instancesKeptAcrossTheRestart = operatorSlices.instances.filter(
-    (instance) => instance.target !== 'preview' && !isInstanceOfAnEvent(instance),
+    (instance) =>
+      instance.target !== 'preview' &&
+      !isInstanceOfAnEvent(instance) &&
+      instance.autoOutAfterMs === undefined,
   );
   // A graphic rebuilt with fewer steps since the stop (or data counted again by a newer
   // step counter) would leave an instance past its count: "Passo 6 de 3" on Camadas. It is
@@ -196,12 +222,18 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
       ...quickFireAndMacroSlices.rowsToSaveAtBoot,
       ...dataSourceSlices.rowsToSaveAtBoot,
       ...eventInboxSlices.rowsToSaveAtBoot,
-      // Last, so these rows win over any earlier layers, panels or items row of this boot.
+      // Last, so these rows win over any earlier layers, panels or items row of this boot;
+      // the plain roll's after the one-off seeds', since its panels and items hold theirs too.
       ...oneOffSeeds.rowsToWrite,
+      ...listRowsOfThePlainSponsorRollSeed(plainSponsorRollSeed, updatedAt),
     ],
     sliceRowNamesToDelete: dataSourceSlices.sliceRowNamesToDeleteAtBoot,
     dataSnapshotRowChanges: dataSourceSlices.dataSnapshotRowChangesAtBoot,
-    seedNamesDone: [...eventInboxSlices.seedNamesDoneAtBoot, ...oneOffSeeds.seedNamesApplied],
+    seedNamesDone: [
+      ...eventInboxSlices.seedNamesDoneAtBoot,
+      ...oneOffSeeds.seedNamesApplied,
+      ...(plainSponsorRollSeed.isSeedApplied ? [plainSponsorRollSeedName] : []),
+    ],
     bootedAt: updatedAt,
   });
   if (isFirstBoot) {
@@ -257,8 +289,8 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     eventLog,
     rundowns: rundownSlices.rundowns,
     items,
-    quickFirePanels: oneOffSeeds.quickFirePanels,
-    macros: quickFireAndMacroSlices.macros,
+    quickFirePanels: plainSponsorRollSeed.quickFirePanels,
+    macros: plainSponsorRollSeed.macros,
     macroRuns: [],
     // Memory only too (BAJAOVRLAY-27): where a run stopped short means nothing after a
     // restart, and OBS's slice is refilled by the OBS connection as soon as it connects.
@@ -266,10 +298,9 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     obs: obsSliceWithoutObs,
     // The triggers are saved (BAJAOVRLAY-48); a database written before them has no row
     // and starts with none, and a row that fails its schema stops the boot, as the items
-    // row does. Their activity is memory only: every boot starts unpaused, nothing fired.
-    triggers: SlicesSchema.shape.triggers.parse(
-      storedRows.find((row) => row.name === 'triggers')?.json ?? [],
-    ),
+    // row does (read above, for the plain roll's seed). Their activity is memory only:
+    // every boot starts unpaused, nothing fired.
+    triggers: plainSponsorRollSeed.triggers,
     triggerActivity: triggerActivityAtBoot,
     dataSources: dataSourceSlices.dataSources,
     dataSnapshots: dataSourceSlices.dataSnapshots,

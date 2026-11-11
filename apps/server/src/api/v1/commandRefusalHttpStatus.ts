@@ -42,6 +42,8 @@ const httpStatusOfEachRefusalCode: Record<CommandErrorCode, CommandRefusalHttpSt
   TRIGGER_FIRING_NOT_FOUND: 422,
   // Content that cannot be used as sent.
   INVALID_GRAPHIC_DATA: 422,
+  // A plain sponsor roll none of whose sponsors has a logo (BAJAOVRLAY-64).
+  NOTHING_TO_SHOW: 422,
   ITEM_NOT_IN_RUNDOWN: 422,
   ITEMS_NOT_A_PERMUTATION: 422,
   UNSUPPORTED_FIELD_KIND: 422,

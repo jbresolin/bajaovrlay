@@ -45,7 +45,9 @@ type PendingAutoOut = { layerId: string; timerHandle: unknown };
  *
  * Deliberate trade-offs:
  * - Waits live in memory only. After a server restart nothing is rescheduled: an item
- *   that was on air with a delay stays on air until someone clears it. Rescheduling
+ *   that was on air with a delay stays on air until someone clears it. An instance that
+ *   carries its own delay (an event's notice, the plain sponsor roll's pass) is instead taken
+ *   off air by the boot (loadInitialSlices.ts), since it was never meant to stay. Rescheduling
  *   would have to guess how much of the delay the viewers already saw, and a graphic
  *   that stays too long is a smaller mistake than one that vanishes at a wrong moment.
  * - The delay counts from the moment the server accepted the take, not from the moment

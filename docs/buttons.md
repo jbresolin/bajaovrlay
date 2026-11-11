@@ -214,7 +214,9 @@ exist, or a number past its last button, answers 422 with the reason in pt-BR. M
 on the page moves what its number fires, as with the digit keys. A new database starts with
 "Atalhos" empty, so the first button you add there is number 1. The channel logo item
 (BAJAOVRLAY-63) is the only button of a panel of its own, "Logo" (id `logo`), so it is
-`fire-shortcut/logo/1` and never takes a number in "Atalhos".
+`fire-shortcut/logo/1` and never takes a number in "Atalhos". The plain sponsor roll
+(BAJAOVRLAY-64) is likewise the only button of "Patrocinadores" (id `patrocinadores`):
+`fire-shortcut/patrocinadores/1` shows each sponsor once, and the roll then leaves by itself.
 
 ### "Limpar tudo"
 
