@@ -1531,6 +1531,7 @@ and §19 are the authority; PR lines record what an agent chose and João has no
 - 2026-11-09 — PR #54 — Gate 2: a page token YouTube refuses (HTTP 400) is dropped and the next poll reads the chat from the start, instead of asking for the same page again.
 - 2026-11-09 — PR #54 — Gate 2 follow-up: a YouTube emoji code holds at least one letter, so digits between colons ("15:30:45", "1:2:3") stay as typed.
 - 2026-11-09 — PR #54 — Gate 2 follow-up: the control page counts a Super Chat as not approved by the server's rule (any status but approved), so it never offers "No ar" on one the server would refuse.
+- 2026-11-10 — PR #62 — The control page draws its text in a bundled Inter (variable, Latin subset, served by the app) named first in its font stack, with the emoji faces last, so no font installed on a machine changes its layout.
 - 2026-11-10 — PR #60 — The match focus is a saved slice, bracketMatchFocuses, one focus per source tied to the brackets' session it was chosen in; a focus of another session reads as empty, so a restarted simulator or the next Super Prime never shows a match of another day.
 - 2026-11-10 — PR #60 — A chosen match the source stops listing is not cleared by a command: its slot reads as gone (the id kept so "Partidas da chave" names it) and the graphics' fields leave the air; the focus stays the operator's alone.
 - 2026-11-10 — PR #60 — setBracketMatchFocus moves a match already in the other slot instead of refusing it, so the bug and the card never show the same match and "a seguir" becomes "agora" in one press.

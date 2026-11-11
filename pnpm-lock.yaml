@@ -260,6 +260,9 @@ importers:
       '@bajaovrlay/race-clock':
         specifier: workspace:*
         version: link:../../packages/graphics/race-clock
+      '@bajaovrlay/theme':
+        specifier: workspace:*
+        version: link:../../packages/theme
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.62.0

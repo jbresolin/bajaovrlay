@@ -17,6 +17,9 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
 - `consoleLayout.e2e.ts` (BAJAOVRLAY-59: at 1920x1080 "Prévia" above "Programa", 640x360, both on screen, the right column
   the widest; at 1366x768 no sideways scroll), `itemUpdateOnAir.e2e.ts` ("Atualizar no ar"),
   `clockStoppedOnAir.e2e.ts` (a stopped clock keeps its time), `rundownTakeWithSpace.e2e.ts` (Space, ←, "Excluir").
+- `controlPageTextInTheBundledFace.e2e.ts` (BAJAOVRLAY-71): the page's stack names "Inter Variable" first and the emoji faces
+  last; Chromium, asked through the DevTools protocol, drew every Latin text of the console (digits and spaces included) in
+  the bundled Inter, none in a face of the machine; the console loads that one file from its own address, no CDN.
 - Quick fire (steps in `quickFireTestSteps.ts`): `quickFireWithNumberKey.e2e.ts` (1 fires a button), `macroTakeWaitClear.e2e.ts`
   (take, wait 0,5 s, clear: empty after 0.4–3 s), `macroStopDuringWait.e2e.ts` ("Parar" in a 5 s wait: the clock stays).
 - Backup (BAJAOVRLAY-33): `backupDownload.e2e.ts` ("Cópia de segurança" → "Baixar": the saved zip is unzipped in the

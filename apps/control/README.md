@@ -11,6 +11,7 @@ health and their latest data. Start at `src/main.tsx`, `src/app/AppShell.tsx`.
 - `src/i18n/` — every string the operator reads (`ptBR.ts`). No inline UI text.
 - `src/keyboard/`, `src/logging/` — shortcuts (Esc, Backspace, Space, Shift+Space, ←, →) and the JSON console log.
 - `src/components/ui/` — shadcn/ui components, styled with semantic tokens only.
+- `src/fonts/` — Inter, the page's bundled face (`src/index.css` names it first), so no machine's fonts change the layout.
 - `e2e/` — Playwright against the real server on a new SQLite file (`pnpm test:e2e`).
 
 `pnpm build` once (the server only offers built graphics), then `pnpm dev` serves it at
