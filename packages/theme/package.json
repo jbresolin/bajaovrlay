@@ -9,7 +9,8 @@
     "./fonts/fonts.css": "./fonts/fonts.css",
     "./brand/logo-branca.png": "./brand/logo-branca.png",
     "./motion": "./src/motion.ts",
-    "./fonts": "./src/waitForThemeFonts.ts"
+    "./fonts": "./src/waitForThemeFonts.ts",
+    "./woff2CharacterMap.testSupport": "./src/woff2CharacterMap.testSupport.ts"
   },
   "scripts": {
     "typecheck": "tsc --project tsconfig.json --noEmit",

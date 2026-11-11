@@ -177,7 +177,7 @@ describe('resolveBindingAgainstSources', () => {
 
   it('cannot read a source that does not exist', () => {
     // Arrange: no source at all (it was deleted).
-    const sources = { dataSources: [], dataSnapshots: [], overrides: [] };
+    const sources = { dataSources: [], dataSnapshots: [], overrides: [], bracketMatchFocuses: [] };
 
     // Act: resolve the flag.
     const resolution = resolveBindingAgainstSources(
@@ -199,6 +199,7 @@ describe('resolveBindingAgainstSources', () => {
       dataSources: [buildSimulatorSource(false)],
       dataSnapshots: [],
       overrides: [],
+      bracketMatchFocuses: [],
     };
 
     // Act: resolve the flag.
@@ -252,6 +253,7 @@ describe('resolveBindingAgainstSources', () => {
       dataSources: [buildSimulatorSource(true)],
       dataSnapshots: [readSimulatorSnapshotAtLap34()],
       overrides: [buildCarOverride(42, 'schoolName', 'CEFET Minas')],
+      bracketMatchFocuses: [],
     };
 
     // Act: resolve car 42's school.

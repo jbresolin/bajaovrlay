@@ -18,6 +18,7 @@ export function ItemSourceMarker(props: { item: Item }) {
   const dataSources = useServerState((state) => state.dataSources);
   const dataSnapshots = useServerState((state) => state.dataSnapshots);
   const overrides = useServerState((state) => state.overrides);
+  const bracketMatchFocuses = useServerState((state) => state.bracketMatchFocuses);
   const teams = useServerState((state) => state.teams);
   if (!doesItemReadASource(props.item)) {
     return null;
@@ -27,7 +28,7 @@ export function ItemSourceMarker(props: { item: Item }) {
   const reason = findWhyItemCannotBeTakenNow(
     props.item,
     graphic,
-    { dataSources, dataSnapshots, overrides },
+    { dataSources, dataSnapshots, overrides, bracketMatchFocuses },
     { teams },
   );
   if (reason === undefined) {

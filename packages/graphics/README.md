@@ -16,6 +16,9 @@ the amount, the author and the message, YouTube's emoji shortcodes taken out.
 `message-ticker/` is the same bar with an "AVISO" label and one typed announcement a page.
 `sponsor-bug/` is the card top-left all day: the mark, the event word and one sponsor's logo.
 `logo-bug/` is the channel logo: one image from media in the corner the item picks, on its own layer.
+`bracket-match-bug/` and `bracket-match-card/` (BAJAOVRLAY-65) are the Super Prime's match "agora" (small,
+in a corner, on its own layer) and "a seguir" (logos, names, school and city, on the lower third), each
+field bound to "Chaves › Partida agora" or "Partida a seguir" of the match focus.
 `countdown/`, `sessions-board/`, `sponsor-roll/` and `intermission-board/` (BAJAOVRLAY-46) are the
 narrow boards and cards that read whole lists from Cadastros ("Lista dos cadastros"); each README
 ends with a typical item, field by field.

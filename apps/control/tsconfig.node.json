@@ -5,6 +5,8 @@
     // library is there for the code Playwright tests run inside the page.
     // Vite and Playwright bundle these files before running them, hence bundler-style
     // import resolution.
+    // src/fonts' guard test reads the font file and the page's source from the disk, so it is
+    // checked here too, with Node's types, and left out of tsconfig.json's browser code.
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "noEmit": true,
@@ -17,6 +19,7 @@
     "vitest.config.ts",
     "playwright.config.ts",
     "playwright.chaos.config.ts",
-    "e2e"
+    "e2e",
+    "src/fonts/controlPageFontCoversPtBR.test.ts"
   ]
 }

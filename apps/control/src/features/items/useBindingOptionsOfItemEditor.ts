@@ -38,10 +38,16 @@ export function useBindingOptionsOfItemEditor(): SchemaFormBindingOptions {
     return {
       dataSources,
       readValueNow: (binding) => {
-        const { dataSources: sources, dataSnapshots, overrides, teams } = readServerStateNow();
+        const {
+          dataSources: sources,
+          dataSnapshots,
+          overrides,
+          bracketMatchFocuses,
+          teams,
+        } = readServerStateNow();
         return resolveBindingAgainstSources(
           binding,
-          { dataSources: sources, dataSnapshots, overrides },
+          { dataSources: sources, dataSnapshots, overrides, bracketMatchFocuses },
           { teams },
         );
       },

@@ -205,6 +205,42 @@ const sentenceScenarios: Array<{ name: string; command: CommandInput; expected: 
     command: { type: 'runTriggerFiring', firingId: 'disparo-7' },
     expected: 'Rodou um disparo que já saiu da lista (disparo-7)',
   },
+  // The match "agora" of a Super Prime chosen by hand: the match bug follows it on air.
+  {
+    name: 'setBracketMatchFocus names the match, the slot and the source',
+    command: {
+      type: 'setBracketMatchFocus',
+      sourceId: 'simulador-enduro',
+      sessionId: 'simulador-enduro-2027-super-prime',
+      slot: 'current',
+      matchId: 'r2-m1',
+    },
+    expected: 'Escolheu a partida r2-m1 para Partida agora na fonte "Simulador — Enduro"',
+  },
+  // "a seguir" emptied: the card shows nothing.
+  {
+    name: 'setBracketMatchFocus with no match says the slot was emptied',
+    command: {
+      type: 'setBracketMatchFocus',
+      sourceId: 'simulador-enduro',
+      sessionId: 'simulador-enduro-2027-super-prime',
+      slot: 'upNext',
+      matchId: null,
+    },
+    expected: 'Esvaziou Partida a seguir na fonte "Simulador — Enduro"',
+  },
+  // "Usar sugestão" after a match was decided.
+  {
+    name: 'acceptSuggestedBracketMatches names the source',
+    command: {
+      type: 'acceptSuggestedBracketMatches',
+      sourceId: 'simulador-enduro',
+      sessionId: 'simulador-enduro-2027-super-prime',
+      currentMatchId: 'r2-m1',
+      upNextMatchId: 'r2-m2',
+    },
+    expected: 'Usou a sugestão para Partida agora e Partida a seguir na fonte "Simulador — Enduro"',
+  },
 ];
 
 describe('the sentences of the group "takesAndClears"', () => {

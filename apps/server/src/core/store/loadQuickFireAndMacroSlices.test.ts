@@ -86,6 +86,7 @@ describe('the quick-fire panels and macros on the first boot', () => {
       { id: 'atalhos', name: 'Atalhos', order: 0 },
       { id: 'avisos', name: 'Avisos', order: 1 },
       { id: 'logo', name: 'Logo', order: 2 },
+      { id: 'chave', name: 'Chave', order: 3 },
     ]);
     expect(slices.macros, 'no macro exists on the first boot').toEqual([]);
     expect(slices.macroRuns, 'no macro is running at boot').toEqual([]);
@@ -99,6 +100,7 @@ describe('the quick-fire panels and macros on the first boot', () => {
         { id: 'atalhos', name: 'Atalhos', order: 0 },
         { id: 'avisos', name: 'Avisos', order: 1 },
         { id: 'logo', name: 'Logo', order: 2 },
+        { id: 'chave', name: 'Chave', order: 3 },
       ],
       updatedAt: '2026-10-09T08:00:00.000Z',
     });

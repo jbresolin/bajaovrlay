@@ -115,6 +115,10 @@
   --bug-right: auto;
   --bug-width: 300px;
   --bug-logo-height: 64px;
+  /* The match bug (BAJAOVRLAY-65), beside the sponsor bug in the top-left corner: each
+     car's short name in a box of its own width, so the bug keeps its size from match to
+     match; a longer name scrolls inside it. */
+  --match-bug-name-width: 170px;
   /* The bug's event word ("ENDURO") and the sponsor's logo under its caption (BAJAOVRLAY-23):
      the design's styles.css sets the word at 44px, its tokens.css the logo strip at 34px. */
   --size-bug-label: 44px;

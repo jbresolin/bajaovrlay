@@ -204,6 +204,10 @@ const roleTable = [
   // Corrections of a source's values.
   { commandType: 'setOverride', produtor: true, dados: true },
   { commandType: 'clearOverride', produtor: true, dados: true },
+  // The match "agora" and "a seguir" of a Super Prime: the bug on air follows "agora", so
+  // only the Produtor moves them (BAJAOVRLAY-65).
+  { commandType: 'setBracketMatchFocus', produtor: true, dados: false },
+  { commandType: 'acceptSuggestedBracketMatches', produtor: true, dados: false },
   // The rules of the event inbox.
   { commandType: 'updateEventRule', produtor: true, dados: true },
   // "Cadastros": entities and their images.

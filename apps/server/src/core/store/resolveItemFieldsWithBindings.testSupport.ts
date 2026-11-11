@@ -67,6 +67,7 @@ export function buildSourcesAtLap34(
     dataSources: [buildSimulatorSourceThatIsOn()],
     dataSnapshots: [snapshot],
     overrides,
+    bracketMatchFocuses: [],
   };
 }
 

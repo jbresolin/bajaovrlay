@@ -70,7 +70,9 @@ describe('listBindingPathChoicesOfField', () => {
     );
 
     // Assert: the session clock's running, then each standings row's disqualified mark
-    // (gate 2 of PR #25): yes/no paths, and nothing else.
+    // (gate 2 of PR #25), then the yes/no fields of the match "agora" and "a seguir" of a
+    // Super Prime (BAJAOVRLAY-65): the third place and each car's light plate. Yes/no
+    // paths, and nothing else.
     expect(pathKeys, 'only yes/no paths fit a switch').toEqual([
       'session:clock.running',
       'standings:entries.0.isDisqualified',
@@ -83,6 +85,12 @@ describe('listBindingPathChoicesOfField', () => {
       'standings:entries.7.isDisqualified',
       'standings:entries.8.isDisqualified',
       'standings:entries.9.isDisqualified',
+      'brackets:matchNow.isThirdPlace',
+      'brackets:matchNow.carA.logoOnLightPlate',
+      'brackets:matchNow.carB.logoOnLightPlate',
+      'brackets:matchUpNext.isThirdPlace',
+      'brackets:matchUpNext.carA.logoOnLightPlate',
+      'brackets:matchUpNext.carB.logoOnLightPlate',
     ]);
   });
 

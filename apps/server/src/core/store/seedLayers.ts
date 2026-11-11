@@ -5,6 +5,9 @@ import { ptBR } from '../messages/ptBR.js';
 /** The channel logo's layer, "Logo do canal" (BAJAOVRLAY-63): the logo bug's default layer. */
 export const channelLogoLayerId = 'channel-logo';
 
+/** The match bug's layer, "Partida da chave" (BAJAOVRLAY-65): its default layer. */
+export const bracketMatchLayerId = 'bracket-match';
+
 /**
  * The layers seeded on the first boot, bottom to top, all on the program output; since
  * BAJAOVRLAY-49 the operator edits them on "Saídas e camadas". The z-indexes leave gaps of
@@ -14,7 +17,8 @@ export const channelLogoLayerId = 'channel-logo';
  * clock and the lower third. The notice (BAJAOVRLAY-44, PR #21's layer plan) is the
  * second, at 45: the fastest lap and penalty card under the bug, above the lower third,
  * transient (each notice leaves after its rule's time). The channel logo (BAJAOVRLAY-63)
- * is the third, at 15, between the bug and the ticker; its reason is written beside it.
+ * is the third, at 15, between the bug and the ticker, and the match bug (BAJAOVRLAY-65)
+ * the fourth, at 17, just above it; their reasons are written beside them.
  *
  * Every layer swaps graphics `out-then-in`, the safest policy: two graphics never
  * overlap on the same layer. The logo, the channel logo, the clock and the tower are
@@ -47,6 +51,19 @@ export const seededLayers: Layer[] = [
     outputId: programOutputId,
     name: ptBR.seededLayerNames.channelLogo,
     zIndex: 15,
+    replacePolicy: 'out-then-in',
+    persistent: true,
+  },
+  // The Super Prime's match bug (BAJAOVRLAY-65) at 17: its own layer, so "agora" can stay
+  // on air beside the sponsor bug and the channel logo, just above the logo for the same
+  // reason the logo sits low: the bars, the clock and the tower cover it while they are up,
+  // so live race information always wins. Persistent: it stays across items. Added once to
+  // a database that existed before it (seedBracketMatchGraphics.ts).
+  {
+    id: bracketMatchLayerId,
+    outputId: programOutputId,
+    name: ptBR.seededLayerNames.bracketMatch,
+    zIndex: 17,
     replacePolicy: 'out-then-in',
     persistent: true,
   },

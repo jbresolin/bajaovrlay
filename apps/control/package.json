@@ -33,6 +33,7 @@
     "@bajaovrlay/message-ticker": "workspace:*",
     "@bajaovrlay/qr-card": "workspace:*",
     "@bajaovrlay/race-clock": "workspace:*",
+    "@bajaovrlay/theme": "workspace:*",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/dom": "^10.4.2",

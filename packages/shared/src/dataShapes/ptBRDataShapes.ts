@@ -101,6 +101,30 @@ export const ptBRDataShapes = {
     rounds: 'Todas as fases',
   },
 
+  /** The paths of the match "agora" and the match "a seguir" (BAJAOVRLAY-65). */
+  bracketMatchFocusLabels: {
+    slotNames: { current: 'Partida agora', upNext: 'Partida a seguir' },
+    carNames: { carA: 'Carro A', carB: 'Carro B' },
+    matchFieldLabels: {
+      roundName: 'Fase',
+      isThirdPlace: 'É a disputa de 3º lugar',
+      bestOf: 'Melhor de',
+      winnerCarNumber: 'Vencedor (carro)',
+    },
+    carFieldLabels: {
+      carNumber: 'Carro',
+      shortName: 'Nome curto',
+      teamName: 'Equipe',
+      schoolName: 'Escola',
+      city: 'Cidade',
+      state: 'UF',
+      logoUrl: 'Logo',
+      logoOnLightPlate: 'Logo sobre placa clara',
+      wins: 'Vitórias',
+      timeMs: 'Tempo',
+    },
+  },
+
   /** The fields of one incident, for the flex mapping's rows and problem lines. */
   incidentsEntryFieldLabels: {
     incidentId: 'Identificador do incidente',

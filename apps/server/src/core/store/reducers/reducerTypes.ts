@@ -30,6 +30,7 @@ export type SlicesChangedByCommands = Pick<
   | 'dataSources'
   | 'dataSnapshots'
   | 'overrides'
+  | 'bracketMatchFocuses'
   | 'recordings'
   | 'events'
   | 'eventRules'

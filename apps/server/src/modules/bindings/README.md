@@ -6,7 +6,8 @@ source (overrides). Reading a binding is shared code (`packages/shared/src/bindi
 take resolves items in core (`core/store/resolveItemFields.ts`) and writes each instance's
 bindings to `instanceBindings` (`core/store/reducers/instanceBindingsBookkeeping.ts`).
 
-Start at `liveRefresher.ts`: after a snapshot, an override or the entity library changes it
+Start at `liveRefresher.ts`: after a snapshot, an override, the match focus (BAJAOVRLAY-65) or the
+entity library changes it
 asks `liveFieldsRefresh.ts` (and `liveEntityFieldsRefresh.ts`, BAJAOVRLAY-19) what each
 instance should show, and sends `refreshBoundInstanceData` as `sistema:vinculos`;
 `reducers/refreshBoundInstanceData.ts` applies it through updateInstanceData's steps, with no
