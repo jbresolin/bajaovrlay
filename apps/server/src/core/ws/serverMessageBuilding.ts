@@ -3,6 +3,7 @@ import {
   type CommandError,
   type CommandResultMessage,
   type DataSnapshotMessage,
+  type LayerNotTaken,
   type ServerMessage,
   ServerMessageSchema,
   type SliceMessage,
@@ -18,21 +19,31 @@ import type { DataSnapshotChange } from '../store/dataSnapshotChanges.js';
 
 /**
  * The `hello` a client gets right after connecting: every slice, `serverNowMs` (what the
- * server clock shows now, in milliseconds), how many steps it has made, and, when the
- * server has one, the `buildId` its built pages embed. With no build id the field is
- * left out altogether.
+ * server clock shows now, in milliseconds), how many steps it has made, when the server has
+ * one, the `buildId` its built pages embed, and, for a control page, the id of the console
+ * it is (BAJAOVRLAY-69). A field with no value is left out altogether.
  */
 export function buildHelloMessage(parts: {
   slices: Slices;
   serverNowMs: number;
   serverClockStepCount: number;
   buildId: string | undefined;
+  consoleId?: string | undefined;
 }): ServerMessage {
-  const { slices, serverNowMs, serverClockStepCount, buildId } = parts;
-  if (buildId === undefined) {
-    return { type: 'hello', slices, serverNowMs, serverClockStepCount };
+  const { slices, serverNowMs, serverClockStepCount, buildId, consoleId } = parts;
+  const helloMessage: Extract<ServerMessage, { type: 'hello' }> = {
+    type: 'hello',
+    slices,
+    serverNowMs,
+    serverClockStepCount,
+  };
+  if (buildId !== undefined) {
+    helloMessage.buildId = buildId;
   }
-  return { type: 'hello', slices, serverNowMs, serverClockStepCount, buildId };
+  if (consoleId !== undefined) {
+    helloMessage.consoleId = consoleId;
+  }
+  return helloMessage;
 }
 
 /**
@@ -292,17 +303,26 @@ export function buildTimeMessage(parts: {
 }
 
 /**
- * The ok `commandResult`, echoing the client's requestId (or null), and naming the item an
- * accepted createItem made when there is one.
+ * The ok `commandResult`, echoing the client's requestId (or null), naming the item an
+ * accepted createItem made when there is one, and the layers a "Tomar tudo" left for
+ * another console when there are some (BAJAOVRLAY-69).
  */
 export function buildOkCommandResult(
   requestId: string | null,
-  createdItemId?: string,
+  whatTheStoreAdded: { createdItemId?: string; layersNotTaken?: LayerNotTaken[] } = {},
 ): CommandResultMessage {
-  if (createdItemId === undefined) {
-    return { type: 'commandResult', requestId, ok: true };
+  const okResult: Extract<CommandResultMessage, { ok: true }> = {
+    type: 'commandResult',
+    requestId,
+    ok: true,
+  };
+  if (whatTheStoreAdded.createdItemId !== undefined) {
+    okResult.createdItemId = whatTheStoreAdded.createdItemId;
   }
-  return { type: 'commandResult', requestId, ok: true, createdItemId };
+  if (whatTheStoreAdded.layersNotTaken !== undefined) {
+    okResult.layersNotTaken = whatTheStoreAdded.layersNotTaken;
+  }
+  return okResult;
 }
 
 /** The error `commandResult`, echoing the client's requestId (or null). */

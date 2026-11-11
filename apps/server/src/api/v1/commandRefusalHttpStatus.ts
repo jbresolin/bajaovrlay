@@ -68,6 +68,9 @@ const httpStatusOfEachRefusalCode: Record<CommandErrorCode, CommandRefusalHttpSt
   NOTHING_ON_AIR_ON_LAYER: 409,
   NO_NEXT_STEP: 409,
   STEP_ALREADY_MOVED: 409,
+  // Another console took on the layer moments ago (BAJAOVRLAY-69). The command API never
+  // gets it (it is never refused for this), but a code must be classed all the same.
+  LAYER_CHANGED_BY_ANOTHER_CONSOLE: 409,
   NOTHING_TO_UNDO: 409,
   QUICK_FIRE_PANEL_NOT_EMPTY: 409,
   LAST_QUICK_FIRE_PANEL: 409,

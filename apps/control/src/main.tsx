@@ -28,6 +28,7 @@ import { QuickFireTabChoiceProvider } from './features/quickFire/QuickFireTabCho
 import { ptBR } from './i18n/ptBR';
 import { browserPageReloadForNewBuild } from './state/browserPageReloadForNewBuild';
 import { buildWebSocketAddress, openBrowserWebSocket } from './state/browserWebSocket';
+import { consoleIdMemoryOfTheBrowserTab } from './state/consoleIdOfThisTab';
 import { ControlPageStateProvider } from './state/ControlPageStateProvider';
 import {
   OperatorSessionProvider,
@@ -77,6 +78,9 @@ function drawTheControlPage(root: Root, sessionAnswer: SessionAnswer): void {
         readSessionAnswer: readSessionAnswerFromTheServer,
         goToTheLoginPage,
       }),
+    // This tab's console id, kept in its sessionStorage: a reload is the same console, a
+    // second tab another one (BAJAOVRLAY-69).
+    consoleIdMemory: consoleIdMemoryOfTheBrowserTab,
   });
   // The one browser setting of the page, read from localStorage once, here, as the page
   // opens. Kept apart from the server-state store, which holds only what the server sent.

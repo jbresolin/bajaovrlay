@@ -25,6 +25,22 @@ export function refuseTakeAllAtLayer(
 }
 
 /**
+ * The refusal for "Tomar tudo" when every layer it would take or clear was just changed by
+ * another console, unseen by this one (BAJAOVRLAY-69): the code of those layers, and their
+ * sentences one after another, so the operator reads what happened on each.
+ */
+export function refuseTakeAllOnEveryLayerChangedByAnotherConsole(
+  refusalsOfTheLayers: CommandError[],
+): CommandError {
+  return {
+    code: 'LAYER_CHANGED_BY_ANOTHER_CONSOLE',
+    message: ptBR.consoleErrors.takeAllRefusedOnEveryLayer(
+      refusalsOfTheLayers.map((refusal) => refusal.message),
+    ),
+  };
+}
+
+/**
  * The refusal for a macro's "Prévia" when one step cannot be shown. It keeps the code of
  * that step's own refusal (ITEM_NOT_FOUND, LAYER_NOT_FOUND, ...), and the message names
  * the step by its position (counted from 1, as the macro editor lists the steps) and by

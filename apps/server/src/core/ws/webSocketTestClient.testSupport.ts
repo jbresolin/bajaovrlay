@@ -50,11 +50,19 @@ export async function connectWebSocketTestClient(
     output?: string;
     /** The Cookie header a logged-in browser sends (BAJAOVRLAY-29); none when left out. */
     cookie?: string;
+    /**
+     * The console id a control page tab names in its address, `&console=` (BAJAOVRLAY-69),
+     * as the tab does once its first hello gave it one; none when left out.
+     */
+    consoleId?: string;
   } = {},
 ): Promise<WebSocketTestClient> {
   const queryParameters = new URLSearchParams();
   if (options.role !== undefined) {
     queryParameters.set('role', options.role);
+  }
+  if (options.consoleId !== undefined) {
+    queryParameters.set('console', options.consoleId);
   }
   if (options.output !== undefined) {
     queryParameters.set('output', options.output);

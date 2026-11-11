@@ -72,11 +72,12 @@ describe('the Space key with something on the preview output', () => {
     // Act: press Space on the page.
     fireEvent.keyDown(document.body, { key: ' ' });
 
-    // Assert: one takePreview for the clock layer, and no takeNext beside it.
+    // Assert: one takePreview for the clock layer, saying the page showed nothing on air
+    // there (BAJAOVRLAY-69), and no takeNext beside it.
     expect(
       fakeServer.listCommandsReceived(),
       'Space must send to air the very preview the operator is looking at, and nothing else',
-    ).toEqual([{ type: 'takePreview', layerId: 'clock' }]);
+    ).toEqual([{ type: 'takePreview', layerId: 'clock', instanceIdSeenOnAir: null }]);
     // (Then the server answers, so no command is left waiting for its 5-second timeout.)
     fakeServer.acceptLastCommand();
   });
@@ -94,7 +95,7 @@ describe('the Space key with something on the preview output', () => {
     expect(
       fakeServer.listCommandsReceived(),
       'Space must fire the item at the cursor, not whatever happens to be previewed',
-    ).toEqual([{ type: 'takeNext', rundownId: 'sessao-principal' }]);
+    ).toEqual([{ type: 'takeNext', rundownId: 'sessao-principal', instanceIdSeenOnAir: null }]);
     fakeServer.acceptLastCommand();
   });
 
@@ -115,7 +116,7 @@ describe('the Space key with something on the preview output', () => {
     expect(
       fakeServer.listCommandsReceived(),
       'Space must read what is on the preview output at the moment of the press',
-    ).toEqual([{ type: 'takePreview', layerId: 'clock' }]);
+    ).toEqual([{ type: 'takePreview', layerId: 'clock', instanceIdSeenOnAir: null }]);
     fakeServer.acceptLastCommand();
   });
 

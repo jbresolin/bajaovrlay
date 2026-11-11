@@ -61,6 +61,12 @@ export const CommandErrorCodeSchema = z.enum([
   /** nextOnLayer's fromStep is not the step the graphic is on: another press moved it first. */
   'STEP_ALREADY_MOVED',
   /**
+   * A console's take on a layer another console changed less than 2 s before, which this
+   * console had not seen yet (BAJAOVRLAY-69). The message names what the other console did
+   * and says this take was not applied.
+   */
+  'LAYER_CHANGED_BY_ANOTHER_CONSOLE',
+  /**
    * undoOnLayer named a layer with no change to undo, or undoLastChangeOnProgram found no
    * layer with one (BAJAOVRLAY-30).
    */

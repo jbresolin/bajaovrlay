@@ -1,6 +1,7 @@
 import { ptBRBackup } from './ptBRBackup.js';
 import { ptBRBindingErrors } from './ptBRBindings.js';
 import { ptBRBracketMatchFocus } from './ptBRBracketMatchFocus.js';
+import { ptBRConsoleErrors } from './ptBRConsoles.js';
 import { ptBREventErrors } from './ptBREvents.js';
 import { ptBRMediaErrors } from './ptBRMedia.js';
 import { ptBRObs } from './ptBRObs.js';
@@ -155,6 +156,8 @@ export const ptBR = {
   eventErrors: ptBREventErrors,
   // Refusals of "Desfazer" and "Desfazer última" (BAJAOVRLAY-30); see ptBRProgramHistory.ts.
   programHistoryErrors: ptBRProgramHistoryErrors,
+  // A take refused because another console had just changed its layer (BAJAOVRLAY-69).
+  consoleErrors: ptBRConsoleErrors,
   // Refusals about the media store: uploads, serving, deleting (BAJAOVRLAY-19); ptBRMedia.ts.
   mediaErrors: ptBRMediaErrors,
   // The backup download: its refusals and its leia-me.txt (BAJAOVRLAY-33); ptBRBackup.ts.

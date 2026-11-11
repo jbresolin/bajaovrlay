@@ -12,6 +12,7 @@ import type { StateStore } from '../store/createStateStore.js';
 import { readServerTime, serverClockOfTheProcess } from '../time/serverClock.js';
 import { answerClientMessage } from './clientMessageAnswers.js';
 import { buildActorForConnection, isScreenConnectionActor } from './connectionActor.js';
+import { chooseConsoleIdOfConnection } from './consoleOfConnection.js';
 import { startHeartbeat } from './heartbeat.js';
 import { readOutputIdFromRequestTarget } from './screenOutput.js';
 import {
@@ -186,6 +187,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
 
     heartbeat.trackClient(client);
     const isScreen = isScreenConnectionActor(actor);
+    const consoleId = chooseConsoleIdOfConnection(request.url, isScreen);
     const outputIdOfTheScreen = readOutputIdFromRequestTarget(request.url);
     if (isScreen) {
       outputIdOfEachScreen.set(client, outputIdOfTheScreen);
@@ -210,6 +212,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
       serverNowMs: readCurrentTime().getTime(),
       serverClockStepCount: readServerClockStepCount(),
       buildId: options.buildId,
+      consoleId,
     });
     client.send(serializeServerMessage(helloMessage));
     if (isScreen) {
@@ -229,6 +232,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
         actor,
         logger: connectionLogger,
         readCurrentTime,
+        consoleId,
       });
       client.send(serializeServerMessage(answer));
     });

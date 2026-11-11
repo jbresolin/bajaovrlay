@@ -1,5 +1,9 @@
 import type { TakeItemCommand } from '@bajaovrlay/shared';
 
+import {
+  findUnseenChangeByAnotherConsole,
+  refuseTakeOverAnUnseenChange,
+} from '../consoles/unseenChangeByAnotherConsole.js';
 import { putItemOnOutput } from './putItemOnOutput.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 import { moveRundownCursorOnIfItWasOnTakenItem } from './rundownCursor.js';
@@ -20,12 +24,39 @@ import { moveRundownCursorOnIfItWasOnTakenItem } from './rundownCursor.js';
  * wall-clock moment in the graphic's schema, the data breaks that schema); nothing
  * changes then. A take a macro's runner fills from a trigger (`triggerFill`,
  * BAJAOVRLAY-48) is refused too when a required field's key is missing from the data.
+ * A console's take is refused too, before anything is resolved, when another console
+ * changed the item's layer less than 2 s ago and this console had not seen it
+ * (LAYER_CHANGED_BY_ANOTHER_CONSOLE, BAJAOVRLAY-69; ../consoles/).
  */
 export function reduceTakeItem(
   slices: SlicesChangedByCommands,
   command: TakeItemCommand,
   context: ReducerContext,
 ): ReducerOutcome {
+  const itemToTake = slices.items.find((candidate) => candidate.id === command.itemId);
+  if (itemToTake !== undefined) {
+    const unseenChange = findUnseenChangeByAnotherConsole({
+      layerId: itemToTake.layerId,
+      instanceIdSeenOnAir: command.instanceIdSeenOnAir,
+      instances: slices.instances,
+      context,
+    });
+    if (unseenChange !== undefined) {
+      const refusal = refuseTakeOverAnUnseenChange({
+        unseenChange,
+        layerId: itemToTake.layerId,
+        slices,
+        context,
+        whatWasNotDone: { kind: 'take', itemLabel: itemToTake.label },
+      });
+      return {
+        status: 'refused',
+        error: refusal.error,
+        takesRefusedForAnotherConsole: [refusal.takeRefused],
+      };
+    }
+  }
+
   // No event fill: an item filled by an event goes on air through showEvent only.
   const takeOutcome = putItemOnOutput(
     slices,
