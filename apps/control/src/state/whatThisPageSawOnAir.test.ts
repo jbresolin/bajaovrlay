@@ -7,7 +7,7 @@
  *   take this page sends carries what the page showed on the program output of the layer it
  *   takes on: the instance id, or null for an empty layer. It is added in the page's one
  *   way of sending commands, so every take path carries it: a rundown row's "Disparar", a
- *   quick-fire button and its number key, "Salvar e disparar", "Atualizar no ar" (all
+ *   quick-fire button and its number key, "Salvar e disparar", a Camadas row's "Disparar" (all
  *   takeItem), Space (takeNext, or takePreview on a previewed item), "Tomar" (takePreview)
  *   and "Tomar tudo" (takeAllPreviews).
  *

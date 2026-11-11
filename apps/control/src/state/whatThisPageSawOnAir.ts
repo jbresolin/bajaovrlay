@@ -14,7 +14,7 @@ type SlicesThePageShows = Pick<
 /**
  * The command with what this page showed on air on the layer it takes on (BAJAOVRLAY-69),
  * read from the store at the moment it is sent: `takeItem` (a rundown row's "Disparar", a
- * quick-fire button or its number key, "Salvar e disparar", "Atualizar no ar"), `takeNext`
+ * quick-fire button or its number key, "Salvar e disparar", a Camadas row's "Disparar"), `takeNext`
  * (Space) and `takePreview` ("Tomar", Space on a previewed item) carry the instance on
  * program of their layer, or null for an empty one; `takeAllPreviews` ("Tomar tudo") carries
  * one per layer it takes. The server refuses a take only when another console changed that
