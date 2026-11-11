@@ -15,6 +15,8 @@
  *   - Each missing optional field leaves its own part out: the school, the lap number,
  *     the lap time, the penalty, the reason (and the whole reason row when both are
  *     missing), the team (the chip alone); a text of blanks counts as missing.
+ *   - A general notice with no car (BAJAOVRLAY-67) shows the head and the text only, its
+ *     whole car row hidden, and the row comes back when an update brings a car.
  *   - Each of the four kinds writes its pt-BR word, and a missing kind writes PENALIDADE.
  *   - Switching the variant redraws the same elements, nothing rebuilt.
  *
@@ -76,10 +78,10 @@ function describeShownParts(parts: NoticeParts): Record<string, string> {
     ['bestLapBadge', parts.bestLapBadge, []],
     ['kindWord', parts.kindWord, [parts.warningBadge]],
     ['headCaption', parts.headCaption, []],
-    ['carNumber', parts.carNumber, []],
-    ['teamName', parts.teamName, [parts.team]],
-    ['schoolName', parts.schoolName, [parts.team]],
-    ['lapTime', parts.lapTime, []],
+    ['carNumber', parts.carNumber, [parts.carRow]],
+    ['teamName', parts.teamName, [parts.team, parts.carRow]],
+    ['schoolName', parts.schoolName, [parts.team, parts.carRow]],
+    ['lapTime', parts.lapTime, [parts.carRow]],
     ['reason', parts.reason, [parts.reasonRow]],
     ['penalty', parts.penalty, [parts.reasonRow]],
   ];
@@ -134,6 +136,47 @@ describe('a penalty', () => {
       penalty: '+30 segundos',
     });
     expect(parts.warningBadge.hidden, 'the warning triangle and word must be shown').toBe(false);
+  });
+});
+
+describe('a general notice, about no car (BAJAOVRLAY-67)', () => {
+  it('shows the head and the text only, with no car chip and no team line', () => {
+    // Arrange: freshly drawn parts, and a notice typed about the event itself.
+    const parts = drawNoticeParts();
+    const generalNotice: NoticeData = {
+      variant: 'penalty',
+      noticeKind: 'notice',
+      reason: 'Largada adiada em 15 minutos',
+    };
+
+    // Act: write it.
+    writeNoticeData(parts, generalNotice);
+
+    // Assert: AVISO, race control and the text; the whole car row left out.
+    expect(describeShownParts(parts), 'a general notice is head and text only').toEqual({
+      kindWord: 'AVISO',
+      headCaption: 'DIREÇÃO DE PROVA',
+      reason: 'Largada adiada em 15 minutos',
+    });
+    expect(parts.carRow.hidden, 'no empty car row may be left on air').toBe(true);
+  });
+
+  it('shows the car row again when the same notice is updated with a car', () => {
+    // Arrange: the general notice written once.
+    const parts = drawNoticeParts();
+    writeNoticeData(parts, { variant: 'penalty', noticeKind: 'notice', reason: 'Pista liberada' });
+
+    // Act: write a notice about car 12 into the same parts.
+    writeNoticeData(parts, {
+      variant: 'penalty',
+      noticeKind: 'notice',
+      carNumber: 12,
+      reason: 'Carro parado na reta dos boxes',
+    });
+
+    // Assert: the car row is back with its chip.
+    expect(parts.carRow.hidden, 'a car brings its row back').toBe(false);
+    expect(describeShownParts(parts).carNumber, 'with the chip').toBe('12');
   });
 });
 

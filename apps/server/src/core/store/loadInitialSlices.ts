@@ -108,8 +108,9 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   );
   // The event inbox's events and rules (BAJAOVRLAY-44): loaded, the rules seeded when
   // their row is missing; see modules/events/loadEventInboxSlices.ts.
-  // Seeding the rules also seeds the "Avisos" panel and its two items, once per database,
-  // so the panels and items go through it.
+  // Seeding the rules also seeds the event templates, once per database, and an older
+  // database's templates leave the quick-fire panels once (BAJAOVRLAY-67), so the panels
+  // and items go through it.
   // The one-off seeds this database has had (seeds_done): the inbox's, the logo's and the
   // Super Prime match graphics' and the plain sponsor roll's.
   const seedNamesDone = readSeedNamesDone(options.database);

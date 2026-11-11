@@ -13,7 +13,18 @@
   "stepCount": 1,
   "v_baja": {
     "defaultLayerId": "notice",
-    "category": "notice"
+    "category": "notice",
+    "carGroups": [
+      {
+        "id": "car",
+        "label": "Carro",
+        "fields": {
+          "carNumber": "carNumber",
+          "teamName": "teamName",
+          "schoolName": "schoolName"
+        }
+      }
+    ]
   },
   "actionDurations": [
     { "type": "playAction", "duration": 400 },
@@ -39,7 +50,7 @@
       "carNumber": {
         "type": "integer",
         "title": "Carro",
-        "description": "Número do carro, no chip azul.",
+        "description": "Número do carro, no chip azul. Opcional: um aviso geral não tem carro, e então nem a linha do carro aparece.",
         "minimum": 1
       },
       "teamName": {
@@ -94,7 +105,7 @@
         "gddType": "single-line"
       }
     },
-    "required": ["variant", "carNumber"],
+    "required": ["variant"],
     "additionalProperties": false
   }
 }

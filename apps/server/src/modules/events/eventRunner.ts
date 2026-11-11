@@ -6,7 +6,7 @@ import type { ServerLogger } from '../../core/logger/createLogger.js';
 import { eventInboxActor } from '../../core/store/commandActors.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
 import { readServerTime } from '../../core/time/serverClock.js';
-import { isEventWaiting } from './reducers/inboxEventChanges.js';
+import { isEventWaiting, readMomentTheWaitCountsFrom } from './reducers/inboxEventChanges.js';
 
 /**
  * The theme's --motion-out (packages/theme/ardosia/tokens.css): how long a graphic takes
@@ -199,8 +199,8 @@ export function startEventRunner(options: EventRunnerOptions): EventRunner {
 }
 
 /**
- * When a waiting event expires: 1 ms past its detection plus its rule's max age (at
- * exactly its max age it may still be shown). Undefined for an event not waiting, or
+ * When a waiting event expires: 1 ms past its detection (or its latest restore) plus its
+ * rule's max age (at exactly its max age it may still be shown). Undefined for an event not waiting, or
  * whose rule has no max age.
  */
 function findMomentEventExpires(event: InboxEvent, rules: EventRule[]): number | undefined {
@@ -211,7 +211,7 @@ function findMomentEventExpires(event: InboxEvent, rules: EventRule[]): number |
   if (!isWaiting || maxAgeMs === null || maxAgeMs === undefined) {
     return undefined;
   }
-  return event.detectedAtMs + maxAgeMs + 1;
+  return readMomentTheWaitCountsFrom(event) + maxAgeMs + 1;
 }
 
 /** The layer an event would go on: its rule's item's layer, or undefined with no item. */

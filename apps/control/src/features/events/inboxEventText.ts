@@ -5,9 +5,23 @@
  */
 import type { DataSource, InboxEvent } from '@bajaovrlay/shared';
 
+import { formatRelativeTimePtBR } from '@/i18n/formatRelativeTimePtBR';
 import { ptBR } from '@/i18n/ptBR';
 
 const texts = ptBR.events;
+
+/**
+ * How long a waiting event has waited: "há 5 min" from its detection, or, once brought
+ * back, "trazido de volta há 3 min" from its latest restore, the moment the server's
+ * maximum wait counts from too.
+ */
+export function describeHowLongTheEventHasWaited(event: InboxEvent, now: Date): string {
+  const latestRestoreMs = event.restoresAtMs?.at(-1);
+  if (latestRestoreMs === undefined) {
+    return formatRelativeTimePtBR(new Date(event.detectedAtMs), now);
+  }
+  return texts.broughtBackAgo(formatRelativeTimePtBR(new Date(latestRestoreMs), now));
+}
 
 /**
  * What an event is, in a word: an incident or a typed event by what its notice says
@@ -27,15 +41,24 @@ export function describeKindOfEvent(event: InboxEvent): string {
 
 /**
  * Who an event is about: "carro 47", or a Super Chat's viewer and amount ("Torcida Pequi
- * Off-Road · R$ 20,00", BAJAOVRLAY-35), which is about no car. Empty when it has neither,
- * which only a database edited by hand could hold.
+ * Off-Road · R$ 20,00", BAJAOVRLAY-35), which is about no car, or "Aviso geral" for a
+ * notice typed about no car (BAJAOVRLAY-67). Empty when it has none of them, which only a
+ * database edited by hand could hold.
  */
 export function describeSubjectOfEvent(event: InboxEvent): string {
   const { carNumber, authorName, amountText } = event.payload;
   if (event.kind === 'superChat' && authorName !== undefined && amountText !== undefined) {
     return texts.superChatSubject(authorName, amountText);
   }
+  if (isAGeneralNotice(event)) {
+    return texts.generalNoticeSubject;
+  }
   return carNumber === undefined ? '' : texts.carSubject(carNumber);
+}
+
+/** True for a notice typed with "Sem equipe (aviso geral)": about the event, no car. */
+export function isAGeneralNotice(event: InboxEvent): boolean {
+  return event.kind === 'manual' && event.payload.carNumber === undefined;
 }
 
 /**

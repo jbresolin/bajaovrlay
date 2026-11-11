@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { InboxEventKindSchema } from '../eventInbox/inboxEvent.js';
 import { PreviewOriginSchema } from '../slices/instance.js';
 
 /**
@@ -26,6 +27,13 @@ export const PreviewItemCommandSchema = z.object({
    * the event. Left out, an item filled by events is filled from a sample event.
    */
   eventId: z.string().min(1).optional(),
+  /**
+   * Only for "Prévia" in "Regras" (BAJAOVRLAY-67): the kind whose sample event fills a
+   * template, so each rule's row shows its own kind's look. Left out, the sample is the
+   * kind of the first rule naming the item. Ignored with `eventId`, and for an item no
+   * event fills.
+   */
+  sampleEventKind: InboxEventKindSchema.optional(),
 });
 
 /** A previewItem command after validation (origin filled in). */

@@ -8,6 +8,7 @@ import {
   isEventWaiting,
   isSuperChatAwaitingApproval,
   readMomentMs,
+  readMomentTheWaitCountsFrom,
 } from './reducers/inboxEventChanges.js';
 
 /**
@@ -37,7 +38,7 @@ export function findRefusalOfTakingAPreviewOfAnEvent(
     return { code: 'EVENT_NOT_APPROVED', message: ptBR.eventErrors.superChatNotApproved };
   }
   const maxAgeMs = findRuleOfKind(slices.eventRules, event.kind)?.maxAgeMs ?? null;
-  const ageMs = readMomentMs(isoMomentOfTheTake) - event.detectedAtMs;
+  const ageMs = readMomentMs(isoMomentOfTheTake) - readMomentTheWaitCountsFrom(event);
   if (maxAgeMs !== null && ageMs > maxAgeMs) {
     return { code: 'EVENT_NOT_WAITING', message: ptBR.eventErrors.eventTooOld };
   }

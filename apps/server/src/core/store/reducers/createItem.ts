@@ -6,15 +6,17 @@ import { findRefusalOfEntityFieldsForGraphic } from '../itemEntityFields.js';
 import { findRefusalOfEventFieldsForGraphic } from '../itemEventFields.js';
 import { findRefusalOfTakeTimeFieldsForGraphic } from '../itemTakeTimeFields.js';
 import { findRefusalOfUnknownItemHome } from './itemHomeExistence.js';
+import { findRefusalOfItemInTheWrongHome } from './itemHomeOfEventTemplates.js';
 import { listItemsOfHomeInOrder, numberItemsByPositionInList } from './itemOrdering.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 import { giveCursorToFirstItemOfEmptyRundown } from './rundownCursor.js';
 
 /**
- * createItem: adds a prepared item to its home (a rundown or a quick-fire panel), at the
- * end or at the position the command names (the items from there on move down by one; a
- * position past the end means the end). Refused if the rundown or panel, the layer or the
- * graphic does not exist, or if
+ * createItem: adds a prepared item to its home (a rundown, a quick-fire panel or the event
+ * templates), at the end or at the position the command names (the items from there on
+ * move down by one; a position past the end means the end). Refused if the rundown or
+ * panel, the layer or the graphic does not exist, if the item is a template and the home
+ * a panel or the reverse (itemHomeOfEventTemplates.ts, BAJAOVRLAY-67), or if
  * a field says takeTime and the graphic's schema does not mark that field as a
  * wall-clock moment (the check and the message of a take; a graphic without a schema
  * accepts no takeTime field), or if a binding cannot be stored (INVALID_BINDING: its
@@ -30,7 +32,9 @@ export function reduceCreateItem(
   command: CreateItemCommand,
   context: ReducerContext,
 ): ReducerOutcome {
-  const refusalOfTheHome = findRefusalOfUnknownItemHome(slices, command.home);
+  const refusalOfTheHome =
+    findRefusalOfUnknownItemHome(slices, command.home) ??
+    findRefusalOfItemInTheWrongHome(command.home, command.fields, command.label);
   if (refusalOfTheHome !== undefined) {
     return { status: 'refused', error: refusalOfTheHome };
   }

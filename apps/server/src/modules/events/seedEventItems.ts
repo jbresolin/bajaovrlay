@@ -3,11 +3,14 @@ import type { EventRule, Item, QuickFirePanel } from '@bajaovrlay/shared';
 import { ptBR } from '../../core/messages/ptBR.js';
 
 /**
- * The panel the two notice items live in, "Avisos"; a fixed, readable id like "atalhos".
- * Not "Eventos", as the brief named it: the strip's inbox tab is "Eventos", and two tabs
- * of one name would be told apart by nobody (decisions, BAJAOVRLAY-44).
+ * The panel the notice items lived in until BAJAOVRLAY-67, "Avisos"; a fixed, readable id
+ * like "atalhos". No new database gets it: the templates now live in "Modelos de evento"
+ * (moveEventTemplatesOffQuickFire.ts takes them off an older database's panels, once).
  */
 export const eventsQuickFirePanelId = 'avisos';
+
+/** The home of every seeded template (BAJAOVRLAY-67). */
+const eventTemplatesHome: Item['home'] = { kind: 'eventTemplates' };
 
 /** The item the default rule shows a new fastest lap with. */
 export const fastestLapItemId = 'volta-mais-rapida';
@@ -25,7 +28,7 @@ export const superChatItemId = 'super-chat';
  */
 const seededSuperChatItem: Item = {
   id: superChatItemId,
-  home: { kind: 'quickFire', panelId: eventsQuickFirePanelId },
+  home: eventTemplatesHome,
   order: 2,
   graphicId: 'super-chat',
   layerId: 'notice',
@@ -40,9 +43,11 @@ const seededSuperChatItem: Item = {
 };
 
 /**
- * The three notice items: the two of BAJAOVRLAY-44 on the notice graphic and the notice layer, in the
- * "Avisos" panel. Every field the event fills is an event field, so they are templates:
- * they go on air only through an event, and Prévia shows them filled from a sample.
+ * The three templates: the two of BAJAOVRLAY-44 on the notice graphic and the notice layer,
+ * in "Modelos de evento". Every field the event fills is an event field, so they are
+ * templates: they go on air only through an event, and Prévia shows them filled from a
+ * sample. "Penalidade" also shows a general notice, about no car (BAJAOVRLAY-67): the
+ * notice graphic's car is optional, so a payload with none leaves its row out.
  * The fastest-lap variant reads the lap and its time; the penalty variant the kind of
  * notice, the reason and the penalty. Both read the car, its team and its school. Then the
  * "Super Chat" (BAJAOVRLAY-35), seededSuperChatItem above.
@@ -50,7 +55,7 @@ const seededSuperChatItem: Item = {
 const seededEventItems: Item[] = [
   {
     id: fastestLapItemId,
-    home: { kind: 'quickFire', panelId: eventsQuickFirePanelId },
+    home: eventTemplatesHome,
     order: 0,
     graphicId: 'notice',
     layerId: 'notice',
@@ -68,7 +73,7 @@ const seededEventItems: Item[] = [
   },
   {
     id: penaltyItemId,
-    home: { kind: 'quickFire', panelId: eventsQuickFirePanelId },
+    home: eventTemplatesHome,
     order: 1,
     graphicId: 'notice',
     layerId: 'notice',
@@ -89,37 +94,28 @@ const seededEventItems: Item[] = [
 ];
 
 /**
- * The panels and items with the "Avisos" panel (after the last panel) and its three items
- * (after every other item) added, each one only when no panel or item of its id exists.
- * Called once per database, when the event rules are seeded (loadEventInboxSlices.ts),
- * so a panel the operator deleted later is never brought back.
+ * The items with the three templates added to "Modelos de evento" (after any template
+ * already there), each one only when no item of its id exists. Called once per database,
+ * when the event rules are seeded (loadEventInboxSlices.ts), so a template the operator
+ * deleted later is never brought back.
  */
-export function addSeededEventPanelAndItems(
-  quickFirePanels: QuickFirePanel[],
-  items: Item[],
-): { quickFirePanels: QuickFirePanel[]; items: Item[] } {
-  const isPanelThere = quickFirePanels.some((panel) => panel.id === eventsQuickFirePanelId);
-  const lastPanelOrder = Math.max(-1, ...quickFirePanels.map((panel) => panel.order));
-  const panelsAfter = isPanelThere
-    ? quickFirePanels
-    : [
-        ...quickFirePanels,
-        {
-          id: eventsQuickFirePanelId,
-          name: ptBR.eventErrors.seededPanelName,
-          order: lastPanelOrder + 1,
-        },
-      ];
+export function addSeededEventTemplates(items: Item[]): Item[] {
+  const templatesAlreadyThere = items.filter((item) => item.home.kind === 'eventTemplates');
   const itemsMissing = seededEventItems.filter(
     (seededItem) => !items.some((item) => item.id === seededItem.id),
   );
-  return { quickFirePanels: panelsAfter, items: [...items, ...itemsMissing] };
+  const itemsAdded = itemsMissing.map((seededItem, index) => ({
+    ...seededItem,
+    order: templatesAlreadyThere.length + index,
+  }));
+  return [...items, ...itemsAdded];
 }
 
 /**
  * The items and rules of a database seeded before BAJAOVRLAY-35, with the "Super Chat" item
- * added to "Avisos" (after its last item) and the Super Chat rule naming it, or undefined
- * when nothing is to change. Added only when the rule still has no item and no item of its
+ * added to "Avisos" (after its last item), where its two templates still were, and the
+ * Super Chat rule naming it, or undefined when nothing is to change. The move of the
+ * templates off the panels, at the same boot, then takes it to "Modelos de evento". Added only when the rule still has no item and no item of its
  * id exists: a rule whose operator chose another item keeps it. Not added either when the
  * operator deleted "Avisos": a deleted panel is never brought back for it. Called once per
  * database: the boot records it in `seeds_done` as superChatItem (loadEventInboxSlices.ts),
@@ -142,7 +138,11 @@ export function addSeededSuperChatItemToAnOlderDatabase(
       (item) => item.home.kind === 'quickFire' && item.home.panelId === eventsQuickFirePanelId,
     )
     .map((item) => item.order);
-  const itemAdded: Item = { ...seededSuperChatItem, order: Math.max(-1, ...ordersInThePanel) + 1 };
+  const itemAdded: Item = {
+    ...seededSuperChatItem,
+    home: { kind: 'quickFire', panelId: eventsQuickFirePanelId },
+    order: Math.max(-1, ...ordersInThePanel) + 1,
+  };
   const rulesAfter = eventRules.map((rule) =>
     rule.kind === 'superChat' ? { ...rule, itemId: superChatItemId } : rule,
   );

@@ -78,17 +78,17 @@ describe('the quick-fire panels and macros on the first boot', () => {
     // Act: load the slices, as the first boot does.
     const slices = loadSlicesAtBoot(database, firstBootTime);
 
-    // Assert: "Atalhos", then "Avisos" (seeded with the event rules, BAJAOVRLAY-44;
-    // modules/events covers it) and "Logo" (seeded with the channel logo, BAJAOVRLAY-63;
-    // store/seededChannelLogo.test.ts covers it), then "Patrocinadores" with the plain sponsor
-    // roll's macro (BAJAOVRLAY-64; store/seededPlainSponsorRoll.test.ts covers them), no other
+    // Assert: "Atalhos", then "Logo" (seeded with the channel logo, BAJAOVRLAY-63;
+    // store/seededChannelLogo.test.ts covers it), "Chave" (the Super Prime's match graphics,
+    // BAJAOVRLAY-65), then "Patrocinadores" with the plain sponsor roll's macro (BAJAOVRLAY-64;
+    // store/seededPlainSponsorRoll.test.ts covers them), and no "Avisos": the event templates
+    // live in "Modelos de evento" since BAJAOVRLAY-67 (modules/events covers it); no other
     // macro, no run, and the two rows saved with the boot time.
     expect(slices.quickFirePanels, 'the first boot must seed exactly these panels').toEqual([
       { id: 'atalhos', name: 'Atalhos', order: 0 },
-      { id: 'avisos', name: 'Avisos', order: 1 },
-      { id: 'logo', name: 'Logo', order: 2 },
-      { id: 'chave', name: 'Chave', order: 3 },
-      { id: 'patrocinadores', name: 'Patrocinadores', order: 4 },
+      { id: 'logo', name: 'Logo', order: 1 },
+      { id: 'chave', name: 'Chave', order: 2 },
+      { id: 'patrocinadores', name: 'Patrocinadores', order: 3 },
     ]);
     expect(
       slices.macros.map((macro) => macro.id),
@@ -103,10 +103,9 @@ describe('the quick-fire panels and macros on the first boot', () => {
       name: 'quickFirePanels',
       json: [
         { id: 'atalhos', name: 'Atalhos', order: 0 },
-        { id: 'avisos', name: 'Avisos', order: 1 },
-        { id: 'logo', name: 'Logo', order: 2 },
-        { id: 'chave', name: 'Chave', order: 3 },
-        { id: 'patrocinadores', name: 'Patrocinadores', order: 4 },
+        { id: 'logo', name: 'Logo', order: 1 },
+        { id: 'chave', name: 'Chave', order: 2 },
+        { id: 'patrocinadores', name: 'Patrocinadores', order: 3 },
       ],
       updatedAt: '2026-10-09T08:00:00.000Z',
     });

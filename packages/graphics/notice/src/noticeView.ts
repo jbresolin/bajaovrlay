@@ -24,6 +24,7 @@ export type NoticeParts = NoticeAnimatedElements & {
   warningBadge: HTMLElement;
   kindWord: HTMLElement;
   headCaption: HTMLElement;
+  carRow: HTMLElement;
   carNumber: HTMLElement;
   team: HTMLElement;
   teamName: HTMLElement;
@@ -73,7 +74,7 @@ export function renderNoticeTemplate(): TemplateResult {
         ></span>
         <span class="caption" data-testid="notice-head-caption"></span>
       </header>
-      <div class="row">
+      <div class="row" data-testid="notice-car-row">
         <span class="chip" data-testid="notice-car-number"></span>
         <span class="team" data-testid="notice-team"
           ><span class="team-name" data-testid="notice-team-name"></span
@@ -104,6 +105,7 @@ export function findNoticeParts(renderRoot: ParentNode): NoticeParts {
     warningBadge: findPart('notice-warning-badge'),
     kindWord: findPart('notice-kind-word'),
     headCaption: findPart('notice-head-caption'),
+    carRow: findPart('notice-car-row'),
     carNumber: findPart('notice-car-number'),
     team: findPart('notice-team'),
     teamName: findPart('notice-team-name'),
@@ -144,9 +146,13 @@ function writeHead(parts: NoticeParts, data: NoticeData): void {
  * Writes the car row: the chip, the team with its school, and (fastest lap only) the time.
  * Without a team name the whole team block is hidden, school included: the school is a
  * caption of the team, and alone beside the chip it would read as the team's name.
+ * Without a car the whole row is hidden: a general notice (BAJAOVRLAY-67) is the head and
+ * its text only, with no empty chip or team line on air.
  */
 function writeCarRow(parts: NoticeParts, data: NoticeData): void {
-  writeTextIfChanged(parts.carNumber, String(data.carNumber));
+  const carNumber = data.carNumber;
+  parts.carRow.hidden = carNumber === undefined;
+  writeTextIfChanged(parts.carNumber, carNumber === undefined ? '' : String(carNumber));
   // The name and the school scroll together; making the box again is a no-op.
   makeScrollingTextBox(parts.team);
 

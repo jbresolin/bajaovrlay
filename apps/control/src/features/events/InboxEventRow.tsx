@@ -3,11 +3,14 @@ import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { ActionButton } from '@/features/connection/ActionButton';
-import { formatRelativeTimePtBR } from '@/i18n/formatRelativeTimePtBR';
 import { ptBR } from '@/i18n/ptBR';
 import { formatTimeOfDay } from '@/i18n/timeOfDayText';
 
-import { describeKindOfEvent } from './inboxEventText';
+import {
+  describeHowLongTheEventHasWaited,
+  describeKindOfEvent,
+  isAGeneralNotice,
+} from './inboxEventText';
 
 const texts = ptBR.events;
 
@@ -47,9 +50,15 @@ export function InboxEventRow(props: {
     <li className="flex flex-col gap-1 rounded-md border p-2">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="font-semibold">{describeKindOfEvent(event)}</span>
-        <span className="rounded-sm bg-primary px-1.5 font-semibold text-primary-foreground tabular-nums">
-          {payload.carNumber}
-        </span>
+        {/* A general notice (BAJAOVRLAY-67) has no car: it reads "Aviso geral" in place of
+            the chip, never an empty chip. */}
+        {isAGeneralNotice(event) ? (
+          <span className="font-semibold">{texts.generalNoticeSubject}</span>
+        ) : (
+          <span className="rounded-sm bg-primary px-1.5 font-semibold text-primary-foreground tabular-nums">
+            {payload.carNumber}
+          </span>
+        )}
         {payload.teamName === undefined ? null : <span>{payload.teamName}</span>}
         {event.status === 'queued' ? (
           <Badge variant="secondary">{texts.statusWords.queued}</Badge>
@@ -58,7 +67,7 @@ export function InboxEventRow(props: {
           <time className="tabular-nums" dateTime={new Date(event.detectedAtMs).toISOString()}>
             {formatTimeOfDay(event.detectedAtMs)}
           </time>
-          <span>{formatRelativeTimePtBR(new Date(event.detectedAtMs), now)}</span>
+          <span>{describeHowLongTheEventHasWaited(event, now)}</span>
         </span>
       </div>
       {/* The details, then the three buttons at the right end of the same line; in a

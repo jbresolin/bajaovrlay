@@ -69,11 +69,11 @@ export function buildApprovedSuperChatOfTorcidaCarnauba(minutesAgo: number): Inb
   };
 }
 
-/** The "Super Chat" item the server seeds in "Avisos", filled from the event's three fields. */
+/** The "Super Chat" template the server seeds, filled from the event's three fields. */
 export function buildSuperChatItem(): Item {
   return {
     id: 'super-chat',
-    home: { kind: 'quickFire', panelId: 'avisos' },
+    home: { kind: 'eventTemplates' },
     order: 2,
     graphicId: 'super-chat',
     layerId: 'notice',

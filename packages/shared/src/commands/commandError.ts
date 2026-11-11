@@ -135,8 +135,10 @@ export const CommandErrorCodeSchema = z.enum([
    */
   'EVENT_NOT_APPROVABLE',
   /**
-   * restoreEvent named an event that was not dismissed (waiting, on air, shown or
-   * expired); only a dismissal can be undone. The message says its status.
+   * restoreEvent named an event it cannot bring back: one still waiting, or on air. Only a
+   * dismissed, shown or expired event comes back (shown and expired since BAJAOVRLAY-67,
+   * "Mostrar de novo"); the name is kept so older event-log rows still parse. The message
+   * says its status.
    */
   'EVENT_NOT_DISMISSED',
   /**
@@ -144,6 +146,22 @@ export const CommandErrorCodeSchema = z.enum([
    * expire at "No ar", so it stays dismissed. A kind with no maximum wait never is.
    */
   'EVENT_TOO_OLD',
+  /**
+   * createManualEvent of a penalty with no car (BAJAOVRLAY-67): a penalty is always given
+   * to a car; only a notice may be about no car, a general notice.
+   */
+  'PENALTY_WITHOUT_CAR',
+  /**
+   * createManualEvent of a notice with no car but a team or a school (gate 2 of PR #58): a
+   * general notice is about no team, and dropping what was sent would hide the mistake.
+   */
+  'GENERAL_NOTICE_WITH_TEAM',
+  /**
+   * createItem, moveItemToHome or updateItemFields would put an event template (an item
+   * with an "Evento" field) on a quick-fire panel (BAJAOVRLAY-67): templates live in
+   * "Modelos de evento" and go on air only through their event.
+   */
+  'TEMPLATE_NOT_ON_QUICK_FIRE',
   /** showEvent named an event whose rule has no item to show it with ("Regras"). */
   'EVENT_RULE_WITHOUT_ITEM',
   /**

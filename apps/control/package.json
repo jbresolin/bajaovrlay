@@ -30,6 +30,7 @@
     "@bajaovrlay/battle-card": "workspace:*",
     "@bajaovrlay/logo-bug": "workspace:*",
     "@bajaovrlay/message-ticker": "workspace:*",
+    "@bajaovrlay/notice": "workspace:*",
     "@bajaovrlay/qr-card": "workspace:*",
     "@bajaovrlay/race-clock": "workspace:*",
     "@bajaovrlay/theme": "workspace:*",

@@ -7,7 +7,7 @@ vai ao ar sem uma pessoa aprovar:
 1. o Super Chat chega como **aguardando aprovação**;
 2. **Dados** (ou o **Produtor**, quando está sozinho) clica **Aprovar** ou **Descartar**;
 3. só os aprovados aparecem para o Produtor, que usa **Prévia** e **No ar** como em qualquer
-   evento, no item "Super Chat" do painel "Avisos".
+   evento, com o modelo "Super Chat" (em **Regras**, desde BAJAOVRLAY-67).
 
 O chat de uma transmissão pública é público, então basta uma **chave de API** do Google: não há
 login com conta Google nem token guardado. Ficam de fora: Super Stickers, membros e membros

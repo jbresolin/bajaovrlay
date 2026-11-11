@@ -254,6 +254,9 @@ importers:
       '@bajaovrlay/message-ticker':
         specifier: workspace:*
         version: link:../../packages/graphics/message-ticker
+      '@bajaovrlay/notice':
+        specifier: workspace:*
+        version: link:../../packages/graphics/notice
       '@bajaovrlay/qr-card':
         specifier: workspace:*
         version: link:../../packages/graphics/qr-card

@@ -42,6 +42,8 @@ export const ptBROutputs = {
       `${countInWords(names.length, 'item', 'itens')}: ${quoteEach(names)}`,
     shortcuts: (names: string[]) =>
       `${countInWords(names.length, 'atalho', 'atalhos')}: ${quoteEach(names)}`,
+    eventTemplates: (names: string[]) =>
+      `${countInWords(names.length, 'modelo de evento', 'modelos de evento')}: ${quoteEach(names)}`,
     macros: (names: string[]) =>
       `${countInWords(names.length, 'macro', 'macros')}: ${quoteEach(names)}`,
     eventRules: (names: string[]) =>

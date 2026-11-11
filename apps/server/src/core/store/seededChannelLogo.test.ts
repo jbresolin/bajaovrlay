@@ -170,13 +170,12 @@ describe('a new database', () => {
     ).toEqual(seededChannelLogoItem);
     expect(
       slices.quickFirePanels.map((panel) => [panel.id, panel.name, panel.order]),
-      'the "Logo" panel comes after the two seeded before it, the sponsor roll’s after it',
+      'the "Logo" panel comes after "Atalhos" (no "Avisos" since BAJAOVRLAY-67), the sponsor roll’s after it',
     ).toEqual([
       ['atalhos', 'Atalhos', 0],
-      ['avisos', 'Avisos', 1],
-      ['logo', 'Logo', 2],
-      ['chave', 'Chave', 3],
-      ['patrocinadores', 'Patrocinadores', 4],
+      ['logo', 'Logo', 1],
+      ['chave', 'Chave', 2],
+      ['patrocinadores', 'Patrocinadores', 3],
     ]);
     expect(
       slices.items.filter(
@@ -235,7 +234,7 @@ describe('a database written before the channel logo', () => {
     expect(
       slices.quickFirePanels.find((panel) => panel.id === 'logo'),
       'the "Logo" panel is added after the last panel ("Chave" and "Patrocinadores" come after it)',
-    ).toEqual({ id: 'logo', name: 'Logo', order: 2 });
+    ).toEqual({ id: 'logo', name: 'Logo', order: 1 });
     const storedRows = readAllSliceRows(database);
     expect(
       storedRows.find((row) => row.name === 'layers')?.json,

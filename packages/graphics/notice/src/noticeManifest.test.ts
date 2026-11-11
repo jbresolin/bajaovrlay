@@ -18,8 +18,8 @@
  *     `--motion-out`, read from the text of packages/theme/ardosia/tokens.css: the
  *     timelines take their lengths from those tokens at run time, and the manifest, which
  *     is static JSON, must promise a renderer the same numbers.
- *   - Only the variant and the car are required; every data field has a pt-BR title, and
- *     the two selects (variant, kind of notice) have pt-BR option labels.
+ *   - Only the variant is required (a general notice has no car, BAJAOVRLAY-67); every
+ *     data field has a pt-BR title, and the two selects (variant, kind of notice) have pt-BR option labels.
  *
  * What these tests deliberately do not cover:
  *   - That the data schema and the graphic's Zod validation accept and refuse the same
@@ -120,18 +120,29 @@ describe('notice.ograf.json settings', () => {
     });
   });
 
-  it('declares the notice layer and the notice category in the v_baja vendor field', () => {
+  it('declares the notice layer, the notice category and its car in the v_baja vendor field', () => {
     // Arrange: nothing to set up; the manifest is read from disk.
 
     // Act: read BajaOvrLay's own field, which OGraf allows because its name starts with v_.
     const bajaVendorFields = noticeManifest.v_baja;
 
     // Assert: the server reads the default layer and the category from it; a notice has
-    // no clock to carry forward, so no update rule.
+    // no clock to carry forward, so no update rule. Its car, team and school are one car
+    // group (BAJAOVRLAY-67), so the item editor picks the car once, or "Do evento".
     expect(
       bajaVendorFields,
-      'the notice must ask for the notice layer and the notice category, with no update rule',
-    ).toEqual({ defaultLayerId: 'notice', category: 'notice' });
+      'the notice must ask for the notice layer and the notice category, with its car grouped',
+    ).toEqual({
+      defaultLayerId: 'notice',
+      category: 'notice',
+      carGroups: [
+        {
+          id: 'car',
+          label: 'Carro',
+          fields: { carNumber: 'carNumber', teamName: 'teamName', schoolName: 'schoolName' },
+        },
+      ],
+    });
   });
 
   it('declares the play and stop lengths the theme sets in --motion-in and --motion-out', () => {
@@ -151,7 +162,7 @@ describe('notice.ograf.json settings', () => {
     ]);
   });
 
-  it('requires only the variant and the car number', () => {
+  it('requires only the variant: a general notice has no car (BAJAOVRLAY-67)', () => {
     // Arrange: nothing to set up; the manifest is read from disk.
 
     // Act: read the required list and whether unknown fields are allowed.
@@ -159,10 +170,7 @@ describe('notice.ograf.json settings', () => {
     const allowsUnknownFields = noticeManifest.schema.additionalProperties;
 
     // Assert: every other field gets "limpar" in the form and may be left out.
-    expect(requiredFields, 'only the variant and the car may be required').toEqual([
-      'variant',
-      'carNumber',
-    ]);
+    expect(requiredFields, 'only the variant may be required').toEqual(['variant']);
     expect(allowsUnknownFields, 'a field the graphic does not know must be refused').toBe(false);
   });
 

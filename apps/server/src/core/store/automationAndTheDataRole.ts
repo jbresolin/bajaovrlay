@@ -36,7 +36,7 @@ export function refuseAutomationTheActorMayNotChange(
   }
   const reason =
     command.type === 'dismissEvent' || command.type === 'restoreEvent'
-      ? findWhyTheDataRoleMayNotTriageThisEvent(command.eventId, slices.events)
+      ? findWhyTheDataRoleMayNotTriageThisEvent(command, slices.events)
       : findWhyTheDataRoleMayNotChangeThisAutomation(command, slices);
   return reason === undefined ? undefined : { code: 'NOT_ALLOWED', message: reason };
 }
@@ -155,17 +155,23 @@ function findWhyNotForAMacroUpdate(
  * Why Dados may not discard or restore this event, or undefined when it may: Dados
  * discards a viewer's Super Chat, and restores any discarded one, whoever discarded it (it
  * returns to pending and still needs approval, gate 2 of PR #54), its own moderation
- * (BAJAOVRLAY-35), and nothing else of the inbox; the
- * race's events are the Produtor's. An unknown event is left to the reducer, whose refusal
+ * (BAJAOVRLAY-35), and nothing else of the inbox; the race's events are the Produtor's,
+ * and so is "Mostrar de novo" of a Super Chat already shown or expired (BAJAOVRLAY-67), a
+ * decision about the air. An unknown event is left to the reducer, whose refusal
  * (EVENT_NOT_FOUND) is the clearer one.
  */
 function findWhyTheDataRoleMayNotTriageThisEvent(
-  eventId: string,
+  command: { type: 'dismissEvent' | 'restoreEvent'; eventId: string },
   events: InboxEvent[],
 ): string | undefined {
-  const event = events.find((candidate) => candidate.eventId === eventId);
-  if (event === undefined || event.kind === 'superChat') {
+  const event = events.find((candidate) => candidate.eventId === command.eventId);
+  if (event === undefined) {
     return undefined;
   }
-  return ptBR.eventErrors.dataRoleTriagesOnlySuperChats;
+  if (event.kind !== 'superChat') {
+    return ptBR.eventErrors.dataRoleTriagesOnlySuperChats;
+  }
+  const wasItShownOrExpired = event.status === 'shown' || event.status === 'expired';
+  const isAShowAgain = command.type === 'restoreEvent' && wasItShownOrExpired;
+  return isAShowAgain ? ptBR.eventErrors.dataRoleRestoresOnlyDiscardedSuperChats : undefined;
 }

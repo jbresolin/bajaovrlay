@@ -124,10 +124,16 @@ const dataAgreementScenarios = [
     data: { ...createFastestLapData(), teamName: 31 },
     isValid: false,
   },
-  // A missing required field fails both.
+  // The car is optional in both: a general notice has none (BAJAOVRLAY-67).
   {
-    name: 'both refuse data without the car number',
-    data: { ...createJumpStartPenaltyData(), carNumber: undefined },
+    name: 'both accept a general notice without the car number',
+    data: { variant: 'penalty', noticeKind: 'notice', reason: 'Largada adiada em 15 minutos' },
+    isValid: true,
+  },
+  // The one required field, the variant, fails both when missing.
+  {
+    name: 'both refuse data without the variant',
+    data: { ...createJumpStartPenaltyData(), variant: undefined },
     isValid: false,
   },
 ];
