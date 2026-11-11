@@ -8,7 +8,8 @@
  *   one poll interval the simulator answers the green flag again.
  *
  * What these tests prove:
- *   - The start of a simulator that is on moves to the moment of the command, and
+ *   - The start of a simulator that is on moves to the moment of the command, its next
+ *     poll is marked a first poll (a new race may list nobody yet; gate 2 of PR #61), and
  *     nothing else of the source changes.
  *   - The command is refused, each with its pt-BR message: an unknown source
  *     (DATA_SOURCE_NOT_FOUND), a replay (DATA_SOURCE_NOT_A_SIMULATOR) and a simulator
@@ -34,7 +35,7 @@ import {
 import { reduceDataSourceCommand } from './reduceDataSourceCommand.js';
 
 describe('restartSimulatedRace', () => {
-  it('moves the race start of a simulator that is on to now, and changes nothing else', () => {
+  it('moves the race start of a simulator that is on to now, marks its next poll a first poll, and changes nothing else', () => {
     // Arrange: the simulator on since 14:00, its race 32 minutes in.
     const simulatorBefore = buildHealthyEnduroSimulator();
     const slicesBefore = buildRaceDaySlicesWithDataSources({ dataSources: [simulatorBefore] });
@@ -46,11 +47,13 @@ describe('restartSimulatedRace', () => {
       contextOfTheDataSourceCommand,
     );
 
-    // Assert: the same simulator, with its race starting at the moment of the command.
+    // Assert: the same simulator, with its race starting at the moment of the command and
+    // its next poll taken as a first poll.
     const sourceAfter = outcome.status === 'applied' ? outcome.slices.dataSources[0] : undefined;
-    expect(sourceAfter, 'only the race start may change, and it must be now').toEqual({
+    expect(sourceAfter, 'only the race start (now) and the first-poll mark may change').toEqual({
       ...simulatorBefore,
       config: { ...simulatorBefore.config, simulatedStartAtMs: momentOfTheCommandMs },
+      status: { ...simulatorBefore.status, isNextPollAFirstPoll: true },
     });
   });
 

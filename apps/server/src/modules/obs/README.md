@@ -11,5 +11,6 @@ OBS's events (recordObsState, `sistema:obs`), and carries out each switch the st
 into its pt-BR reason. Reducers are in `reducers/`; `index.ts` lists what core may use.
 
 Tests run against `fakeObsWebSocketServer.testSupport.ts`, a real WebSocket server speaking
-the protocol (its controls: `fakeObsControls.testSupport.ts`). Read `obsConnection.test.ts`
+the protocol (its controls: `fakeObsControls.testSupport.ts`), built by `openFakeObs.testSupport.ts`,
+which is free of Vitest so the chaos suite (apps/control/e2e/chaos) opens it too. Read `obsConnection.test.ts`
 first, then `obsThatOnlyHalfAnswers.test.ts` and `switchObsScene.test.ts`.

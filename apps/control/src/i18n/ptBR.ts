@@ -78,6 +78,11 @@ export const ptBR = {
     checking: 'Verificando o servidor…',
     online: (version: string) => `Servidor no ar, versão ${version}.`,
     unreachable: 'Não foi possível falar com o servidor.',
+    // The data sources that are on, after the version and the clock (BAJAOVRLAY-32), by
+    // the rows' rule: "atrasada" while failing under a minute, "com erro" after it.
+    lateSources: (labels: string[]) => `Fontes atrasadas: ${labels.join(', ')}.`,
+    sourcesInError: (labels: string[]) => `Fontes com erro: ${labels.join(', ')}.`,
+    everySourceOk: 'Fontes ligadas: todas ok.',
   },
   connection: {
     statusLabel: 'Conexão com o servidor',

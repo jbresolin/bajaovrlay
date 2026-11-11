@@ -257,6 +257,12 @@ export const ptBR = {
     // A "good" poll that carried no shape at all: an adapter that answered nothing. Kept
     // as a failure so the last good data stays on air (rule 4).
     noShapesInPoll: 'A fonte respondeu sem nenhum dado.',
+    // A list of cars that had cars and came back with none (BAJAOVRLAY-32): kept as a
+    // failure so a tower or a standings board on air keeps its rows (rule 4).
+    positionsListCameEmpty:
+      'A fonte respondeu a lista de posições vazia; os últimos dados foram mantidos.',
+    standingsListCameEmpty:
+      'A fonte respondeu a lista de classificação vazia; os últimos dados foram mantidos.',
     // A failed poll whose adapter gave no reason (an Error with no message).
     failedPollWithoutReason: 'A leitura da fonte falhou sem dizer o motivo.',
     // The poller called a poll off: the source took longer than min(interval, 10 s).

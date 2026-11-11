@@ -63,7 +63,8 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   button, "Leiaute" "Detalhada", "Atualizar no ar": the same instance id, the "DIF." caption; a race clock taken too sits above the
   tower in the same column (bounding boxes inside the frame, compared with each other only).
   A restart keeps the last data, marked stale: the harness cannot restart its server, so
-  `apps/server/src/core/boot/startServerRestart.test.ts` proves it.
+  `apps/server/src/core/boot/startServerRestart.test.ts` proves it (the chaos suite's `serverRestart.chaos.ts`
+  restarts a server of its own mid-show).
 
 - The event inbox (BAJAOVRLAY-44; commands and state reads in `eventInboxOnTheRealServer.ts`): `eventInboxWithTheSimulator.e2e.ts`
   (the simulator at 60× on seed 227, whose first penalty comes 3 simulated minutes in: the penalty waits in "Eventos" with nothing on
@@ -124,6 +125,10 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   The own servers' start and stop are in `ownServerOfABrowserTest.ts` (moved there from the restart test).
   `triggerFieldsFitTheirBox.e2e.ts`: at 1024×768, a take step's "Dado do gatilho" with a long key stays inside the step's box,
   and the item editor's "Nome" stays inside the editor whichever way it is filled (jsdom measures no layout).
+
+- The chaos suite (BAJAOVRLAY-32): `chaos/`, its own Playwright config (`../playwright.chaos.config.ts`, `pnpm test:chaos`)
+  and its own servers, which it kills and restarts; `chaos/README.md` lists every scenario. The Baja app stand-in
+  (`bajaAppTestServer.ts`) can break its race for it (garbage, an empty list, too late) and go down and come back.
 
 `emptyTheServerState.ts` empties the server before each test, triggers (unpaused), panels, macros, "vai limpar" marks, corrections of a source's values, waiting events and the entity library with its images included, the event rules back to their defaults, and puts the data sources back to the seeded simulator alone, off, not recording, with its default settings (`emptyServerState.e2e.ts` proves it; `emptyServerStateEventInbox.e2e.ts` the event inbox part). `../playwright.config.ts` starts the real server (5187, new SQLite file) and the control dev server (5188); run `pnpm --filter @bajaovrlay/control test:e2e` after `pnpm build`, with nothing left listening on 5187/5188 (a reused server keeps its old database). A second checkout running its browser tests at the same time sets `BAJAOVRLAY_E2E_PORT_OFFSET` (for example 100: 5287/5288), which moves every package's browser-test ports alike; it is read once, in `scripts/e2ePortOffset.ts`, and anything but a whole number counts as 0.
 `clockStoppedOnAir.e2e.ts` fails locally when the WSL clock steps (a time sync moves the wall clock); the fix is syncing the Windows clock (Settings → Time & language → Date & time → Sync now), then running `wsl --shutdown` in PowerShell and reopening the terminal, not quarantine.

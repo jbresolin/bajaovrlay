@@ -27,7 +27,8 @@ import { checkDataSourceConfig } from '../schema.js';
  * edit form saved untouched). Refused for an unknown source and for a config that fails
  * its schema or the host list, like createDataSource. An edit without a config (a rename)
  * is not checked against the host list. A YouTube live chat's interval may not go under
- * 10 s, as at createDataSource.
+ * 10 s, as at createDataSource. A changed config marks the source's next poll as a first
+ * poll (status.isNextPollAFirstPoll).
  */
 export function reduceUpdateDataSource(
   slices: SlicesChangedByCommands,
@@ -75,6 +76,16 @@ export function reduceUpdateDataSource(
       nowMs,
     );
     updatedSource = { ...updatedSource, ...kindAndConfig };
+    // A new config is a new feed (another prova, another timing system): its next poll
+    // counts as a first one, so a new race listing nobody yet is not refused as a blanked
+    // list (gate 2 of PR #61). An unchanged config, saved again, is no new feed.
+    const isTheConfigChanged = !areJsonValuesEqual(updatedSource.config, storedSource.config);
+    if (isTheConfigChanged) {
+      updatedSource = {
+        ...updatedSource,
+        status: { ...updatedSource.status, isNextPollAFirstPoll: true },
+      };
+    }
   }
 
   const isNothingChanged = areJsonValuesEqual(updatedSource, storedSource);

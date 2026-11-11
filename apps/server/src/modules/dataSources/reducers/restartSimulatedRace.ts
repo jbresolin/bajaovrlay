@@ -43,7 +43,13 @@ export function reduceRestartSimulatedRace(
   }
 
   const simulatedStartAtMs = Date.parse(context.now);
-  const restartedSimulator = { ...source, config: { ...source.config, simulatedStartAtMs } };
+  // A restarted race lists its cars again from the start: its next poll counts as a first
+  // one, so a race with nobody on track yet is not refused as a blanked list.
+  const restartedSimulator = {
+    ...source,
+    config: { ...source.config, simulatedStartAtMs },
+    status: { ...source.status, isNextPollAFirstPoll: true as const },
+  };
   const dataSources = replaceDataSource(slices.dataSources, restartedSimulator);
   return { status: 'applied', slices: { ...slices, dataSources } };
 }

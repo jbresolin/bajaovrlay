@@ -7,6 +7,8 @@ running, and what did its clock last hear from NTP?" without opening DevTools. S
 - `useServerHealthCheck.ts` — runs the check and writes what the server answered
   ("Servidor no ar, versão 0.3.1." with the last NTP answer's time, server and difference,
   or that it could not be reached); the menu shows it.
+- `dataSourcesSentence.ts` — the sentence on the data sources that are on, which ends the
+  answer: the late ones and those in error by name, or "todas ok" (BAJAOVRLAY-32).
 - `fetchServerHealth.ts` — the `GET /health` call, checked against the shared
   `HealthResponseSchema`.
 

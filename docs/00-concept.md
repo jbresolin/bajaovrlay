@@ -429,7 +429,7 @@ Tests are the primary review artefact. A PR is reviewed by reading its tests fir
 - Component (Vitest with Testing Library): generated item forms from real manifests, layer status panel, rundown reordering.
 - Renderer (Playwright): OGraf lifecycle ordering against a fake graphic, reconnect rebuild, one screenshot per graphic with sample data.
 - E2E (Playwright): open control, preview, take, live update from a replayed feed, clear.
-- Chaos (scenario suite): data source down, stale, garbage payload; WS drop mid-take; two operators taking on one layer at once.
+- Chaos (scenario suite, Playwright, `pnpm test:chaos`, apps/control/e2e/chaos, BAJAOVRLAY-32): named failure scenarios against real built servers it kills and restarts, with fault switches in test support only (a stand-in API that breaks, a connection proxy per page, fake NTP and OBS): data sources down, garbage, empty, late and back; WS drops mid-take and offline consoles; a server killed mid-show; two operators at once; NTP out of reach and stepping; OBS and the Super Chat feed gone; a backup during takes. Each ends on what the air shows and what the console says. Its own CI job.
 
 Test readability, written for a beginner. Paddock's law applies (sentence-style names, arrange-act-assert separated by blank lines, table-driven named scenarios, no clever generation, factories named for what they build), plus:
 
