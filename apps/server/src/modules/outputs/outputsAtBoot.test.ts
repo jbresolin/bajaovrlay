@@ -4,14 +4,14 @@
  * What this module is for:
  *   Since BAJAOVRLAY-49 every layer belongs to an output, and the `outputs` slice always
  *   holds `program` ("Programa", the output OBS's main browser source draws). A new
- *   database is seeded with program and the nine layers on it. An operator's database
+ *   database is seeded with program and the ten layers on it. An operator's database
  *   written before outputs existed has a layers row without `outputId` and no outputs
  *   row: it gains program at boot, with every layer it had assigned to it, so the show
  *   looks exactly as it did. From then on the layers are the operator's own, edited on
  *   "Saídas e camadas": a seeded layer the operator deleted does not come back.
  *
  * What these tests prove (with a real SQLite file and a stand-in graphics folder):
- *   - The first boot seeds program and the nine layers on it, and writes both rows.
+ *   - The first boot seeds program and the ten layers on it, and writes both rows.
  *   - A database written before outputs boots with program and every stored layer on it,
  *     names and heights as they were; both rows are written, stamped with this boot, and
  *     an info line counts the layers assigned.
@@ -63,6 +63,7 @@ function loadSlicesAtBoot(options: {
 /** The ids of the program output's layers, bottom to top, as the seed has them. */
 const seededLayerIdsBottomToTop = [
   'bug',
+  'sponsor-roll-plain',
   'channel-logo',
   'bracket-match',
   'ticker',
@@ -74,11 +75,12 @@ const seededLayerIdsBottomToTop = [
 ];
 
 /**
- * The layers of a server before outputs: the seed of that time, without the channel logo
- * and the match bug's layer (BAJAOVRLAY-63, BAJAOVRLAY-65), both seeded since.
+ * The layers of a server before outputs: the seed of that time, without the plain sponsor
+ * roll's, the channel logo's and the match bug's layers (BAJAOVRLAY-64, -63, -65), seeded since.
  */
 const layerIdsOfAServerBeforeOutputs = seededLayerIdsBottomToTop.filter(
-  (layerId) => layerId !== 'channel-logo' && layerId !== 'bracket-match',
+  (layerId) =>
+    layerId !== 'sponsor-roll-plain' && layerId !== 'channel-logo' && layerId !== 'bracket-match',
 );
 
 /**
@@ -110,7 +112,7 @@ function openDatabaseOfAServerBeforeOutputs(
 }
 
 describe('the first boot', () => {
-  it('seeds the program output and the nine layers on it, and writes both rows', () => {
+  it('seeds the program output and the ten layers on it, and writes both rows', () => {
     // Arrange: an empty database.
     const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
     const { database } = openTemporaryDatabase();
@@ -118,7 +120,7 @@ describe('the first boot', () => {
     // Act: boot for the first time.
     const slices = loadSlicesAtBoot({ database, graphicPackagesFolder });
 
-    // Assert: program alone, the nine layers on it, and the same in the database.
+    // Assert: program alone, the ten layers on it, and the same in the database.
     expect(slices.outputs, 'a new database has the program output only').toEqual([
       { outputId: 'program', name: 'Programa', order: 0 },
     ]);
@@ -158,6 +160,7 @@ describe('a database written before outputs existed', () => {
       'every stored layer is assigned to program at its old height',
     ).toEqual([
       ['bug', 'program', 10],
+      ['sponsor-roll-plain', 'program', 12],
       ['channel-logo', 'program', 15],
       ['bracket-match', 'program', 17],
       ['ticker', 'program', 20],

@@ -18,3 +18,20 @@ export function useWhyTheDataRoleMayNotTriage(): (event: InboxEvent) => string |
       ? ptBR.events.dataRoleTriagesOnlySuperChats
       : undefined;
 }
+
+/**
+ * A function telling why the logged-in operator may not bring back a shown or expired
+ * event ("Mostrar de novo", BAJAOVRLAY-67): for Dados, a decision about the air on any
+ * event, a Super Chat too, as the server holds it; undefined for the Produtor.
+ */
+export function useWhyTheDataRoleMayNotShowAgain(): (event: InboxEvent) => string | undefined {
+  const isTheDataRoleLoggedIn = useIsTheDataRoleLoggedIn();
+  return (event) => {
+    if (!isTheDataRoleLoggedIn) {
+      return undefined;
+    }
+    return event.kind === 'superChat'
+      ? ptBR.events.dataRoleRestoresOnlyDiscardedSuperChats
+      : ptBR.events.dataRoleTriagesOnlySuperChats;
+  };
+}

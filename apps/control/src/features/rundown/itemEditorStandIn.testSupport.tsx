@@ -19,6 +19,9 @@ function describeHomeForNewItem(home: ItemHome): string {
   if (home.kind === 'rundown') {
     return `no rundown ${home.rundownId}`;
   }
+  if (home.kind === 'eventTemplates') {
+    return 'em Modelos de evento';
+  }
   return `no painel ${home.panelId}`;
 }
 

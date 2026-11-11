@@ -42,6 +42,8 @@ const httpStatusOfEachRefusalCode: Record<CommandErrorCode, CommandRefusalHttpSt
   TRIGGER_FIRING_NOT_FOUND: 422,
   // Content that cannot be used as sent.
   INVALID_GRAPHIC_DATA: 422,
+  // A plain sponsor roll none of whose sponsors has a logo (BAJAOVRLAY-64).
+  NOTHING_TO_SHOW: 422,
   ITEM_NOT_IN_RUNDOWN: 422,
   ITEMS_NOT_A_PERMUTATION: 422,
   UNSUPPORTED_FIELD_KIND: 422,
@@ -79,6 +81,9 @@ const httpStatusOfEachRefusalCode: Record<CommandErrorCode, CommandRefusalHttpSt
   EVENT_NOT_APPROVABLE: 409,
   EVENT_NOT_DISMISSED: 409,
   EVENT_TOO_OLD: 409,
+  PENALTY_WITHOUT_CAR: 422,
+  GENERAL_NOTICE_WITH_TEAM: 422,
+  TEMPLATE_NOT_ON_QUICK_FIRE: 422,
   EVENT_RULE_WITHOUT_ITEM: 409,
   ITEM_FILLED_BY_EVENT: 409,
   EVENT_FIELD_NOT_FILLED: 409,

@@ -26,3 +26,12 @@ export function listItemsOfQuickFirePanelInOrder(items: Item[], panelId: string)
   );
   return itemsOfThePanel.sort((oneItem, otherItem) => oneItem.order - otherItem.order);
 }
+
+/**
+ * Lists the event templates ("Modelos de evento", BAJAOVRLAY-67) from first to last, the
+ * same way listItemsOfRundownInOrder lists a rundown's.
+ */
+export function listEventTemplatesInOrder(items: Item[]): Item[] {
+  const eventTemplates = items.filter((item) => item.home.kind === 'eventTemplates');
+  return eventTemplates.sort((oneItem, otherItem) => oneItem.order - otherItem.order);
+}

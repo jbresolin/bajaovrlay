@@ -15,6 +15,8 @@
  *   - A notice for car 12 with its school typed is sent with the school.
  *   - A car that is not a whole number and an empty reason are refused on the page in
  *     pt-BR, and nothing is sent.
+ *   - Every label of the form points at its control (`htmlFor`), so a click on it focuses
+ *     the control and a screen reader reads the label with it (gate 2 of PR #58).
  *
  * What these tests deliberately do not cover:
  *   - Filling the team and school from the sources; the server's inboxCommandsOnTheStore.
@@ -27,7 +29,10 @@ import {
   letThePageFinishWhatItStarted,
   renderOnControlPageConnectedToFakeServer,
 } from '@/state/controlPageOnFakeServer.testSupport';
-import { buildSlicesWithTheInbox } from '@/state/eventsLikeTheServerSends.testSupport';
+import {
+  buildSlicesWithTheInbox,
+  buildTeamsOfCadastros,
+} from '@/state/eventsLikeTheServerSends.testSupport';
 
 import { EventReviewPage } from './EventReviewPage';
 
@@ -111,5 +116,35 @@ describe('the "+ Evento" form', () => {
       'Informe o número do carro, um número inteiro.',
     );
     expect(fakeServer.listCommandsReceived(), 'nothing may be sent').toEqual([]);
+  });
+});
+
+describe('the labels of the "+ Evento" form', () => {
+  it('points every label at its control, the team list included', () => {
+    // Arrange: the form, with the teams of Cadastros so the team list is offered.
+    renderOnControlPageConnectedToFakeServer(
+      <EventReviewPage />,
+      buildSlicesWithTheInbox([], buildTeamsOfCadastros()),
+    );
+    fireEvent.click(screen.getByRole('button', { name: '+ Evento' }));
+
+    // Act: read each label and the control it points at.
+    const labels = [...screen.getByRole('dialog').querySelectorAll('label')];
+    const labelsAndTheirControls = labels.map((label) => {
+      const controlId = label.htmlFor;
+      const control = controlId === '' ? null : document.getElementById(controlId);
+      return { label: label.textContent, pointsAtAControl: control !== null };
+    });
+    const teamListLabel = labels.find((label) => label.textContent === 'Equipe dos cadastros');
+
+    // Assert: no label points nowhere, and "Equipe dos cadastros" names the team list.
+    expect(
+      labelsAndTheirControls.filter((entry) => !entry.pointsAtAControl),
+      'every label must point at its control',
+    ).toEqual([]);
+    expect(
+      document.getElementById(teamListLabel?.htmlFor ?? ''),
+      '"Equipe dos cadastros" must point at the team list',
+    ).toBe(screen.getByRole('combobox', { name: 'Equipe dos cadastros' }));
   });
 });

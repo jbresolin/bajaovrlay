@@ -15,7 +15,12 @@ export type InboxEventAsTheTestsReadIt = {
 /** The parts of GET /api/v1/state these tests read. */
 export type StateTheInboxTestsRead = {
   events: InboxEventAsTheTestsReadIt[];
-  instances: Array<{ layerId: string; target: string; eventId?: string }>;
+  instances: Array<{
+    layerId: string;
+    target: string;
+    eventId?: string;
+    resolvedData: Record<string, unknown>;
+  }>;
   dataSnapshots: Array<{ sourceId: string; receivedAtMs: number }>;
 };
 
@@ -104,9 +109,9 @@ export async function readEventIdOnTheNoticeLayer(port: number): Promise<string 
 }
 
 /**
- * Makes the two notice items the tests show events with ("Penalidade — teste" and
- * "Volta mais rápida — teste", on the "Atalhos" panel; the reset deletes the seeded ones),
- * and answers their ids.
+ * Makes the two notice templates the tests show events with ("Penalidade — teste" and
+ * "Volta mais rápida — teste", in "Modelos de evento": no panel takes a template since
+ * BAJAOVRLAY-67; the reset deletes the seeded ones), and answers their ids.
  */
 export async function createNoticeItemsOnTheServer(
   port: number,
@@ -118,7 +123,7 @@ export async function createNoticeItemsOnTheServer(
   };
   const penaltyItem = await sendCommandOrFail(port, {
     type: 'createItem',
-    home: { kind: 'quickFire', panelId: 'atalhos' },
+    home: { kind: 'eventTemplates' },
     graphicId: 'notice',
     layerId: 'notice',
     label: 'Penalidade — teste',
@@ -132,7 +137,7 @@ export async function createNoticeItemsOnTheServer(
   });
   const fastestLapItem = await sendCommandOrFail(port, {
     type: 'createItem',
-    home: { kind: 'quickFire', panelId: 'atalhos' },
+    home: { kind: 'eventTemplates' },
     graphicId: 'notice',
     layerId: 'notice',
     label: 'Volta mais rápida — teste',

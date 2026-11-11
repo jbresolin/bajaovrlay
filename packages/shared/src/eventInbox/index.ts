@@ -67,6 +67,13 @@ export {
   listEventPayloadPathsThatFitField,
   readEventFieldFromPayload,
 } from './eventFieldValue.js';
+// Which templates suit which kind, and the event fields a new template starts with
+// ("Trocar" and "+ Novo modelo" in "Regras", BAJAOVRLAY-67).
+export {
+  buildEventFieldsOfANewTemplate,
+  doesTemplateSuitKind,
+  listEventPayloadPathsOfKind,
+} from './eventTemplateKinds.js';
 // A realistic event of each kind, for "Prévia" of a template item.
 export { readSampleEventPayload } from './sampleEventPayloads.js';
 // The pt-BR reasons of the schemas above.

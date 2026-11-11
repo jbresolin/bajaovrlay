@@ -219,6 +219,7 @@ export const SchemaFormFieldRow = memo(function SchemaFormFieldRow(props: {
           dataSchema={dataSchema}
           controlId={controlId}
           isDisabled={isDisabled}
+          sampleEventPayload={bindingOptions?.sampleEventPayload}
         />
       )}
       {isReadFromTheLibrary && props.entityLibrary !== undefined && (

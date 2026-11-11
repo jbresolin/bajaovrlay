@@ -96,8 +96,9 @@ describe('the history', () => {
     const rows = readHistoryRows();
 
     // Assert: four rows, newest first. Each row: time, kind, car, team, lap, details,
-    // origin, status, and "Restaurar" for the dismissed one only. The typed notice says
-    // "Digitado"; the others name their source.
+    // origin, status, and "Restaurar" for the dismissed one, "Mostrar de novo" for the
+    // shown one (BAJAOVRLAY-67). The typed notice says "Digitado"; the others name their
+    // source.
     expect(rows, 'every event the server keeps, newest first').toEqual([
       [
         formatTimeOfDay(fastestLap.detectedAtMs),
@@ -141,7 +142,7 @@ describe('the history', () => {
         'Troca de piloto no box',
         'Digitado',
         'exibido',
-        '',
+        'Mostrar de novo',
       ],
     ]);
   });

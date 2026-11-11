@@ -128,9 +128,12 @@ export type SchemaFormValues = {
  * - `carNumber`: one car by its number, wherever it runs ("Carro 47");
  * - `place`: whichever car runs at one place ("2º lugar");
  * - `typed`: typed by hand, the group's fields shown together, typed only;
+ * - `fromTheEvent`: on an event template only (BAJAOVRLAY-67), each field read from the
+ *   event's payload field of its own name ("Do evento");
  * - `separate`: "Campos separados", each field edited on its own as before.
  */
-export type CarGroupWay = 'notChosen' | 'carNumber' | 'place' | 'typed' | 'separate';
+export type CarGroupWay =
+  'notChosen' | 'carNumber' | 'place' | 'typed' | 'fromTheEvent' | 'separate';
 
 /**
  * Which fields the operator changed since the form was last filled: the part of

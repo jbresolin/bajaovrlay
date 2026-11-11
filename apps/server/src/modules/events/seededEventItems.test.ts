@@ -1,29 +1,30 @@
 /**
- * The seeded "Avisos" panel and its two notice items (apps/server)
+ * The seeded event templates (apps/server)
  *
  * What this module is for:
  *   So events have something to show from the first boot (BAJAOVRLAY-44), the server
- *   seeds a quick-fire panel "Avisos" holding two items on the notice graphic and the
- *   notice layer, every field the event fills an event field: "Volta mais rápida" (the
- *   fastest-lap variant) and "Penalidade" (the penalty variant), and a third on the Super
- *   Chat graphic, "Super Chat" (BAJAOVRLAY-35). The default rules show fastest laps with
- *   the first, incidents and manual events with the second, Super Chats with the third. They are
- *   seeded together with the rules, once per database: on a new database, and on one
- *   written before the inbox existed, at its first boot with the inbox. A panel the
- *   operator deleted is not brought back.
+ *   seeds two templates on the notice graphic and the notice layer, every field the event
+ *   fills an event field: "Volta mais rápida" (the fastest-lap variant) and "Penalidade"
+ *   (the penalty variant), and a third on the Super Chat graphic, "Super Chat"
+ *   (BAJAOVRLAY-35). The default rules show fastest laps with the first, incidents and
+ *   manual events with the second, Super Chats with the third. Since BAJAOVRLAY-67 they
+ *   live in "Modelos de evento", shown in "Regras", not on a quick-fire panel: no panel
+ *   "Avisos" is seeded. They are seeded together with the rules, once per database: on a
+ *   new database, and on one written before the inbox existed, at its first boot with the
+ *   inbox. A template the operator deleted is not brought back.
  *
  * What these tests prove:
- *   - A new database has the panel after "Atalhos", the three items as described, and the
+ *   - A new database has no panel "Avisos", the three templates as described, and the
  *     rules naming them (leader changes have no item: no design yet; Super Chats have the
  *     "Super Chat" item on the super-chat graphic, BAJAOVRLAY-35).
- *   - A database whose Super Chat rule still has no item gets the "Super Chat" item and the
- *     rule naming it, once; one whose operator chose another item, or chose none and kept
- *     the item, keeps that choice; one whose panel "Avisos" was deleted gets nothing; and
- *     an operator who deletes the item and clears the rule never gets it back (gate 2 of
- *     PR #54: the seed is remembered in seeds_done, as superChatItem).
- *   - A database written before the inbox gets the panel, the items and the rules at its
- *     next boot, its own panels and items kept.
- *   - Once deleted by the operator, the panel and its items stay deleted after a restart.
+ *   - A database whose Super Chat rule still has no item gets the "Super Chat" template and
+ *     the rule naming it, once; one whose operator chose another item, or chose none and
+ *     kept the item, keeps that choice; one whose panel "Avisos" was deleted gets nothing;
+ *     and an operator who deletes the item and clears the rule never gets it back (gate 2
+ *     of PR #54: the seed is remembered in seeds_done, as superChatItem).
+ *   - A database written before the inbox gets the templates and the rules at its next
+ *     boot, its own panels and items kept.
+ *   - Once deleted by the operator, the templates stay deleted after a restart.
  *
  * What these tests deliberately do not cover:
  *   - The notice graphic itself (packages/graphics/notice) and showing an event with these
@@ -40,16 +41,22 @@ import {
   openEventInboxOnTheStore,
   restartTheServer,
 } from './eventInboxOnTheStore.testSupport.js';
+import {
+  makeTheDatabaseOlderThanTemplatesInRegras,
+  readSeedNamesDoneOfDatabase,
+} from './eventTemplatesOnOlderDatabases.testSupport.js';
 
-/** The items in the "Avisos" panel (Atalhos has its own seeded "Logo do canal"). */
-function listItemsOfAvisos(items: Item[]): Item[] {
-  return items.filter((item) => item.home.kind === 'quickFire' && item.home.panelId === 'avisos');
+/** The event templates, in "Modelos de evento", first to last. */
+function listEventTemplates(items: Item[]): Item[] {
+  return items
+    .filter((item) => item.home.kind === 'eventTemplates')
+    .sort((first, second) => first.order - second.order);
 }
 
 /** The "Volta mais rápida" item as the server seeds it. */
 const seededFastestLapItem: Item = {
   id: 'volta-mais-rapida',
-  home: { kind: 'quickFire', panelId: 'avisos' },
+  home: { kind: 'eventTemplates' },
   order: 0,
   graphicId: 'notice',
   layerId: 'notice',
@@ -69,7 +76,7 @@ const seededFastestLapItem: Item = {
 /** The "Penalidade" item as the server seeds it. */
 const seededPenaltyItem: Item = {
   id: 'penalidade',
-  home: { kind: 'quickFire', panelId: 'avisos' },
+  home: { kind: 'eventTemplates' },
   order: 1,
   graphicId: 'notice',
   layerId: 'notice',
@@ -90,7 +97,7 @@ const seededPenaltyItem: Item = {
 /** The "Super Chat" item as the server seeds it (BAJAOVRLAY-35). */
 const seededSuperChatItem: Item = {
   id: 'super-chat',
-  home: { kind: 'quickFire', panelId: 'avisos' },
+  home: { kind: 'eventTemplates' },
   order: 2,
   graphicId: 'super-chat',
   layerId: 'notice',
@@ -105,10 +112,16 @@ const seededSuperChatItem: Item = {
 };
 
 /**
- * Rewrites a closed database as one written before BAJAOVRLAY-35: the Super Chat rule with
- * no item, no "Super Chat" item and no row remembering its seed, the rest as seeded.
+ * Rewrites a closed database as one written before BAJAOVRLAY-35: the templates on the
+ * panel "Avisos" (as before BAJAOVRLAY-67), the Super Chat rule with no item, no "Super
+ * Chat" item and no row remembering its seed, the rest as seeded. With
+ * `isAvisosDeleted`, the operator had deleted the panel "Avisos" and its two templates.
  */
-function makeTheDatabaseOlderThanSuperChats(databasePath: string): void {
+function makeTheDatabaseOlderThanSuperChats(
+  databasePath: string,
+  isAvisosDeleted: boolean = false,
+): void {
+  makeTheDatabaseOlderThanTemplatesInRegras(databasePath, []);
   const database = openDatabaseForTests(databasePath);
   const readSlice = (name: string): unknown =>
     JSON.parse(
@@ -129,31 +142,41 @@ function makeTheDatabaseOlderThanSuperChats(databasePath: string): void {
     rules.map((rule) => (rule.kind === 'superChat' ? { ...rule, itemId: null } : rule)),
   );
   const items = readSlice('items') as Array<{ id: string }>;
+  const idsLeftOut = isAvisosDeleted
+    ? ['super-chat', 'volta-mais-rapida', 'penalidade']
+    : ['super-chat'];
   writeSlice(
     'items',
-    items.filter((item) => item.id !== 'super-chat'),
+    items.filter((item) => !idsLeftOut.includes(item.id)),
   );
+  if (isAvisosDeleted) {
+    writeSlice('quickFirePanels', [
+      { id: 'atalhos', name: 'Atalhos', order: 0 },
+      { id: 'logo', name: 'Logo', order: 2 },
+    ]);
+  }
   // Nor the seeds_done row that remembers the seed was considered (gate 2 of PR #54).
   database.$client.prepare("DELETE FROM seeds_done WHERE name = 'superChatItem'").run();
   database.$client.close();
 }
 
-describe('the seeded "Avisos" panel', () => {
-  it('starts a new database with the panel, its two items and the rules naming them', () => {
+describe('the seeded event templates', () => {
+  it('starts a new database with the three templates, the rules naming them, and no "Avisos"', () => {
     // Arrange: nothing; a new database.
 
     // Act: open the store on it.
     const slices = openEventInboxOnTheStore().stateStore.readAllSlices();
 
-    // Assert: the panel after "Atalhos" (and before the channel logo's "Logo", seeded
-    // after it), the three items in it, and the rules wired.
-    expect(slices.quickFirePanels, 'the panel "Avisos" follows "Atalhos"').toEqual([
+    // Assert: no panel "Avisos" (only "Atalhos", the channel logo's "Logo", the Super
+    // Prime's "Chave" and the sponsor roll's "Patrocinadores"), the three templates, and the
+    // rules wired.
+    expect(slices.quickFirePanels, 'no panel holds the templates').toEqual([
       { id: 'atalhos', name: 'Atalhos', order: 0 },
-      { id: 'avisos', name: 'Avisos', order: 1 },
-      { id: 'logo', name: 'Logo', order: 2 },
-      { id: 'chave', name: 'Chave', order: 3 },
+      { id: 'logo', name: 'Logo', order: 1 },
+      { id: 'chave', name: 'Chave', order: 2 },
+      { id: 'patrocinadores', name: 'Patrocinadores', order: 3 },
     ]);
-    expect(listItemsOfAvisos(slices.items), 'the notice items, as seeded').toEqual([
+    expect(listEventTemplates(slices.items), 'the templates, as seeded').toEqual([
       seededFastestLapItem,
       seededPenaltyItem,
       seededSuperChatItem,
@@ -172,7 +195,7 @@ describe('the seeded "Avisos" panel', () => {
 
   it('is added to a database written before the inbox, at its next boot', () => {
     // Arrange: a database as BAJAOVRLAY-22 left it: no rules row, only the panel
-    // "Atalhos", and none of the two items.
+    // "Atalhos", and none of the templates.
     const inboxBefore = openEventInboxOnTheStore();
     inboxBefore.shutDown();
     const olderDatabase = openDatabaseForTests(inboxBefore.databasePath);
@@ -186,14 +209,14 @@ describe('the seeded "Avisos" panel', () => {
     // Act: boot on it.
     const slices = openEventInboxOnTheStore(inboxBefore).stateStore.readAllSlices();
 
-    // Assert: the panel, the items and the wired rules are all there.
+    // Assert: the templates and the wired rules are there, and the panels as they were.
     expect(
       slices.quickFirePanels.map((panel) => panel.name),
-      'the older panel stays first and "Avisos" is added',
-    ).toEqual(['Atalhos', 'Avisos']);
+      'the older panel stays, and no "Avisos" is added',
+    ).toEqual(['Atalhos']);
     expect(
-      slices.items.map((item) => item.id),
-      'the three notice items are added',
+      listEventTemplates(slices.items).map((item) => item.id),
+      'the three templates are added',
     ).toEqual(['volta-mais-rapida', 'penalidade', 'super-chat']);
     expect(
       slices.eventRules.find((rule) => rule.kind === 'fastestLap')?.itemId,
@@ -201,23 +224,18 @@ describe('the seeded "Avisos" panel', () => {
     ).toBe('volta-mais-rapida');
   });
 
-  it('stays deleted after a restart once the operator deleted it', () => {
-    // Arrange: the operator deletes the three items and the panel.
+  it('stay deleted after a restart once the operator deleted them', () => {
+    // Arrange: the operator deletes the three templates.
     const inbox = openEventInboxOnTheStore();
     applyOrThrow(inbox.stateStore, { type: 'deleteItem', itemId: 'volta-mais-rapida' });
     applyOrThrow(inbox.stateStore, { type: 'deleteItem', itemId: 'penalidade' });
     applyOrThrow(inbox.stateStore, { type: 'deleteItem', itemId: 'super-chat' });
-    applyOrThrow(inbox.stateStore, { type: 'deleteQuickFirePanel', panelId: 'avisos' });
 
     // Act: restart.
     const slices = restartTheServer(inbox).stateStore.readAllSlices();
 
-    // Assert: neither the panel nor the items came back; the channel logo's panel stays.
-    expect(
-      slices.quickFirePanels.map((panel) => panel.id),
-      'a deleted panel is not seeded again',
-    ).toEqual(['atalhos', 'logo', 'chave']);
-    expect(listItemsOfAvisos(slices.items), 'nor its items').toEqual([]);
+    // Assert: none came back.
+    expect(listEventTemplates(slices.items), 'deleted templates are not seeded again').toEqual([]);
   });
 });
 
@@ -231,7 +249,7 @@ describe('the seeded "Super Chat" item on a database older than it', () => {
     // Act: boot on it.
     const slices = openEventInboxOnTheStore(inboxBefore).stateStore.readAllSlices();
 
-    // Assert: the item is in "Avisos", after the other two, and the rule names it.
+    // Assert: the item is a template after the other two, and the rule names it.
     expect(
       slices.items.find((item) => item.id === 'super-chat'),
       'the "Super Chat" item must be added as seeded',
@@ -326,12 +344,8 @@ describe('the seeded "Super Chat" item on a database older than it', () => {
   it('is not added when the operator deleted the panel "Avisos"', () => {
     // Arrange: an older database whose operator deleted the panel and its notice items.
     const inbox = openEventInboxOnTheStore();
-    applyOrThrow(inbox.stateStore, { type: 'deleteItem', itemId: 'volta-mais-rapida' });
-    applyOrThrow(inbox.stateStore, { type: 'deleteItem', itemId: 'penalidade' });
-    applyOrThrow(inbox.stateStore, { type: 'deleteItem', itemId: 'super-chat' });
-    applyOrThrow(inbox.stateStore, { type: 'deleteQuickFirePanel', panelId: 'avisos' });
     inbox.shutDown();
-    makeTheDatabaseOlderThanSuperChats(inbox.databasePath);
+    makeTheDatabaseOlderThanSuperChats(inbox.databasePath, true);
 
     // Act: boot on it.
     const slices = openEventInboxOnTheStore(inbox).stateStore.readAllSlices();
@@ -355,16 +369,17 @@ describe('where the "Super Chat" seed is remembered', () => {
     inbox.shutDown();
 
     // Act: read the seeds the boot recorded as done.
-    const database = openDatabaseForTests(inbox.databasePath);
-    const seedNamesDone = (
-      database.$client.prepare('SELECT name FROM seeds_done').all() as Array<{ name: string }>
-    ).map((row) => row.name);
-    database.$client.close();
+    const seedNamesDone = readSeedNamesDoneOfDatabase(inbox.databasePath);
 
-    // Assert: the Super Chat seed is there, beside the channel logo's.
+    // Assert: the Super Chat seed is there, beside the channel logo's, and so is the move
+    // of the templates off the panels: a new database never needs it.
     expect(
       seedNamesDone,
       'the one table of one-off seeds (BAJAOVRLAY-63) remembers the Super Chat item too',
     ).toContain('superChatItem');
+    expect(
+      seedNamesDone,
+      'a new database has its templates where they belong from the start',
+    ).toContain('eventTemplatesOffQuickFire');
   });
 });

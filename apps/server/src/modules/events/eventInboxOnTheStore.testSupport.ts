@@ -3,7 +3,12 @@
 // is not started, so no poll arrives that the test did not send), and the event detection
 // watching it with a clock and timers the test moves by hand. Every function builds fresh
 // objects on each call.
-import type { DataSnapshotShapes, InboxEvent, ItemFields } from '@bajaovrlay/shared';
+import {
+  type DataSnapshotShapes,
+  type InboxEvent,
+  isItemFilledByAnEvent,
+  type ItemFields,
+} from '@bajaovrlay/shared';
 
 import {
   createTemporaryDatabasePath,
@@ -135,24 +140,32 @@ export function createPlainClockItem(stateStore: StateStore, label: string): str
   return createClockItem(stateStore, label, {});
 }
 
-/** Creates a race clock item in "Atalhos" with these fields over a typed green enduro. */
+/**
+ * Creates a race clock item with these fields over a typed green enduro: in "Modelos de
+ * evento" when an event fills a field (a template never sits on a panel, BAJAOVRLAY-67),
+ * in "Atalhos" otherwise.
+ */
 function createClockItem(stateStore: StateStore, label: string, fields: ItemFields): string {
+  const allFields: ItemFields = {
+    sessionName: { kind: 'literal', value: 'Enduro de Resistência' },
+    state: { kind: 'literal', value: 'green' },
+    clockMode: { kind: 'literal', value: 'remaining' },
+    referenceTimeMs: { kind: 'literal', value: 4_560_000 },
+    referenceWallClockMs: { kind: 'literal', value: Date.parse(startOfTheTests) },
+    running: { kind: 'literal', value: true },
+    ...fields,
+  };
+  const home = isItemFilledByAnEvent(allFields)
+    ? { kind: 'eventTemplates' }
+    : { kind: 'quickFire', panelId: 'atalhos' };
   const outcome = stateStore.applyCommand(
     {
       type: 'createItem',
-      home: { kind: 'quickFire', panelId: 'atalhos' },
+      home,
       graphicId: 'race-clock',
       layerId: 'clock',
       label,
-      fields: {
-        sessionName: { kind: 'literal', value: 'Enduro de Resistência' },
-        state: { kind: 'literal', value: 'green' },
-        clockMode: { kind: 'literal', value: 'remaining' },
-        referenceTimeMs: { kind: 'literal', value: 4_560_000 },
-        referenceWallClockMs: { kind: 'literal', value: Date.parse(startOfTheTests) },
-        running: { kind: 'literal', value: true },
-        ...fields,
-      },
+      fields: allFields,
     },
     operatorActor,
   );

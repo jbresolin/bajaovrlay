@@ -19,6 +19,7 @@ the amount, the author and the message, YouTube's emoji shortcodes taken out.
 `bracket-match-bug/` and `bracket-match-card/` (BAJAOVRLAY-65) are the Super Prime's match "agora" (small,
 in a corner, on its own layer) and "a seguir" (logos, names, school and city, on the lower third), each
 field bound to "Chaves › Partida agora" or "Partida a seguir" of the match focus.
+`sponsor-roll-plain/` is the plain sponsor roll: each sponsor once, logo and level, in a corner; it leaves when its pass ends.
 `countdown/`, `sessions-board/`, `sponsor-roll/` and `intermission-board/` (BAJAOVRLAY-46) are the
 narrow boards and cards that read whole lists from Cadastros ("Lista dos cadastros"); each README
 ends with a typical item, field by field.

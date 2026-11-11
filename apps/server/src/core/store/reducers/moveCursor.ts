@@ -36,7 +36,7 @@ export function reduceMoveCursor(
         error: refuseQuickFireButtonAsCursor(item.label, rundown.name),
       };
     }
-    if (item.home.rundownId !== rundown.id) {
+    if (item.home.kind === 'eventTemplates' || item.home.rundownId !== rundown.id) {
       return {
         status: 'refused',
         error: refuseItemOfAnotherRundown(item.label, rundown.name),

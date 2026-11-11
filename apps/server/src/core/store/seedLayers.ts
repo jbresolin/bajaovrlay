@@ -9,6 +9,12 @@ export const channelLogoLayerId = 'channel-logo';
 export const bracketMatchLayerId = 'bracket-match';
 
 /**
+ * The plain sponsor roll's layer, "Patrocinadores (rodízio)" (BAJAOVRLAY-64): the roll's
+ * default layer.
+ */
+export const plainSponsorRollLayerId = 'sponsor-roll-plain';
+
+/**
  * The layers seeded on the first boot, bottom to top, all on the program output; since
  * BAJAOVRLAY-49 the operator edits them on "Saídas e camadas". The z-indexes leave gaps of
  * ten so a layer can be slotted in between later without renumbering the others; the
@@ -17,8 +23,9 @@ export const bracketMatchLayerId = 'bracket-match';
  * clock and the lower third. The notice (BAJAOVRLAY-44, PR #21's layer plan) is the
  * second, at 45: the fastest lap and penalty card under the bug, above the lower third,
  * transient (each notice leaves after its rule's time). The channel logo (BAJAOVRLAY-63)
- * is the third, at 15, between the bug and the ticker, and the match bug (BAJAOVRLAY-65)
- * the fourth, at 17, just above it; their reasons are written beside them.
+ * is the third, at 15, between the bug and the ticker, the match bug (BAJAOVRLAY-65)
+ * the fourth, at 17, just above it, and the plain sponsor roll (BAJAOVRLAY-64) the fifth,
+ * at 12, just above the bug; their reasons are written beside them.
  *
  * Every layer swaps graphics `out-then-in`, the safest policy: two graphics never
  * overlap on the same layer. The logo, the channel logo, the clock and the tower are
@@ -39,6 +46,20 @@ export const seededLayers: Layer[] = [
     zIndex: 10,
     replacePolicy: 'out-then-in',
     persistent: true,
+  },
+  // The plain sponsor roll (BAJAOVRLAY-64) at 12, the first z above the bug's, with the bug's
+  // footprint (the card is the bug's width, top-left by default): a pass covers the sponsor bug
+  // in its corner and, when the roll leaves, the bug is still there under it (João's ruling at
+  // gate 2 of PR #59: the sponsor bug stays up all day). Not persistent: the roll leaves by
+  // itself after one pass. Under the channel logo, the ticker and everything else, like the bug.
+  // Added once to a database that existed before it (seedPlainSponsorRoll.ts).
+  {
+    id: plainSponsorRollLayerId,
+    outputId: programOutputId,
+    name: ptBR.seededLayerNames.plainSponsorRoll,
+    zIndex: 12,
+    replacePolicy: 'out-then-in',
+    persistent: false,
   },
   // The channel logo (BAJAOVRLAY-63) at 15: its own layer, so it can be on air beside the
   // sponsor bug, and the first z above the bug's. Under the ticker, the clock and everything
@@ -138,4 +159,42 @@ export function addSeededLayersMissingFromStoredLayers(storedLayers: Layer[]): {
     (lower, higher) => lower.zIndex - higher.zIndex,
   );
   return { layers: layersInZOrder, addedLayerIds: missingLayers.map((layer) => layer.id) };
+}
+
+/** The layers after a one-off seed of one layer, and whether the operator's layer was in the way. */
+export type SeededLayerAddition = {
+  layers: Layer[];
+  /** Set when the layer could not be added: the operator's own layer holds its height. */
+  zIndexTakenByTheOperator: number | undefined;
+};
+
+/**
+ * The layers with one seeded layer added in its z-order place, for a one-off seed (the
+ * channel logo's, BAJAOVRLAY-63; the plain sponsor roll's, BAJAOVRLAY-64). A layer already
+ * there is kept as it is. When another layer of the same output holds the seeded height,
+ * nothing is added and that height is handed back, so the seed adds nothing that would go on
+ * it and warns. Throws for a layer id seededLayers does not list: a bug in the caller.
+ */
+export function addTheSeededLayerUnlessItsHeightIsTaken(
+  layers: Layer[],
+  seededLayerId: string,
+): SeededLayerAddition {
+  const seededLayer = seededLayers.find((layer) => layer.id === seededLayerId);
+  if (seededLayer === undefined) {
+    throw new Error(`the layer ${seededLayerId} is missing from seededLayers; this is a bug`);
+  }
+  const isLayerThere = layers.some((layer) => layer.id === seededLayerId);
+  if (isLayerThere) {
+    return { layers, zIndexTakenByTheOperator: undefined };
+  }
+  const isHeightTaken = layers.some(
+    (layer) => layer.outputId === seededLayer.outputId && layer.zIndex === seededLayer.zIndex,
+  );
+  if (isHeightTaken) {
+    return { layers, zIndexTakenByTheOperator: seededLayer.zIndex };
+  }
+  const layersInZOrder = [...layers, seededLayer].sort(
+    (lower, higher) => lower.zIndex - higher.zIndex,
+  );
+  return { layers: layersInZOrder, zIndexTakenByTheOperator: undefined };
 }

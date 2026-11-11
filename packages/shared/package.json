@@ -20,6 +20,11 @@
       "types": "./dist/entities/sponsorLevels.d.ts",
       "default": "./dist/entities/sponsorLevels.js"
     },
+    "./sponsorRollPass": {
+      "@bajaovrlay/source": "./src/entities/sponsorRollPass.ts",
+      "types": "./dist/entities/sponsorRollPass.d.ts",
+      "default": "./dist/entities/sponsorRollPass.js"
+    },
     "./scheduleSlotStatus": {
       "@bajaovrlay/source": "./src/entities/scheduleSlotStatus.ts",
       "types": "./dist/entities/scheduleSlotStatus.d.ts",

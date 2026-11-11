@@ -46,8 +46,10 @@ export const DismissEventCommandSchema = z.object({
 export type DismissEventCommand = z.infer<typeof DismissEventCommandSchema>;
 
 /**
- * Undoes "Descartar" ("Desfazer" on the console, "Restaurar" on the "Eventos" page): a
- * dismissed event waits for the operator again. Operators only.
+ * Brings an event back: a dismissed one ("Desfazer" on the console, "Restaurar" on the
+ * "Eventos" page), or a shown or expired one ("Mostrar de novo", BAJAOVRLAY-67). It waits
+ * for the operator again, never for the runner. Operators only; Dados only a dismissed
+ * Super Chat.
  */
 export const RestoreEventCommandSchema = z.object({
   type: z.literal('restoreEvent'),
@@ -58,14 +60,16 @@ export const RestoreEventCommandSchema = z.object({
 export type RestoreEventCommand = z.infer<typeof RestoreEventCommandSchema>;
 
 /**
- * Types an event by hand ("+ Evento"): a penalty or a notice about one car. Team and
- * school may be left out; the server fills them from the cars the sources list.
- * Operators only.
+ * Types an event by hand ("+ Evento"): a penalty or a notice about one car, or a notice
+ * about no car at all, a general notice (BAJAOVRLAY-67). Team and school may be left out;
+ * the server fills them from the cars the sources list, then from Cadastros. A penalty with
+ * no car is refused by the server (PENALTY_WITHOUT_CAR), saying why in pt-BR, which a
+ * schema refusal could not. Operators only.
  */
 export const CreateManualEventCommandSchema = z.object({
   type: z.literal('createManualEvent'),
   noticeKind: z.enum(['penalty', 'notice']),
-  carNumber: z.number().int().positive(),
+  carNumber: z.number().int().positive().optional(),
   teamName: z.string().trim().min(1).optional(),
   schoolName: z.string().trim().min(1).optional(),
   reason: z.string().trim().min(1),

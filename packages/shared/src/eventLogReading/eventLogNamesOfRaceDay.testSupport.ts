@@ -92,6 +92,20 @@ function buildWaitingEvent(eventId: string, kind: InboxEvent['kind'], carNumber:
   return inboxEvent;
 }
 
+/** A general notice typed in "+ Evento", about no car (BAJAOVRLAY-67). */
+function buildWaitingGeneralNotice(): InboxEvent {
+  const detectedAtMs = Date.parse('2026-10-09T14:33:00.000Z');
+  return {
+    eventId: 'manual:aviso-largada-adiada',
+    kind: 'manual',
+    sourceId: null,
+    detectedAtMs,
+    payload: { noticeKind: 'notice', reason: 'Largada adiada em 15 minutos' },
+    status: 'pending',
+    statusChanges: [{ status: 'pending', atMs: detectedAtMs }],
+  };
+}
+
 /** A fictional viewer's Super Chat of R$ 20,00, waiting for approval (BAJAOVRLAY-35). */
 function buildWaitingSuperChat(): InboxEvent {
   const detectedAtMs = Date.parse('2026-10-09T14:32:10.000Z');
@@ -193,6 +207,7 @@ export function buildEventLogNamesOfRaceDay(): EventLogNames {
       buildWaitingEvent('evento-volta-31', 'fastestLap', 31),
       buildWaitingEvent('evento-ocorrencia-47', 'newIncident', 47),
       buildWaitingSuperChat(),
+      buildWaitingGeneralNotice(),
     ],
     instances: [buildAnaSouzaOnAir()],
     triggers: [buildBoxEnteredTrigger()],

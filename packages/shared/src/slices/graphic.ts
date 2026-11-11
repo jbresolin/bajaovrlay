@@ -25,6 +25,13 @@ export const BajaVendorManifestFieldsSchema = z.looseObject({
    * server warns at boot about a name it does not know; this schema only checks the text.
    */
   stepCounter: z.string().min(1).optional(),
+  /**
+   * The name of the server rule that works out, from the data a take puts on air, how long
+   * the graphic stays before it is taken off by itself (the plain sponsor roll's
+   * `onePlainSponsorRollPass`, BAJAOVRLAY-64). It wins over the item's own auto-out. The
+   * server leaves a name it does not know without auto-out; this schema only checks the text.
+   */
+  autoOutRule: z.string().min(1).optional(),
 });
 
 /** A manifest's `v_baja` field after validation. */

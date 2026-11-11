@@ -49,7 +49,14 @@ export const ptBRTriggers = {
     scheduleMomentKindNames: {
       timeOfDay: 'Hora do dia',
       slotStart: 'Antes ou depois de uma sessão',
+      everyMinutes: 'A cada N minutos',
     },
+    everyMinutesLabel: 'A cada (minutos, de 5 a 240)',
+    everyMinutesHint:
+      'Conta a partir do momento em que o gatilho é ligado (ou salvo com outro intervalo). Enquanto o gráfico da macro ainda está no ar, o disparo não acontece.',
+    dayWindowLabel: 'Só entre dois horários',
+    windowFromLabel: 'De (HH:MM)',
+    windowToLabel: 'Até (HH:MM)',
     timeOfDayLabel: 'Hora (HH:MM, horário de Brasília)',
     minutesLabel: 'Minutos',
     slotDirectionLabel: 'Antes ou depois',
@@ -70,6 +77,9 @@ export const ptBRTriggers = {
       sceneMissing: 'Informe a cena do OBS.',
       timeOfDayInvalid: 'Informe o horário como HH:MM, de 00:00 a 23:59 (por exemplo 07:30).',
       minutesInvalid: 'Informe os minutos como um número inteiro de 0 a 720.',
+      everyMinutesInvalid: 'Informe a cada quantos minutos como um número inteiro de 5 a 240.',
+      dayWindowInvalid:
+        'Informe o começo e o fim como HH:MM, de 00:00 a 23:59 (por exemplo 08:00 e 18:00).',
       macroMissing: 'Escolha a macro do gatilho.',
       intervalInvalid: 'Informe o intervalo mínimo em segundos, de 1 a 3600.',
     },
@@ -83,6 +93,9 @@ export const ptBRTriggers = {
     timeOfDay: (timeOfDay: string) => `Às ${timeOfDay}`,
     slotStart: (minutes: number, isBefore: boolean, slotName: string) =>
       `${minutes} min ${isBefore ? 'antes' : 'depois'} de ${slotName}`,
+    everyMinutes: (everyMinutes: number) => `A cada ${everyMinutes} min`,
+    everyMinutesBetween: (everyMinutes: number, from: string, to: string) =>
+      `A cada ${everyMinutes} min, das ${from} às ${to}`,
     everySlot: 'cada sessão',
     slotMissing: 'uma sessão excluída',
   },

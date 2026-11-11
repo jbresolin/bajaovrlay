@@ -19,11 +19,12 @@ export type NoticeVariant = (typeof noticeVariants)[number];
 export type NoticeKind = (typeof noticeKinds)[number];
 
 // Strict: a field the graphic does not know (usually a typo) is refused, not ignored.
-// Every field but the variant and the car is optional: the card leaves out the part a
-// missing field would have filled, so an event that knows little still makes a clean card.
+// Every field but the variant is optional: the card leaves out the part a missing field
+// would have filled, so an event that knows little still makes a clean card. Even the car:
+// a general notice is about the event itself, with no car (BAJAOVRLAY-67).
 const noticeDataSchema = z.strictObject({
   variant: z.enum(noticeVariants),
-  carNumber: z.int().min(1),
+  carNumber: z.int().min(1).optional(),
   teamName: z.string().optional(),
   schoolName: z.string().optional(),
   lapNumber: z.int().min(1).optional(),

@@ -6,7 +6,13 @@ import type { SlicesChangedByCommands } from '../../core/store/reducers/reducerT
 
 /** Why a trigger may not fire now: a short name for code, and the pt-BR reason. */
 export type ReasonNotToFire = {
-  why: 'disabled' | 'paused' | 'tooSoon' | 'causedByAMacro' | 'causedByATriggerStartedRun';
+  why:
+    | 'disabled'
+    | 'paused'
+    | 'tooSoon'
+    | 'stillOnAir'
+    | 'causedByAMacro'
+    | 'causedByATriggerStartedRun';
   message: string;
 };
 
@@ -18,6 +24,8 @@ export type ReasonNotToFire = {
  * - "Pausar gatilhos" is on;
  * - its minimum interval has not passed since its last firing (the interval counts from
  *   the last firing, whatever became of it: a firing that asked counts too);
+ * - for a schedule every N minutes, a layer its macro takes an item onto still has a graphic
+ *   on program (below);
  * - the two rules against loops below, which read `causedBy`, the actor behind what
  *   happened.
  */
@@ -40,6 +48,14 @@ export function findWhyTriggerMayNotFireNow(
   if (isWithinTheInterval) {
     const intervalSeconds = Math.round(trigger.minimumIntervalMs / 1000);
     return { why: 'tooSoon', message: reasons.tooSoon(trigger.name, intervalSeconds) };
+  }
+
+  const layerStillOnAir = findLayerOfTheMacroStillOnAir(slices, trigger);
+  if (layerStillOnAir !== undefined) {
+    return {
+      why: 'stillOnAir',
+      message: reasons.stillOnAir(trigger.name, layerStillOnAir.name),
+    };
   }
 
   const macroIdOfTheCause = readMacroIdOfMacroRunnerActor(causedBy);
@@ -68,6 +84,48 @@ export function findWhyTriggerMayNotFireNow(
   const runOfTheCause = slices.macroRuns.find((run) => run.macroId === macroIdOfTheCause);
   if (runOfTheCause?.trigger !== undefined) {
     return { why: 'causedByATriggerStartedRun', message: reasons.causedByAMacro(trigger.name) };
+  }
+  return undefined;
+}
+
+/**
+ * For a schedule every N minutes (BAJAOVRLAY-64), the first layer its macro takes an item
+ * onto that has anything on the program output now; undefined for any other trigger, or
+ * when every such layer is free. By layer, not by item: a copy of the roll item, or the roll
+ * sent to air from its preview, keeps the layer as busy as the roll itself.
+ * Deliberate: a firing over the plain sponsor roll still on air would take it again, and
+ * the layer's out-then-in would cut the pass short and start it over, every N minutes
+ * while it overruns. The other kinds keep firing over what is on air, as before: a scene
+ * or an event means "now", and the operator chose that by setting the trigger.
+ */
+function findLayerOfTheMacroStillOnAir(
+  slices: SlicesChangedByCommands,
+  trigger: Trigger,
+): { name: string } | undefined {
+  const isInterval =
+    trigger.when.kind === 'schedule' && trigger.when.moment.kind === 'everyMinutes';
+  if (!isInterval) {
+    return undefined;
+  }
+  const macro = slices.macros.find((candidate) => candidate.id === trigger.macroId);
+  if (macro === undefined) {
+    return undefined;
+  }
+  for (const step of macro.steps) {
+    if (step.kind !== 'takeItem') {
+      continue;
+    }
+    const item = slices.items.find((candidate) => candidate.id === step.itemId);
+    if (item === undefined) {
+      continue;
+    }
+    const isLayerBusy = slices.instances.some(
+      (instance) => instance.target === 'program' && instance.layerId === item.layerId,
+    );
+    if (isLayerBusy) {
+      const layer = slices.layers.find((candidate) => candidate.id === item.layerId);
+      return { name: layer?.name ?? item.layerId };
+    }
   }
   return undefined;
 }

@@ -1,6 +1,7 @@
 /**
- * Wires preview.html: registers the graphic as a renderer would, loads it with the data
- * from `?data=` (or the fastest lap sample), plays it in, and adds buttons for play, stop
+ * Wires preview.html: sets the stage from `?stage=` (BAJAOVRLAY-67), registers the graphic
+ * as a renderer would, loads it with the data from `?data=` (or the fastest lap sample),
+ * plays it in, and adds buttons for play, stop
  * and each variant. `data-preview-state` on <body> tells tests and people what happened
  * last: loading, busy, onAir, offAir or error.
  *
@@ -12,6 +13,7 @@ import '@bajaovrlay/theme/ardosia/tokens.css';
 import '@bajaovrlay/theme/fonts/fonts.css';
 
 import { setUpPreviewControls } from '@bajaovrlay/graphics-kit/previewControls';
+import { choosePreviewStage } from '@bajaovrlay/graphics-kit/previewStage';
 
 import NoticeGraphic from './notice.js';
 import { choosePreviewData, createFastestLapSample, createPenaltySample } from './previewData.js';
@@ -21,6 +23,7 @@ const { previewStage, addPreviewButton, runActionAndShowAnswer, showProblem, rea
   setUpPreviewControls(ptBR.preview);
 
 async function startPreview(): Promise<void> {
+  document.body.dataset.stage = choosePreviewStage(location.search);
   customElements.define('baja-notice', NoticeGraphic);
   const notice = document.createElement('baja-notice') as NoticeGraphic;
   previewStage.append(notice);

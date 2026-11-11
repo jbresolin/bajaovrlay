@@ -1,7 +1,9 @@
 import type { Instance, InstanceTarget } from '@bajaovrlay/shared';
 
+import { readAutoOutByTheGraphicsRule } from '../autoOutRules.js';
 import {
   refuseFieldGraphicCannotStamp,
+  refuseGraphicWithNothingToShow,
   refuseInvalidGraphicData,
   refuseUnknownGraphic,
   refuseUnknownLayer,
@@ -111,6 +113,16 @@ export function putGraphicOnOutput(
     return { status: 'refused', error: refuseInvalidGraphicData(graphic, problemInData) };
   }
 
+  // The graphic's own auto-out rule (the plain sponsor roll's pass, BAJAOVRLAY-64), read
+  // before anything leaves the layer: a take that would show nothing is refused here.
+  const autoOutByTheRule = readAutoOutByTheGraphicsRule(graphic, dataForTheGraphic);
+  if (autoOutByTheRule.kind === 'nothingToShow') {
+    return {
+      status: 'refused',
+      error: refuseGraphicWithNothingToShow(graphic.id, autoOutByTheRule.why),
+    };
+  }
+
   // A new instance is `loading` until a renderer reports what happened to it on
   // screen; reportInstanceStatus then moves it to `on-air` or `failed`.
   const newInstance: Instance = {
@@ -142,8 +154,14 @@ export function putGraphicOnOutput(
   if (request.eventId !== undefined) {
     newInstance.eventId = request.eventId;
   }
-  if (request.autoOutAfterMs !== undefined) {
-    newInstance.autoOutAfterMs = request.autoOutAfterMs;
+  // An event's rule duration wins; otherwise the graphic's own auto-out rule, worked out
+  // from the data on air (the plain sponsor roll's pass, BAJAOVRLAY-64), wins over the
+  // item's delay, which the auto-out reads when the instance carries none.
+  const autoOutAfterMs =
+    request.autoOutAfterMs ??
+    (autoOutByTheRule.kind === 'onAirFor' ? autoOutByTheRule.milliseconds : undefined);
+  if (autoOutAfterMs !== undefined) {
+    newInstance.autoOutAfterMs = autoOutAfterMs;
   }
   const instancesKept = slices.instances.filter((instance) => {
     const isOnTheSameLayerAndOutput =

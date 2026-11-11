@@ -1,5 +1,11 @@
-import type { Graphic, Item, ItemFields } from '@bajaovrlay/shared';
-import { type Ref, useEffect, useImperativeHandle, useState } from 'react';
+import {
+  type Graphic,
+  type InboxEventKind,
+  type Item,
+  type ItemFields,
+  readSampleEventPayload,
+} from '@bajaovrlay/shared';
+import { type Ref, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
 import { useEntityLibrary } from '@/features/entityLibrary/useEntityLibrary';
@@ -68,6 +74,12 @@ export type ItemGraphicFieldsFormProps = {
    * keeps its save buttons off meanwhile. It must stay the same function between draws.
    */
   onImageUploadingChange: (fieldKey: string, isUploading: boolean) => void;
+  /**
+   * On an event template (BAJAOVRLAY-67): the kind whose sample event the "Evento" fields
+   * show as examples, which also offers a car group "Do evento". Undefined on any other
+   * item.
+   */
+  sampleEventKind: InboxEventKind | undefined;
 };
 
 /**
@@ -137,7 +149,20 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
   const hasFieldsThatCouldNotBeRead = graphicFields.labelsOfFieldsThatCouldNotBeRead.length > 0;
   // The item editor alone lets a field read a data source (BAJAOVRLAY-20) or the entity
   // library (BAJAOVRLAY-19).
-  const bindingOptions = useBindingOptionsOfItemEditor();
+  const bindingOptionsOfTheEditor = useBindingOptionsOfItemEditor();
+  const { sampleEventKind } = props;
+  // The same object between draws while neither part changes, as the rows are memoised:
+  // the sample is read here, once per kind, since each read is a fresh copy.
+  const bindingOptions = useMemo(
+    () =>
+      sampleEventKind === undefined
+        ? bindingOptionsOfTheEditor
+        : {
+            ...bindingOptionsOfTheEditor,
+            sampleEventPayload: readSampleEventPayload(sampleEventKind),
+          },
+    [bindingOptionsOfTheEditor, sampleEventKind],
+  );
   const entityLibrary = useEntityLibrary();
 
   return (

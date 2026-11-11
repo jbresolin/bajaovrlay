@@ -30,15 +30,32 @@ const controlId = 'item-editor-home';
  * is written in front of the id: a panel and a rundown with the same id stay apart.
  */
 function writeHomeAsOptionValue(home: ItemHome): string {
+  if (home.kind === 'eventTemplates') {
+    return 'eventTemplates';
+  }
   return home.kind === 'rundown' ? `rundown:${home.rundownId}` : `quickFire:${home.panelId}`;
 }
 
-/** The places a new item may go: the rundown on screen first, then each panel in tab order. */
+/**
+ * The places a new item may go: the rundown on screen first, then each panel in tab order.
+ * A new template ("+ Novo modelo" in "Regras", BAJAOVRLAY-67) goes among the templates
+ * only: no panel takes a template, and the server refuses one there.
+ */
 function listHomeChoices(
   rundownShown: Rundown | undefined,
   panels: QuickFirePanel[],
+  chosenHome: ItemHome,
 ): HomeChoice[] {
   const homeOptions = ptBR.itemEditor.homeOptions;
+  if (chosenHome.kind === 'eventTemplates') {
+    return [
+      {
+        value: writeHomeAsOptionValue(chosenHome),
+        optionName: homeOptions.eventTemplates,
+        home: chosenHome,
+      },
+    ];
+  }
   const choices: HomeChoice[] = [];
   if (rundownShown !== undefined) {
     const home: ItemHome = { kind: 'rundown', rundownId: rundownShown.id };
@@ -70,7 +87,7 @@ function listHomeChoices(
  * item's form, because it is sent as createItem's `home` and never as a change.
  */
 export function ItemHomeSelect(props: ItemHomeSelectProps) {
-  const choices = listHomeChoices(props.rundownShown, props.panels);
+  const choices = listHomeChoices(props.rundownShown, props.panels, props.chosenHome);
 
   function chooseHomeOfOptionValue(optionValue: string): void {
     const choice = choices.find((candidate) => candidate.value === optionValue);

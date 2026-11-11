@@ -145,7 +145,7 @@ describe('the rundowns and items on a database written before they existed (M0)'
       seededMainSessionRundown,
     ]);
     expect(slices.items, 'an M0 database starts with no items').toEqual([]);
-    expect(slices.layers.length, 'the nine stored layers must load back').toBe(9);
+    expect(slices.layers.length, 'the ten stored layers must load back').toBe(10);
     expect(
       readUpdatedAtBySliceName(database),
       'only graphics (refreshed every boot) and the seeded rows may be written by this boot',
@@ -163,6 +163,8 @@ describe('the rundowns and items on a database written before they existed (M0)'
       dataSources: '2026-10-09T08:00:00.000Z',
       // The default event rules, seeded at the first boot too (BAJAOVRLAY-44).
       eventRules: '2026-10-09T08:00:00.000Z',
+      // The plain sponsor roll's trigger, seeded once at the first boot (BAJAOVRLAY-64).
+      triggers: '2026-10-09T08:00:00.000Z',
     });
   });
 });

@@ -1,6 +1,7 @@
 // The history sentences of the commands about the data the show reads (BAJAOVRLAY-30):
 // sources and recordings, corrections, the event inbox, the library and the images. One
 // named formatter per command type, gathered in sentenceOfEachCommandType.ts.
+import type { EventLogDetails } from '../slices/eventLogEntry.js';
 import type { CommandOfType } from './commandOfType.js';
 import type { EventLogNames } from './eventLogNames.js';
 import {
@@ -187,12 +188,25 @@ export function describeApproveEvent(
   return sentences.approvedEvent(nameInboxEvent(command.eventId, names));
 }
 
-/** restoreEvent ("Desfazer" or "Restaurar"). */
+/**
+ * restoreEvent: "Desfazer" or "Restaurar" on a dismissed event, or "Mostrar de novo" on a
+ * shown or expired one (BAJAOVRLAY-67), told apart by the status the row's details say it
+ * came back from. A row written before those details reads as a restore.
+ */
 export function describeRestoreEvent(
   command: CommandOfType<'restoreEvent'>,
   names: EventLogNames,
+  details?: EventLogDetails,
 ): string {
-  return sentences.restoredEvent(nameInboxEvent(command.eventId, names));
+  const eventName = nameInboxEvent(command.eventId, names);
+  const restoredFrom = details?.restoredFrom;
+  if (restoredFrom === 'shown' || restoredFrom === 'expired') {
+    return sentences.restoredEventToShowAgain(
+      eventName,
+      sentences.whatARestoredEventWas[restoredFrom],
+    );
+  }
+  return sentences.restoredEvent(eventName);
 }
 
 /** dismissTriggerFiring: "Descartar" on a firing that waits, as on an event. */
@@ -211,12 +225,21 @@ export function describeRestoreTriggerFiring(
   return sentences.restoredFiring(nameTriggerFiring(command.firingId, names));
 }
 
-/** createManualEvent ("+ Evento"): a penalty or a notice, the car and the reason. */
+/**
+ * createManualEvent ("+ Evento"): a penalty or a notice, the car and the reason, or a
+ * general notice, about no car (BAJAOVRLAY-67).
+ */
 export function describeCreateManualEvent(command: CommandOfType<'createManualEvent'>): string {
-  if (command.noticeKind === 'penalty') {
-    return sentences.typedPenalty(command.carNumber, command.reason);
+  const carNumber = command.carNumber;
+  if (command.noticeKind === 'notice') {
+    return carNumber === undefined
+      ? sentences.typedGeneralNotice(command.reason)
+      : sentences.typedNotice(carNumber, command.reason);
   }
-  return sentences.typedNotice(command.carNumber, command.reason);
+  // Only a refused row has a penalty with no car (PENALTY_WITHOUT_CAR); it still reads.
+  return carNumber === undefined
+    ? sentences.typedPenaltyWithoutCar(command.reason)
+    : sentences.typedPenalty(carNumber, command.reason);
 }
 
 /** updateEventRule ("Regras"). */

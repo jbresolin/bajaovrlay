@@ -1,24 +1,26 @@
 // Test support: a real store on a temporary SQLite file, holding the real manifests of the
-// lower third, the notice and the countdown, three items that use them, the macros the
-// brief's examples run, the macro runner and the trigger service, all on Vitest's fake
+// lower third, the notice, the countdown and the plain sponsor roll, four items that use
+// them, the macros the brief's examples run, the macro runner, the trigger service and, when
+// a test asks, the auto-out, all on Vitest's fake
 // time (the clock and every timer move only when a test moves them). Every call builds its
 // own store, database and service, so no test can change what another test sees.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import type { MacroStep, ObsStatus, TriggerFiring } from '@bajaovrlay/shared';
 import { expect, onTestFinished, vi } from 'vitest';
 
-import { openTemporaryDatabase } from '../../core/db/temporaryDatabase.testSupport.js';
+import {
+  openDatabaseForTests,
+  openTemporaryDatabase,
+} from '../../core/db/temporaryDatabase.testSupport.js';
+import type { ServerLogger } from '../../core/logger/createLogger.js';
 import {
   createRecordingLogger,
   type RecordedLogLine,
 } from '../../core/logger/recordingLogger.testSupport.js';
-import { createGraphicsFolderWithUnbuiltRaceClock } from '../../core/store/builtGraphicsFolder.testSupport.js';
+import { startAutoOutScheduler } from '../../core/store/autoOut.js';
 import { obsConnectionActor } from '../../core/store/commandActors.js';
 import { createStateStore, type StateStore } from '../../core/store/createStateStore.js';
 import { startMacroRunner } from '../../core/store/macroRunner.js';
+import { createGraphicsFolderWithTheRealGraphicsOfTheMacros } from './realGraphicsOfTheMacros.testSupport.js';
 import { startTriggerService } from './service.js';
 
 /** The operator's actor in these tests: one control page's connection. */
@@ -27,10 +29,11 @@ export const operatorActor = 'operador:conexao-12';
 /** Saturday of the 2027 national, 11:00 in São Paulo (14:00 UTC): before the Enduro. */
 export const startOfRaceDay = '2027-08-14T14:00:00.000Z';
 
-/** The three items the macros take, by id. */
+/** The four items the macros take, by id. */
 export const lowerThirdItemId = 'item-entrevistado-no-box';
 export const penaltyNoticeItemId = 'item-aviso-de-penalidade';
 export const countdownItemId = 'item-contagem-do-enduro';
+export const plainSponsorRollItemId = 'item-patrocinadores-simples';
 
 /** The macros of the brief's examples, by id. */
 export const interviewInTheBoxMacroId = 'macro-entrevista-no-box';
@@ -38,33 +41,13 @@ export const trackReplayMacroId = 'macro-replay-da-pista';
 export const penaltyNoticeMacroId = 'macro-aviso-de-penalidade';
 export const enduroCountdownMacroId = 'macro-contagem-do-enduro';
 export const goToTheBoxMacroId = 'macro-ir-para-o-box';
-
-/** The graphics whose real manifests the store registers, by package folder. */
-const graphicFoldersUsed = ['lower-third', 'notice', 'countdown'];
-
-/** packages/graphics in this repository, where the real manifests are. */
-const repositoryGraphicsFolder = fileURLToPath(
-  new URL('../../../../../packages/graphics/', import.meta.url),
-);
+export const plainSponsorRollMacroId = 'macro-patrocinadores-simples';
 
 /**
- * A temporary graphics folder with the lower third, the notice and the countdown "built":
- * their real manifests copied into dist/, so a take here is refused or accepted exactly as
- * on race day.
+ * How long the plain roll's pass lasts with its two sponsors (BAJAOVRLAY-64): the 0,4 s
+ * entrance, Bosch's 8 s (Diamante) and SAE Brasil's 5 s (Realização).
  */
-function createGraphicsFolderWithTheRealLowerThirdNoticeAndCountdown(): string {
-  const graphicsFolder = createGraphicsFolderWithUnbuiltRaceClock();
-  for (const folderName of graphicFoldersUsed) {
-    const manifestText = readFileSync(
-      join(repositoryGraphicsFolder, folderName, `${folderName}.ograf.json`),
-      'utf8',
-    );
-    const distFolder = join(graphicsFolder, folderName, 'dist');
-    mkdirSync(distFolder, { recursive: true });
-    writeFileSync(join(distFolder, `${folderName}.ograf.json`), manifestText);
-  }
-  return graphicsFolder;
-}
+export const plainSponsorRollPassMs = 13_400;
 
 /** Applies a command as the operator and fails the test at once if it is refused. */
 export function applyAsTheOperatorOrThrow(store: StateStore, command: unknown): void {
@@ -74,7 +57,7 @@ export function applyAsTheOperatorOrThrow(store: StateStore, command: unknown): 
   }
 }
 
-/** Creates the three items the macros take, each with plain values of its own. */
+/** Creates the four items the macros take, each with plain values of its own. */
 function createTheItemsOfTheMacros(store: StateStore): void {
   const home = { kind: 'quickFire', panelId: 'atalhos' };
   applyAsTheOperatorOrThrow(store, {
@@ -110,6 +93,23 @@ function createTheItemsOfTheMacros(store: StateStore): void {
       layout: { kind: 'literal', value: 'card' },
       sessionName: { kind: 'literal', value: 'Enduro de Resistência' },
       startsAtMs: { kind: 'literal', value: Date.parse('2027-08-14T16:00:00.000Z') },
+    },
+  });
+  applyAsTheOperatorOrThrow(store, {
+    type: 'createItem',
+    home,
+    graphicId: 'sponsor-roll-plain',
+    layerId: 'sponsor-roll-plain',
+    label: 'Patrocinadores (simples)',
+    fields: {
+      sponsors: {
+        kind: 'literal',
+        value: [
+          { name: 'Bosch', level: 'diamante', logoUrl: '/media/logo-bosch.png' },
+          { name: 'SAE Brasil', level: 'realizacao', logoUrl: '/media/logo-sae.png' },
+        ],
+      },
+      corner: { kind: 'literal', value: 'top-left' },
     },
   });
 }
@@ -154,6 +154,7 @@ function buildDefaultMacroSteps(): Record<string, MacroStep[]> {
       },
     ],
     [goToTheBoxMacroId]: [{ kind: 'obsScene', sceneName: 'Box', target: 'program' }],
+    [plainSponsorRollMacroId]: [{ kind: 'takeItem', itemId: plainSponsorRollItemId }],
   };
 }
 
@@ -164,6 +165,7 @@ const labelOfEachMacro: Record<string, string> = {
   [penaltyNoticeMacroId]: 'Aviso de penalidade',
   [enduroCountdownMacroId]: 'Contagem do Enduro',
   [goToTheBoxMacroId]: 'Ir para o box',
+  [plainSponsorRollMacroId]: 'Patrocinadores (simples)',
 };
 
 /** What a test drives and reads. */
@@ -182,17 +184,47 @@ export type TriggersOnTheStore = {
   stepTheClockBack: (milliseconds: number) => void;
   /** Every line the store, the macro runner and the trigger service have logged. */
   readRecordedLogLines: () => RecordedLogLine[];
+  /**
+   * Stops the store's services and boots a new store on the same database file, with the
+   * macro runner, the trigger service and (if asked) the auto-out started again, as a
+   * restart of the server does; returns the new store.
+   */
+  restartTheServer: () => StateStore;
 };
+
+/** Starts the macro runner, the trigger service and, if asked, the auto-out on a store. */
+function startTheServicesOf(
+  store: StateStore,
+  logger: ServerLogger,
+  readTheFakedWallClock: () => Date,
+  isAutoOutRunning: boolean,
+): () => void {
+  const macroRunner = startMacroRunner({ stateStore: store, logger });
+  const triggerService = startTriggerService({
+    stateStore: store,
+    logger,
+    readCurrentTime: readTheFakedWallClock,
+  });
+  const autoOutScheduler = isAutoOutRunning
+    ? startAutoOutScheduler({ stateStore: store, logger })
+    : undefined;
+  return () => {
+    triggerService.stop();
+    macroRunner.stop();
+    autoOutScheduler?.stop();
+  };
+}
 
 /**
  * Builds what every trigger test starts from: the fake clock at 11:00 in São Paulo on race
- * day, a store on a fresh database with the three items and five macros (the steps of any
- * may be replaced), the macro runner and the trigger service. Trigger ids are
+ * day, a store on a fresh database with the four items and six macros (the steps of any
+ * may be replaced), the macro runner and the trigger service, and the auto-out when
+ * `isAutoOutRunning` (the plain roll then leaves after its pass). Trigger ids are
  * `gatilho-1`, `gatilho-2`…, firing ids `disparo-1`, `disparo-2`…, counted from what the
  * store holds (a test that deletes a trigger and creates another would reuse an id).
  */
 export function startTriggersOnTheStore(
-  options: { macroSteps?: MacroStepsOfTheTests } = {},
+  options: { macroSteps?: MacroStepsOfTheTests; isAutoOutRunning?: boolean } = {},
 ): TriggersOnTheStore {
   vi.useFakeTimers({ now: Date.parse(startOfRaceDay) });
   onTestFinished(() => {
@@ -202,15 +234,21 @@ export function startTriggersOnTheStore(
   // own; the server clock's own behaviour is tested in core/time.
   const readTheFakedWallClock = () => new Date();
   const { database, databasePath } = openTemporaryDatabase();
-  const itemIdsInCreationOrder = [lowerThirdItemId, penaltyNoticeItemId, countdownItemId];
+  const itemIdsInCreationOrder = [
+    lowerThirdItemId,
+    penaltyNoticeItemId,
+    countdownItemId,
+    plainSponsorRollItemId,
+  ];
   // The store asks for every kind of id at every command, so an id is chosen from what
   // is being made, never from how many times it was asked for.
   let idOfTheNextMacro = 'macro-sem-id';
   const { logger, readRecordedLines } = createRecordingLogger();
+  const graphicPackagesFolder = createGraphicsFolderWithTheRealGraphicsOfTheMacros();
   const store: StateStore = createStateStore({
     database,
     logger,
-    graphicPackagesFolder: createGraphicsFolderWithTheRealLowerThirdNoticeAndCountdown(),
+    graphicPackagesFolder,
     readCurrentTime: readTheFakedWallClock,
     createItemId: () => {
       const itemIdsHeld = store.readAllSlices().items.map((item) => item.id);
@@ -222,6 +260,14 @@ export function startTriggersOnTheStore(
     createTriggerFiringId: () =>
       `disparo-${String(store.readAllSlices().triggerActivity.firings.length + 1)}`,
   });
+  // The seeded "Patrocinadores a cada 30 min" and its macro (BAJAOVRLAY-64) are deleted
+  // first, as an operator may: these tests make their own triggers and macros, numbered from
+  // gatilho-1, and read their lists whole. seededPlainSponsorRoll.test.ts proves the seed.
+  applyAsTheOperatorOrThrow(store, {
+    type: 'deleteTrigger',
+    triggerId: 'patrocinadores-a-cada-30-min',
+  });
+  applyAsTheOperatorOrThrow(store, { type: 'deleteMacro', macroId: 'patrocinadores-simples' });
   createTheItemsOfTheMacros(store);
   const stepsOfEachMacro = { ...buildDefaultMacroSteps(), ...options.macroSteps };
   for (const [macroId, label] of Object.entries(labelOfEachMacro)) {
@@ -233,16 +279,9 @@ export function startTriggersOnTheStore(
       steps: stepsOfEachMacro[macroId] ?? [],
     });
   }
-  const macroRunner = startMacroRunner({ stateStore: store, logger });
-  const triggerService = startTriggerService({
-    stateStore: store,
-    logger,
-    readCurrentTime: readTheFakedWallClock,
-  });
-  onTestFinished(() => {
-    triggerService.stop();
-    macroRunner.stop();
-  });
+  const isAutoOutRunning = options.isAutoOutRunning === true;
+  let stopTheServices = startTheServicesOf(store, logger, readTheFakedWallClock, isAutoOutRunning);
+  onTestFinished(() => stopTheServices());
   return {
     store,
     databasePath,
@@ -256,6 +295,22 @@ export function startTriggersOnTheStore(
       vi.setSystemTime(Date.now() - milliseconds);
     },
     readRecordedLogLines: readRecordedLines,
+    restartTheServer: () => {
+      stopTheServices();
+      const storeAfterTheRestart = createStateStore({
+        database: openDatabaseForTests(databasePath),
+        logger,
+        graphicPackagesFolder,
+        readCurrentTime: readTheFakedWallClock,
+      });
+      stopTheServices = startTheServicesOf(
+        storeAfterTheRestart,
+        logger,
+        readTheFakedWallClock,
+        isAutoOutRunning,
+      );
+      return storeAfterTheRestart;
+    },
   };
 }
 

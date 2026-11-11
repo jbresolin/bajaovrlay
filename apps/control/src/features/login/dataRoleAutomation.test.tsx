@@ -177,7 +177,7 @@ describe('the rules, for Dados', () => {
 
     // Assert: what it airs and for how long are the Produtor's; its mode may go down.
     expect(
-      fastestLapRow.getByRole('combobox', { name: 'Item de Volta mais rápida' }),
+      fastestLapRow.getByRole('combobox', { name: 'Trocar o modelo de Volta mais rápida' }),
       'its item',
     ).toBeDisabled();
     expect(

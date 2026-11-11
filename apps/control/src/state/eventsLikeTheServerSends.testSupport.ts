@@ -1,9 +1,10 @@
 /**
  * Test support: the event inbox as the server sends it (BAJAOVRLAY-44), with realistic
- * events of the 2027 enduro, the two notice items of the panel "Avisos" and João's default
- * rules naming them. Every function builds fresh objects, so a test can change one thing.
+ * events of the 2027 enduro, the two notice templates in "Modelos de evento"
+ * (BAJAOVRLAY-67) and João's default rules naming them, and three teams of Cadastros.
+ * Every function builds fresh objects, so a test can change one thing.
  */
-import type { EventRule, InboxEvent, Item, Slices } from '@bajaovrlay/shared';
+import type { EventRule, InboxEvent, Item, Slices, Team } from '@bajaovrlay/shared';
 
 import { buildSlicesWithShortcutsAndMacros } from './quickFireLikeTheServerSends.testSupport';
 
@@ -15,12 +16,12 @@ function minutesBeforeNowMs(minutesAgo: number): number {
   return nowInTheInboxTests.getTime() - minutesAgo * 60_000;
 }
 
-/** The two notice items the server seeds in the panel "Avisos". */
+/** The two notice templates the server seeds in "Modelos de evento". */
 export function buildNoticeItems(): Item[] {
   return [
     {
       id: 'volta-mais-rapida',
-      home: { kind: 'quickFire', panelId: 'avisos' },
+      home: { kind: 'eventTemplates' },
       order: 0,
       graphicId: 'notice',
       layerId: 'notice',
@@ -34,7 +35,7 @@ export function buildNoticeItems(): Item[] {
     },
     {
       id: 'penalidade',
-      home: { kind: 'quickFire', panelId: 'avisos' },
+      home: { kind: 'eventTemplates' },
       order: 1,
       graphicId: 'notice',
       layerId: 'notice',
@@ -196,20 +197,30 @@ export function buildShownManualNoticeOfCar12(minutesAgo: number): InboxEvent {
 }
 
 /**
- * The strip's slices (panels "Atalhos" and "Box", the macros) plus the panel "Avisos" with
- * its two notice items, the default rules, and the events given.
+ * Three teams of Cadastros, as the entity library holds them (out of car-number order, as
+ * an import may leave them): car 47 Carnaúba Baja (UFERSA), car 12 Gralha Azul Baja (UTFPR)
+ * and car 31 Acauã Baja (Mauá).
  */
-export function buildSlicesWithTheInbox(events: InboxEvent[]): Slices {
+export function buildTeamsOfCadastros(): Team[] {
+  return [
+    { carNumber: 47, teamName: 'Carnaúba Baja', schoolName: 'UFERSA' },
+    { carNumber: 12, teamName: 'Gralha Azul Baja', schoolName: 'UTFPR' },
+    { carNumber: 31, teamName: 'Acauã Baja', schoolName: 'Mauá' },
+  ];
+}
+
+/**
+ * The strip's slices (panels "Atalhos" and "Box", the macros) plus the two notice templates
+ * in "Modelos de evento", the default rules, the events given, and the teams given (none
+ * when left out).
+ */
+export function buildSlicesWithTheInbox(events: InboxEvent[], teams: Team[] = []): Slices {
   const slices = buildSlicesWithShortcutsAndMacros();
-  const lastPanelOrder = Math.max(...slices.quickFirePanels.map((panel) => panel.order));
   return {
     ...slices,
-    quickFirePanels: [
-      ...slices.quickFirePanels,
-      { id: 'avisos', name: 'Avisos', order: lastPanelOrder + 1 },
-    ],
     items: [...slices.items, ...buildNoticeItems()],
     eventRules: buildDefaultEventRules(),
     events,
+    teams,
   };
 }

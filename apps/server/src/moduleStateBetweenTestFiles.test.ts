@@ -83,6 +83,9 @@ const moduleStateThatCannotLeak = [
   // fixed where it is made, and Node's resolver keeps no cache, so each look-up stands
   // alone. Tests hand in their own look-up and never reach it.
   'apps/server/src/core/time/ntpPolls.ts: resolverOfTheNtpServers',
+  // The São Paulo wall-clock formatter of the schedule triggers (BAJAOVRLAY-64): its options
+  // are fixed where it is made, and each formatToParts() call stands alone.
+  'apps/server/src/modules/triggers/scheduleMoments.ts: saoPauloWallClockFormatter',
 ];
 
 /** Every TypeScript file under `folder`, subfolders included, as full paths. */

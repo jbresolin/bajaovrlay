@@ -10,7 +10,7 @@ instance's `target` (program or preview: on air or in Prévia); `packages/shared
 README.md` says more.
 
 Start at `loadOutputAndLayerSlices.ts`: a new database is seeded with program and the
-eight layers of `core/store/seedLayers.ts`; a database written before outputs gains
+ten layers of `core/store/seedLayers.ts`; a database written before outputs gains
 program with every layer it had assigned to it. From then on the layers are the
 operator's own, and the seed is no longer caught up at boot, except by a one-off seed
 recorded in `seeds_done` (the channel logo's, `core/store/seedChannelLogo.ts`).

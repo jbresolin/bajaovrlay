@@ -21,6 +21,7 @@ import { describe, expect, it } from 'vitest';
 
 import { type CommandInput, CommandSchema } from '../commands/command.js';
 import { buildFakeMediaId } from '../media/fakeMediaIds.testSupport.js';
+import type { EventLogDetails } from '../slices/eventLogEntry.js';
 import { commandGroupOfEachCommandType } from './eventLogCommandGroups.js';
 import { buildEventLogNamesOfRaceDay } from './eventLogNamesOfRaceDay.testSupport.js';
 import { describeCommand } from './sentenceOfEachCommandType.js';
@@ -28,7 +29,12 @@ import { describeCommand } from './sentenceOfEachCommandType.js';
 // The media id of "logo-petrobras.png": a SHA-256, as the media store names its files.
 const petrobrasLogoMediaId = buildFakeMediaId(17);
 
-const sentenceScenarios: Array<{ name: string; command: CommandInput; expected: string }> = [
+const sentenceScenarios: Array<{
+  name: string;
+  command: CommandInput;
+  details?: EventLogDetails;
+  expected: string;
+}> = [
   // A new source reads by the label given.
   {
     name: 'createDataSource names the label given',
@@ -157,6 +163,27 @@ const sentenceScenarios: Array<{ name: string; command: CommandInput; expected: 
     command: { type: 'restoreEvent', eventId: 'evento-ocorrencia-47' },
     expected: 'Restaurou o evento ocorrência do carro 47',
   },
+  // "Mostrar de novo" (BAJAOVRLAY-67): the row says the event had already been shown.
+  {
+    name: 'restoreEvent of a shown event says it was shown before',
+    command: { type: 'restoreEvent', eventId: 'evento-ocorrencia-47' },
+    details: { restoredFrom: 'shown' },
+    expected: 'Trouxe de volta para mostrar de novo o evento ocorrência do carro 47, já exibido',
+  },
+  // "Mostrar de novo" on an event that expired before anyone showed it.
+  {
+    name: 'restoreEvent of an expired event says it had expired',
+    command: { type: 'restoreEvent', eventId: 'evento-volta-31' },
+    details: { restoredFrom: 'expired' },
+    expected:
+      'Trouxe de volta para mostrar de novo o evento volta mais rápida do carro 31, expirado',
+  },
+  // A general notice in the inbox reads as one, not as an event of no car.
+  {
+    name: 'restoreEvent names a general notice as "aviso geral"',
+    command: { type: 'restoreEvent', eventId: 'manual:aviso-largada-adiada' },
+    expected: 'Restaurou o evento aviso geral',
+  },
   // "+ Evento": a penalty, its car and reason.
   {
     name: 'createManualEvent of a penalty names the car and the reason',
@@ -168,6 +195,16 @@ const sentenceScenarios: Array<{ name: string; command: CommandInput; expected: 
       penaltyText: '+30 segundos',
     },
     expected: 'Digitou uma penalidade para o carro 47: Queima de largada',
+  },
+  // "+ Evento" with "Sem equipe (aviso geral)" (BAJAOVRLAY-67): a notice about no car.
+  {
+    name: 'createManualEvent of a notice with no car reads as a general notice',
+    command: {
+      type: 'createManualEvent',
+      noticeKind: 'notice',
+      reason: 'Largada adiada em 15 minutos',
+    },
+    expected: 'Digitou um aviso geral: Largada adiada em 15 minutos',
   },
   // "Regras".
   {
@@ -280,13 +317,13 @@ describe('the sentences of the group "sourcesAndData"', () => {
     expect(typesWithoutARow, 'each command type of the group must have a row below').toEqual([]);
   });
 
-  it.each(sentenceScenarios)('$name', ({ command, expected }) => {
+  it.each(sentenceScenarios)('$name', ({ command, details, expected }) => {
     // Arrange: the command checked as the server checks it, and the race day's names.
     const validCommand = CommandSchema.parse(command);
     const names = buildEventLogNamesOfRaceDay();
 
-    // Act: write its history sentence.
-    const sentence = describeCommand(validCommand, names);
+    // Act: write its history sentence, with the row's details when it has some.
+    const sentence = describeCommand(validCommand, names, details);
 
     // Assert: exactly the sentence the operator reads.
     expect(sentence, 'the history must read the command in these words').toBe(expected);

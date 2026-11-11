@@ -64,12 +64,17 @@ export const ptBREventLogReading = {
       `Super Chat de ${authorName} (${amountText})`,
     /** An event with no car and no viewer: only a database edited by hand has one. */
     eventWithoutCar: (kindLabel: string) => kindLabel,
+    /** A notice typed in "+ Evento" about no car, the event itself (BAJAOVRLAY-67). */
+    generalNotice: 'aviso geral',
     /** ""Tarja – Ana Souza" na camada Tarja (Programa)": what an instance showed. */
     instanceOnLayer: (itemName: string, layerName: string) => `${itemName} na camada ${layerName}`,
     inRundown: (rundownName: string) => `no rundown ${rundownName}`,
     inPanel: (panelName: string) => `no painel ${panelName}`,
     toRundown: (rundownName: string) => `para o rundown ${rundownName}`,
     toPanel: (panelName: string) => `para o painel ${panelName}`,
+    /** The one home of the event templates, shown in "Regras" (BAJAOVRLAY-67). */
+    inEventTemplates: 'em Modelos de evento',
+    toEventTemplates: 'para Modelos de evento',
   },
   eventKindLabels: {
     newIncident: 'ocorrência',
@@ -215,6 +220,10 @@ export const ptBREventLogReading = {
       `Desfez a correção do ${fieldText} na fonte ${sourceName}`,
     dismissedEvent: (eventName: string) => `Descartou o evento ${eventName}`,
     restoredEvent: (eventName: string) => `Restaurou o evento ${eventName}`,
+    /** "Mostrar de novo" (BAJAOVRLAY-67): the event was shown, or had expired, before. */
+    restoredEventToShowAgain: (eventName: string, whatItWas: string) =>
+      `Trouxe de volta para mostrar de novo o evento ${eventName}, ${whatItWas}`,
+    whatARestoredEventWas: { shown: 'já exibido', expired: 'expirado' },
     approvedEvent: (eventName: string) => `Aprovou o ${eventName}`,
     dismissedFiring: (firingName: string) => `Descartou ${firingName}`,
     restoredFiring: (firingName: string) => `Restaurou ${firingName}`,
@@ -222,6 +231,8 @@ export const ptBREventLogReading = {
       `Digitou uma penalidade para o carro ${String(carNumber)}: ${reason}`,
     typedNotice: (carNumber: number, reason: string) =>
       `Digitou um aviso para o carro ${String(carNumber)}: ${reason}`,
+    typedGeneralNotice: (reason: string) => `Digitou um aviso geral: ${reason}`,
+    typedPenaltyWithoutCar: (reason: string) => `Digitou uma penalidade sem carro: ${reason}`,
     changedEventRule: (kindLabel: string) => `Mudou a regra dos eventos de ${kindLabel}`,
     detectedEvents: (eventNames: string[]) =>
       `Detectou ${countWithWord(eventNames.length, 'evento', 'eventos')}: ${eventNames.join(', ')}`,

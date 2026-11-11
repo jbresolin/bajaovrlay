@@ -62,6 +62,19 @@ export function replaceInboxEvent(events: InboxEvent[], changedEvent: InboxEvent
 }
 
 /**
+ * The slice with one event replaced by its changed copy, moved to the end where the newest
+ * events are. For an event that waits again (a restore): left in its old place, it would be
+ * the next to fall out of a full slice while the operator still has to act on it.
+ */
+export function replaceInboxEventAtTheEnd(
+  events: InboxEvent[],
+  changedEvent: InboxEvent,
+): InboxEvent[] {
+  const otherEvents = events.filter((event) => event.eventId !== changedEvent.eventId);
+  return [...otherEvents, changedEvent];
+}
+
+/**
  * The slice with new events at its end, keeping only the newest `inboxEventsSliceSize`.
  * The event log table keeps every event; the slice is what the page lists and what the
  * inbox checks a new id against.
@@ -79,6 +92,15 @@ export function appendInboxEvents(events: InboxEvent[], newEvents: InboxEvent[])
 export function findStatusOfNewEvent(rule: EventRule | undefined): InboxEventStatus {
   const canTheRunnerShowIt = rule?.mode === 'auto' && rule.itemId !== null;
   return canTheRunnerShowIt ? 'queued' : 'pending';
+}
+
+/**
+ * The moment an event's wait is measured from: its latest restore, or its detection when it
+ * was never restored (BAJAOVRLAY-67). A fastest lap brought back with "Mostrar de novo" ten
+ * minutes after it was shown would otherwise expire the moment "No ar" is pressed.
+ */
+export function readMomentTheWaitCountsFrom(event: InboxEvent): number {
+  return event.restoresAtMs?.at(-1) ?? event.detectedAtMs;
 }
 
 /** A moment of the store (ISO 8601 text) in ms since 1970. */

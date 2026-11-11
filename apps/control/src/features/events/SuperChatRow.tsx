@@ -3,9 +3,10 @@ import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { ActionButton } from '@/features/connection/ActionButton';
-import { formatRelativeTimePtBR } from '@/i18n/formatRelativeTimePtBR';
 import { ptBR } from '@/i18n/ptBR';
 import { formatTimeOfDay } from '@/i18n/timeOfDayText';
+
+import { describeHowLongTheEventHasWaited } from './inboxEventText';
 
 const texts = ptBR.events;
 
@@ -57,7 +58,7 @@ export function SuperChatRow(props: {
           <time className="tabular-nums" dateTime={new Date(event.detectedAtMs).toISOString()}>
             {formatTimeOfDay(event.detectedAtMs)}
           </time>
-          <span>{formatRelativeTimePtBR(new Date(event.detectedAtMs), now)}</span>
+          <span>{describeHowLongTheEventHasWaited(event, now)}</span>
         </span>
       </div>
       <p

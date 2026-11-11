@@ -14,6 +14,7 @@ import {
   describeDetailsOfEvent,
   describeKindOfEvent,
   describeOriginOfEvent,
+  isAGeneralNotice,
 } from './inboxEventText';
 
 /** The columns the history can be sorted by; "Detalhes" and "Ações" cannot. */
@@ -46,6 +47,14 @@ export type HistoryRow = {
 // Built once: pt-BR order of words ("Acauã" before "Carnaúba"), as Cadastros sorts names.
 const wordOrder = new Intl.Collator('pt-BR');
 
+/** The car column: the car's number, or "Aviso geral" for a notice about no car. */
+function readCarCellOfEvent(event: InboxEvent): string {
+  if (isAGeneralNotice(event)) {
+    return ptBR.events.generalNoticeSubject;
+  }
+  return event.payload.carNumber === undefined ? '' : String(event.payload.carNumber);
+}
+
 /** The row of one event, each cell written as the table shows it. */
 function buildHistoryRow(event: InboxEvent, dataSources: DataSource[]): HistoryRow {
   const { payload } = event;
@@ -54,7 +63,7 @@ function buildHistoryRow(event: InboxEvent, dataSources: DataSource[]): HistoryR
     cells: {
       time: formatTimeOfDay(event.detectedAtMs),
       kind: describeKindOfEvent(event),
-      car: payload.carNumber === undefined ? '' : String(payload.carNumber),
+      car: readCarCellOfEvent(event),
       team: payload.teamName ?? '',
       lap: payload.lapNumber === undefined ? '' : String(payload.lapNumber),
       details: describeDetailsOfEvent(event),

@@ -36,8 +36,9 @@ const texts = ptBR.quickFire;
  * name small, with the digit that fires it in the corner. A click puts the item on air;
  * right-click, or the small "⋯" beside it, opens "Prévia", "Editar" and "Mover para
  * rundown". Like a rundown row it is off while the page is disconnected. A button of an
- * item filled by an event (the notices of "Avisos") is off too, a tooltip saying why, its
- * "Prévia" kept (gate 2 of PR #22).
+ * item filled by an event is off too, a tooltip saying why, its "Prévia" kept (gate 2 of
+ * PR #22); since BAJAOVRLAY-67 the server keeps templates off every panel, so this only
+ * guards a page that is out of step with it.
  *
  * Two focus rules keep Space and Enter safe in the middle of a show. After a click the
  * button lets go of the focus, as the rundown's "Disparar" does, so a later Enter cannot

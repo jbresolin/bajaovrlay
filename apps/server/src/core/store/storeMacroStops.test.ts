@@ -178,7 +178,10 @@ describe('the macroStops slice', () => {
     const storeAfter = createStoreWithTheTrackAndTowerMacro(databasePath);
 
     // Assert: the macro is still there, its stop is not.
-    expect(storeAfter.readAllSlices().macros.length, 'the macro itself is saved').toBe(1);
+    expect(
+      storeAfter.readAllSlices().macros.map((macro) => macro.label),
+      'the macro itself is saved',
+    ).toContain('Pista + torre');
     expect(
       storeAfter.readAllSlices().macroStops,
       'a stop belongs to a run, gone at a restart',

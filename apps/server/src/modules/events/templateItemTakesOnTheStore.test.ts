@@ -10,7 +10,8 @@
  *
  * What these tests prove, one row each:
  *   - takeNext (Space) with the template at the rundown's cursor;
- *   - takeItem from a shortcut button of "Atalhos";
+ *   - takeItem of a template in "Modelos de evento" (no panel holds one since BAJAOVRLAY-67,
+ *     but the command API or an older page may still name it);
  *   - runMacro of a macro with a step taking the template (refused before any step runs);
  *   - previewMacro of that macro;
  *   - takeAllPreviews ("Tomar tudo") with the template previewed from its sample.
@@ -52,28 +53,28 @@ const takeScenarios: Array<{
     home: { kind: 'rundown', rundownId: 'sessao-principal' },
     buildCommandsOfTheTake: () => [{ type: 'takeNext', rundownId: 'sessao-principal' }],
   },
-  // A button of "Atalhos" sends takeItem.
+  // takeItem naming the template, as a button did before BAJAOVRLAY-67 or the API may.
   {
-    name: 'refuses takeItem from a shortcut button',
-    home: { kind: 'quickFire', panelId: 'atalhos' },
+    name: 'refuses takeItem of the template',
+    home: { kind: 'eventTemplates' },
     buildCommandsOfTheTake: (templateItemId) => [{ type: 'takeItem', itemId: templateItemId }],
   },
   // A macro taking the template: refused at "Executar", before any step can run.
   {
     name: 'refuses runMacro of a macro that takes the template',
-    home: { kind: 'quickFire', panelId: 'atalhos' },
+    home: { kind: 'eventTemplates' },
     buildCommandsOfTheTake: () => [{ type: 'runMacro', macroId: 'macro-aviso' }],
   },
   // The macro's Prévia previews its steps: the template has no event to fill it.
   {
     name: 'refuses previewMacro of that macro',
-    home: { kind: 'quickFire', panelId: 'atalhos' },
+    home: { kind: 'eventTemplates' },
     buildCommandsOfTheTake: () => [{ type: 'previewMacro', macroId: 'macro-aviso' }],
   },
   // "Tomar tudo" with the template previewed from its sample event.
   {
     name: 'refuses takeAllPreviews with the template previewed from its sample',
-    home: { kind: 'quickFire', panelId: 'atalhos' },
+    home: { kind: 'eventTemplates' },
     buildCommandsOfTheTake: (templateItemId) => [
       { type: 'previewItem', itemId: templateItemId },
       { type: 'takeAllPreviews' },
@@ -103,7 +104,8 @@ describe('a take of an item filled by an event', () => {
       operatorActor,
     );
     expect(outcomeOfTheMacro.ok, 'the macro is made (its run is what must be refused)').toBe(true);
-    const macroId = inbox.stateStore.readAllSlices().macros[0]?.id ?? '';
+    // The macro just made is the last one; the seeded sponsor roll's comes first.
+    const macroId = inbox.stateStore.readAllSlices().macros.at(-1)?.id ?? '';
     const commands = buildCommandsOfTheTake('relogio-aviso').map((command) =>
       command.macroId === undefined ? command : { ...command, macroId },
     );

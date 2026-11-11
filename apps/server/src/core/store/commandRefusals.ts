@@ -131,6 +131,17 @@ export function refuseInvalidGraphicData(
 }
 
 /**
+ * The refusal for a take whose data the graphic accepts but would show nothing of (the plain
+ * sponsor roll with no sponsor logo, BAJAOVRLAY-64): the layer would be cleared for nothing.
+ */
+export function refuseGraphicWithNothingToShow(graphicId: string, why: string): CommandError {
+  return {
+    code: 'NOTHING_TO_SHOW',
+    message: ptBR.commandErrors.graphicHasNothingToShow(graphicId, why),
+  };
+}
+
+/**
  * The refusal for a take or an update that names, in `takeTimeFieldKeys`, a field the
  * graphic's manifest does not mark as a wall-clock moment. It carries the same code as
  * data the schema refuses: the request does not fit what the manifest says of the field.

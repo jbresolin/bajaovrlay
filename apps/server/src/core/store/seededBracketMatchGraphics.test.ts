@@ -84,8 +84,9 @@ const seededItemIds = ['partida-agora', 'partida-a-seguir'];
 
 /**
  * A database as the server of BAJAOVRLAY-63 left it: booted once, then the match graphics'
- * layer, panel, items and seed mark taken out again, so it holds what an operator's
- * database held before this update.
+ * layer, panel, items and seed mark taken out again, and the plain sponsor roll's layer,
+ * panel, item and seed mark too (BAJAOVRLAY-64, seeded after it), so it holds what an
+ * operator's database held before this update.
  */
 function openDatabaseOfAServerBeforeTheMatchGraphics() {
   const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
@@ -94,21 +95,28 @@ function openDatabaseOfAServerBeforeTheMatchGraphics() {
   writeSliceRows(database, [
     {
       name: 'layers',
-      json: slicesOfTheOldBoot.layers.filter((layer) => layer.id !== 'bracket-match'),
+      json: slicesOfTheOldBoot.layers.filter(
+        (layer) => layer.id !== 'bracket-match' && layer.id !== 'sponsor-roll-plain',
+      ),
       updatedAt: '2026-11-09T22:10:00.000Z',
     },
     {
       name: 'quickFirePanels',
-      json: slicesOfTheOldBoot.quickFirePanels.filter((panel) => panel.id !== 'chave'),
+      json: slicesOfTheOldBoot.quickFirePanels.filter(
+        (panel) => panel.id !== 'chave' && panel.id !== 'patrocinadores',
+      ),
       updatedAt: '2026-11-09T22:10:00.000Z',
     },
     {
       name: 'items',
-      json: slicesOfTheOldBoot.items.filter((item) => !seededItemIds.includes(item.id)),
+      json: slicesOfTheOldBoot.items.filter(
+        (item) => !seededItemIds.includes(item.id) && item.id !== 'patrocinadores-simples',
+      ),
       updatedAt: '2026-11-09T22:10:00.000Z',
     },
   ]);
   database.$client.prepare("DELETE FROM seeds_done WHERE name = 'bracketMatchGraphics'").run();
+  database.$client.prepare("DELETE FROM seeds_done WHERE name = 'plainSponsorRoll'").run();
   return { database, graphicPackagesFolder };
 }
 
@@ -127,17 +135,18 @@ describe('a new database', () => {
       'the layer is seeded at z 17 on program',
     ).toEqual(seededBracketMatchLayer);
     expect(
-      slices.layers.map((layer) => layer.id).slice(0, 4),
+      slices.layers.map((layer) => layer.id).slice(0, 5),
       'the match bug sits above the channel logo and under the ticker',
-    ).toEqual(['bug', 'channel-logo', 'bracket-match', 'ticker']);
+    ).toEqual(['bug', 'sponsor-roll-plain', 'channel-logo', 'bracket-match', 'ticker']);
     expect(
       slices.quickFirePanels.map((panel) => [panel.id, panel.name, panel.order]),
-      'the "Chave" panel comes after the panels seeded before it',
+      'the "Chave" panel comes after the panels seeded before it (no "Avisos" since BAJAOVRLAY-67)',
     ).toEqual([
       ['atalhos', 'Atalhos', 0],
-      ['avisos', 'Avisos', 1],
-      ['logo', 'Logo', 2],
-      ['chave', 'Chave', 3],
+      ['logo', 'Logo', 1],
+      ['chave', 'Chave', 2],
+      // The plain sponsor roll's panel (BAJAOVRLAY-64), seeded after this one.
+      ['patrocinadores', 'Patrocinadores', 3],
     ]);
     const itemsOfTheKeyPanel = slices.items.filter(
       (item) => item.home.kind === 'quickFire' && item.home.panelId === 'chave',
@@ -206,10 +215,13 @@ describe('a database written before the match graphics', () => {
       slices.layers.map((layer) => layer.id),
       'the layer is added in its z-order place',
     ).toContain('bracket-match');
-    expect(slices.quickFirePanels.at(-1), 'the "Chave" panel is added last').toEqual({
+    expect(
+      slices.quickFirePanels.find((panel) => panel.id === 'chave'),
+      'the "Chave" panel is added after the last panel ("Patrocinadores" comes after it)',
+    ).toEqual({
       id: 'chave',
       name: 'Chave',
-      order: 3,
+      order: 2,
     });
     expect(
       slices.items.filter((item) => seededItemIds.includes(item.id)).map((item) => item.id),
