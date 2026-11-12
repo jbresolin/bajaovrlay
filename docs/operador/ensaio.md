@@ -2,20 +2,23 @@
 
 Um ensaio de um dia de prova, com o simulador no lugar do sistema de cronometragem, para provar que o [guia do operador](guia-do-operador.md) basta. Dois voluntários que nunca usaram o BajaOvrLay, cada um no seu computador: o **Produtor** (Mesa 1) e **Dados** (Mesa 2). O João conduz, provoca os problemas e anota. Os voluntários têm só o guia impresso; o João não explica a tela, só lê os passos em voz alta.
 
-Cada passo diz o que cada voluntário faz e o que **os dois** devem ver. Quando o que aparece não bate, o João anota no fim (o que tropeçou) e segue.
+Cada passo diz o que cada voluntário faz e o que **os dois** devem ver. Quando o que aparece não bate, o João anota no fim (onde tropeçaram) e segue. No ensaio, o João é o responsável técnico que o guia manda avisar.
 
-## Antes do ensaio (João, 15 minutos antes)
+## Antes do ensaio (João, 20 minutos antes)
 
-1. `pnpm build`, depois `pnpm start` com `BAJAOVRLAY_PIN_PRODUCER` e `BAJAOVRLAY_PIN_DATA` definidos no `.env` (PINs só do ensaio) e um banco novo (`DATABASE_PATH` apontando para um arquivo que ainda não existe).
-2. Abra a saída do programa (`/render/`) numa terceira tela ou no OBS, onde só o João vê: é o ar do ensaio.
-3. No console do João (entre como "Produtor", "Estação" Mesa 3), em "Fontes", no "Simulador — Enduro": "Editar", "Velocidade (vezes o tempo real)" 3, "Simular Super Chats" ligado, "Salvar fonte". Ainda não ligue a fonte.
-4. Em "Sessão principal", três itens com "+ Item" (o "Gráfico" de cada um e "Salvar item"):
+1. `pnpm build`, depois `pnpm start` com, no `.env`: `HOST=0.0.0.0` (sem isso o servidor só atende a própria máquina e os computadores dos voluntários não conectam), `BAJAOVRLAY_PIN_PRODUCER` e `BAJAOVRLAY_PIN_DATA` (PINs só do ensaio) e um banco novo (`DATABASE_PATH` apontando para um arquivo que ainda não existe). Libere a porta (`PORT`, 3000 se não definida) no firewall.
+2. Passe aos voluntários o endereço `http://<IP do servidor>:<porta>` (por exemplo `http://192.168.0.10:3000`) e os PINs.
+3. Abra a saída do programa (`/render/`) numa terceira tela ou no OBS, onde só o João vê: é o ar do ensaio.
+4. No console do João (entre como "Produtor", "Estação" Mesa 3), em "Fontes", no "Simulador — Enduro": "Editar", "Velocidade (vezes o tempo real)" 3, "Simular Super Chats" ligado, "Salvar fonte". Ainda não ligue a fonte.
+5. Em "Cadastros", aba "Patrocinadores": pelo menos um com "+ Patrocinador", com nome e logo ("Escolher imagem"), "Salvar". Sem patrocinador, o rodízio do passo 6 dos passos abaixo é recusado.
+6. O logo do canal: na aba "Logo" (**F2**) do console, no botão "Logo do canal", "⋯" → "Editar", escolha a imagem do logo no campo Imagem e "Salvar item". Sem imagem, o "Logo do canal" é recusado no passo 2 dos passos abaixo.
+7. Em "Sessão principal", três itens com "+ Item": o "Gráfico" de cada um, o "Rótulo" digitado **exatamente** como o gráfico (os passos usam esses nomes) e "Salvar item":
    - "Relógio de prova", com o tempo em "Relógio da fonte";
    - "Torre de posições", lendo os carros da fonte (a sugestão que o formulário já traz);
    - "Tarja" com um nome e cargo digitados (por exemplo Ana Souza, locutora).
-5. Imprima o guia (`docs/operador/guia-do-operador.pdf`, frente e verso) e deixe uma cópia em cada mesa.
-6. **Minuto 0:** ligue a fonte ("Ligada") e clique em "Reiniciar corrida". O Super Prime simulado começa junto, com os 60 carros: uma bateria a cada 20 segundos (uma por minuto simulado, a 3×), dos 32 avos de final às semifinais, depois a "Disputa de 3º lugar" e a "Final", nessa ordem, por volta dos minutos 20 a 25. Um Super Chat simulado chega a cada um ou dois minutos.
-7. **Também no minuto 0:** na página "Eventos", "Gatilhos": abra "Patrocinadores a cada 30 min", marque "Gatilho ligado" e "Salvar gatilho". Ele conta a partir de quando é ligado, então pergunta perto do minuto 30 do ensaio.
+8. Imprima o guia (`docs/operador/guia-do-operador.pdf`, frente e verso), escreva no topo seu nome e telefone como responsável técnico, e deixe uma cópia em cada mesa.
+9. **Minuto 0:** ligue a fonte ("Ligada") e clique em "Reiniciar corrida". O Super Prime simulado começa junto, com os 60 carros: uma bateria a cada 20 segundos (uma por minuto simulado, a 3×), dos 32 avos de final às semifinais, depois a "Disputa de 3º lugar" e a "Final", nessa ordem, por volta dos minutos 20 a 25. Um Super Chat simulado chega a cada um ou dois minutos.
+10. **Também no minuto 0:** na página "Eventos", "Gatilhos": abra "Patrocinadores a cada 30 min", marque "Gatilho ligado" e "Salvar gatilho". Ele conta a partir de quando é ligado, então pergunta perto do minuto 30 do ensaio.
 
 ## Passos
 
@@ -38,22 +41,22 @@ Cada passo diz o que cada voluntário faz e o que **os dois** devem ver. Quando 
 
 ### 3. Eventos e Super Chats (minutos 10–15) — guia §4 e §5
 
-| Quem     | Faz                                                                                            | Deve ver                                                 |
-| -------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| Dados    | Quando a lista "Super Chats aguardando aprovação" mostrar um Super Chat, "Aprovar".            | O Super Chat sai da sua lista.                           |
-| Produtor | Na aba "Eventos", "No ar" no Super Chat aprovado.                                              | O Super Chat na tela pelo tempo da regra, e sai sozinho. |
-| Dados    | No Super Chat seguinte, o João diz que esse não vai ao ar: "Descartar".                        | Ele sai da lista; nada vai ao ar.                        |
-| Produtor | Quando a primeira penalidade do simulador aparecer na aba "Eventos": "Prévia", depois "No ar". | A penalidade na tela; o número da aba diminui.           |
+| Quem     | Faz                                                                                                         | Deve ver                                                 |
+| -------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Dados    | Abre a aba "Eventos"; quando a lista _N aguardando aprovação_ (já aberta) mostrar um Super Chat, "Aprovar". | O Super Chat sai da sua lista.                           |
+| Produtor | Na aba "Eventos", "No ar" no Super Chat aprovado.                                                           | O Super Chat na tela pelo tempo da regra, e sai sozinho. |
+| Dados    | No Super Chat seguinte, o João diz que esse não vai ao ar: "Descartar".                                     | Ele sai da lista; nada vai ao ar.                        |
+| Produtor | Quando a primeira penalidade do simulador aparecer na aba "Eventos": "Prévia", depois "No ar".              | A penalidade na tela; o número da aba diminui.           |
 
 ### 4. A fonte cai e volta (minutos 15–18) — guia §8
 
 João, na página "Fontes": "Editar" no "Simulador — Enduro", liga "Falha simulada", "Salvar fonte". Dois minutos depois, desliga do mesmo jeito.
 
-| Quem    | Faz                                                         | Deve ver                                                                                                                                              |
-| ------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Os dois | Percebem o problema e dizem em voz alta o que o guia manda. | Selo "Fontes" amarelo; "fonte atrasada" na linha "Torre" de "Camadas". A torre e o relógio **continuam no ar** com o último dado. Ninguém limpa nada. |
-| Dados   | Avisa o Produtor e o João.                                  | —                                                                                                                                                     |
-| Os dois | Esperam a fonte voltar.                                     | Selo verde de novo; a torre volta a mudar sozinha.                                                                                                    |
+| Quem    | Faz                                                         | Deve ver                                                                                                                                                                                                |
+| ------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Os dois | Percebem o problema e dizem em voz alta o que o guia manda. | Selo "Fontes" amarelo e "fonte atrasada" na linha "Torre" de "Camadas"; depois de 1 minuto, vermelho e "fonte com erro". A torre e o relógio **continuam no ar** com o último dado. Ninguém limpa nada. |
+| Dados   | Avisa o Produtor e o responsável técnico (o João).          | —                                                                                                                                                                                                       |
+| Os dois | Esperam a fonte voltar.                                     | Selo verde de novo; a torre volta a mudar sozinha.                                                                                                                                                      |
 
 ### 5. Super Prime, até a final (minutos 18–25) — guia §6
 
@@ -79,9 +82,7 @@ João, na página "Fontes": "Editar" no "Simulador — Enduro", liga "Falha simu
 | Dados    | Fecha a aba e abre o endereço de novo.                               | Volta ao console sem perder nada.                                                                      |
 | João     | Tira o cabo de rede (ou o Wi-Fi) do Dados por 30 segundos e devolve. | Dados vê "Reconectando…" e os botões cinza; depois "Conectado" de novo, sozinho.                       |
 
-### 8. Tomada recusada (minutos 35–38) — guia §8 — **depois do -69**
-
-Este passo só vale depois que o BAJAOVRLAY-69 entrar no main. Até lá, o João pula este passo e marca pulado na lista.
+### 8. Tomada recusada (minutos 35–38) — guia §8
 
 | Quem            | Faz                                                                                              | Deve ver                                                                                                                             |
 | --------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
@@ -112,12 +113,12 @@ Marque cada linha: **ok**, **com ajuda** (o voluntário precisou de mais do que 
 | 6   | Limpar tudo e Ctrl+Z                                        |           |            |
 | 6   | Gatilho rodado; pausar e retomar                            |           |            |
 | 7   | F5 e aba fechada sem perder nada; reconectou sozinho        |           |            |
-| 8   | Tomada recusada entendida (ou pulado, antes do -69)         |           |            |
+| 8   | Tomada recusada entendida                                   |           |            |
 | 9   | Aviso geral digitado e posto no ar; mostrar de novo         |           |            |
 | 9   | Cópia de segurança salva                                    |           |            |
 | —   | O ar nunca piscou nem ficou vazio sem alguém mandar         |           |            |
 
-## O que os voluntários tropeçaram
+## Onde os voluntários tropeçaram
 
 Uma linha por tropeço: o passo, o que a pessoa procurou ou fez, e o que mudar (no guia, ou um pedido no Plane).
 

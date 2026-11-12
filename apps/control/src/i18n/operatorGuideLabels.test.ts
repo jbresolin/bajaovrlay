@@ -20,6 +20,9 @@
  * What these tests deliberately do not cover:
  *   - Texts the catalogs build from a value ("Fontes: 1 ok", "Passo 2 de 5"): the guide
  *     writes those without quotes, and nothing here checks them.
+ *   - A common word renamed in one place only: "Editar", "Limpar" or "Prévia" label several
+ *     buttons, so the check still passes while one of them is still called that, even if the
+ *     button the guide means was renamed. Only a label used once is fully guarded.
  *   - Whether the guide describes the page truly: the pictures are retaken from the real
  *     page (docs/operador/screenshots.e2e.ts), and the rehearsal is the real proof.
  *   - That the guide fits on two A4 pages: docs/operador/guidePrintsOnTwoPages.e2e.ts.

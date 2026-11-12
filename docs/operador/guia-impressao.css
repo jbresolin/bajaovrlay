@@ -38,8 +38,17 @@ h1 {
   font-size: 15pt;
 }
 
-/* The first paragraph, under the title, spans both columns too: it is what the sheet is for. */
+/*
+ * The two paragraphs under the title span both columns: first the blank line for the day's
+ * technical lead and phone, written by hand on the printed sheet; then what the sheet is for.
+ */
 h1 + p {
+  column-span: all;
+  margin: 1.5mm 0 2mm;
+  font-size: 10pt;
+}
+
+h1 + p + p {
   column-span: all;
   margin: 0 0 2.5mm;
   color: var(--muted-ink);
