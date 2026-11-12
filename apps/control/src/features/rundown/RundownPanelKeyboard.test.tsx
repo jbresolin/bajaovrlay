@@ -52,11 +52,12 @@ import { RundownPanel } from './RundownPanel';
 // The item editor has its own tests; a stand-in takes its place here.
 vi.mock('@/features/items/ItemEditorPanel', () => import('./itemEditorStandIn.testSupport'));
 
-// The race clock is on air on the layer of every cursor item here, and Space says the page
-// showed it there (BAJAOVRLAY-69).
+// Space with the cursor on the start: it says which cursor item the page showed (gate 2 of
+// PR #64), and that the race clock was on air on that item's layer (BAJAOVRLAY-69).
 const takeNextOfTheMainRundown = {
   type: 'takeNext',
   rundownId: 'sessao-principal',
+  cursorItemIdSeen: 'item-largada-do-enduro',
   instanceIdSeenOnAir: idOfTheRaceClockOnAir,
 };
 

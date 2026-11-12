@@ -95,7 +95,14 @@ describe('the Space key with something on the preview output', () => {
     expect(
       fakeServer.listCommandsReceived(),
       'Space must fire the item at the cursor, not whatever happens to be previewed',
-    ).toEqual([{ type: 'takeNext', rundownId: 'sessao-principal', instanceIdSeenOnAir: null }]);
+    ).toEqual([
+      {
+        type: 'takeNext',
+        rundownId: 'sessao-principal',
+        cursorItemIdSeen: 'item-largada-do-enduro',
+        instanceIdSeenOnAir: null,
+      },
+    ]);
     fakeServer.acceptLastCommand();
   });
 

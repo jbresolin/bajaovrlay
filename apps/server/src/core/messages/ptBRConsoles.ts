@@ -1,8 +1,9 @@
 import type { OperatorRole } from '@bajaovrlay/shared';
 
 /**
- * The server's pt-BR sentences about two consoles on one layer (BAJAOVRLAY-69), reached as
- * ptBR.consoleErrors. Kept apart from ptBR.ts to keep that file short. A refusal reads:
+ * The server's pt-BR sentences about two consoles on one layer (BAJAOVRLAY-69), imported
+ * directly by the refusals that use them (core/store/consoles/, previewRefusals.ts), so
+ * ptBR.ts stays short (gate 2 of PR #64). A refusal reads:
  * Outra mesa (Produtor) tomou "Tarja — capitã da UFPR" na camada "Tarja" há 0,8 s; sua
  * tomada de "Tarja — chefe da UFSC" não foi feita.
  * The names passed in are bare; the quotes are added here.

@@ -3,6 +3,7 @@
 import type { CommandError } from '@bajaovrlay/shared';
 
 import { ptBR } from '../messages/ptBR.js';
+import { ptBRConsoleErrors } from '../messages/ptBRConsoles.js';
 
 /** The refusal for "Tomar tudo" with no preview instance and no "will be cleared" marker. */
 export function refuseTakeAllWithNothingInPreview(): CommandError {
@@ -34,7 +35,7 @@ export function refuseTakeAllOnEveryLayerChangedByAnotherConsole(
 ): CommandError {
   return {
     code: 'LAYER_CHANGED_BY_ANOTHER_CONSOLE',
-    message: ptBR.consoleErrors.takeAllRefusedOnEveryLayer(
+    message: ptBRConsoleErrors.takeAllRefusedOnEveryLayer(
       refusalsOfTheLayers.map((refusal) => refusal.message),
     ),
   };

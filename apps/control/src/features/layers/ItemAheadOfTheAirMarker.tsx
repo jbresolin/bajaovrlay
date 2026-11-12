@@ -138,7 +138,8 @@ export const ItemAheadOfTheAirMarker = memo(function ItemAheadOfTheAirMarker(pro
     if (item === undefined) {
       return;
     }
-    void sendCommand({ type: 'takeItem', itemId: item.id });
+    // Sent as Camadas', so a refusal shows under Camadas, beside this button.
+    void sendCommand({ type: 'takeItem', itemId: item.id }, 'layerPanel');
   }
 
   // Wraps inside its own part of the row: that part may shrink to 12rem (LayerStatusRow),

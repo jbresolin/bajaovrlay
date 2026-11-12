@@ -14,8 +14,8 @@
  * What these tests prove, one row per case:
  *   - takeItem carries the instance on its item's layer, or null when the page shows that
  *     layer empty; a take of an item the page does not know is sent as it is.
- *   - takeNext carries the instance on the layer of the cursor's item; with the cursor on
- *     nothing it is sent as it is.
+ *   - takeNext carries the cursor's item and the instance on that item's layer; with the
+ *     cursor on nothing it is sent as it is.
  *   - takePreview carries the instance on its layer.
  *   - takeAllPreviews carries, for each layer with a preview or a "vai limpar" mark, the
  *     instance on that layer's program output.
@@ -97,13 +97,15 @@ const casesOfEachTakePath: Row[] = [
     expectedCommand: { type: 'takeItem', itemId: 'item-excluido-ha-pouco' },
   },
   {
-    // Space: the cursor is on the yellow flag, whose layer shows the start's clock.
-    name: "adds the instance on the layer of the cursor's item to a takeNext",
+    // Space: the cursor is on the yellow flag, whose layer shows the start's clock. It says
+    // which cursor item it saw too, so the server refuses it if the cursor moved meanwhile.
+    name: "adds the cursor's item and the instance on its layer to a takeNext",
     slicesNow: buildTheStartOnAir(),
     command: { type: 'takeNext', rundownId: mainRundownId },
     expectedCommand: {
       type: 'takeNext',
       rundownId: mainRundownId,
+      cursorItemIdSeen: yellowFlagItemId,
       instanceIdSeenOnAir: idOfTheClockOnAir,
     },
   },

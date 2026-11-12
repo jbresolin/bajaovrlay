@@ -46,6 +46,20 @@ export function refuseOrderThatIsNotAPermutation(rundownName: string): CommandEr
   };
 }
 
+/**
+ * The refusal for Space pressed on a cursor item that is no longer the server's (gate 2 of
+ * PR #64): another press moved the cursor first; the message names the item it is on now.
+ */
+export function refuseTakeFromACursorThatMoved(
+  rundownName: string,
+  cursorItemLabelNow: string,
+): CommandError {
+  return {
+    code: 'RUNDOWN_CURSOR_MOVED',
+    message: ptBR.rundownCommandErrors.rundownCursorMoved(rundownName, cursorItemLabelNow),
+  };
+}
+
 /** The refusal for "take the next item" when the rundown's cursor is on nothing. */
 export function refuseTakeWithEmptyCursor(rundownName: string): CommandError {
   return {

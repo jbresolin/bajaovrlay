@@ -16,7 +16,8 @@ type SlicesThePageShows = Pick<
  * read from the store at the moment it is sent: `takeItem` (a rundown row's "Disparar", a
  * quick-fire button or its number key, "Salvar e disparar", a Camadas row's "Disparar"), `takeNext`
  * (Space) and `takePreview` ("Tomar", Space on a previewed item) carry the instance on
- * program of their layer, or null for an empty one; `takeAllPreviews` ("Tomar tudo") carries
+ * program of their layer, or null for an empty one, and `takeNext` the cursor item it showed
+ * as well (gate 2 of PR #64); `takeAllPreviews` ("Tomar tudo") carries
  * one per layer it takes. The server refuses a take only when another console changed that
  * layer less than 2 s ago and this page had not shown it yet. Every other command is sent
  * as it is.
@@ -40,10 +41,16 @@ export function addWhatThisPageSawOnAir(
       const rundown = slicesNow.rundowns.find((candidate) => candidate.id === command.rundownId);
       const cursorItemId = rundown?.cursorItemId ?? null;
       const layerId = cursorItemId === null ? undefined : findLayerOfItem(cursorItemId, slicesNow);
-      if (layerId === undefined) {
+      if (cursorItemId === null || layerId === undefined) {
         return command;
       }
-      return { ...command, instanceIdSeenOnAir: findInstanceIdOnProgram(layerId, slicesNow) };
+      // The cursor item goes too: the server takes at its own cursor, and refuses the press
+      // when that is another item now, since what the page saw was about this one.
+      return {
+        ...command,
+        cursorItemIdSeen: cursorItemId,
+        instanceIdSeenOnAir: findInstanceIdOnProgram(layerId, slicesNow),
+      };
     }
     case 'takePreview':
       return {

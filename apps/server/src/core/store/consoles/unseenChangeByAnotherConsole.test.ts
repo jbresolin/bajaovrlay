@@ -17,6 +17,8 @@
  *     that took meanwhile does not refuse; a layer emptied by another console refuses; the
  *     command API, a console take that says nothing of what it saw, and a layer whose last
  *     change is unknown (a restart) go through.
+ *   - A step of the server clock since the other change, back or forward, makes it old, and
+ *     so does a change stamped after the take: only 0 ≤ elapsed < 2 s on one clock is recent.
  *   - The refusal's exact pt-BR sentence: who (the other console's role), what it did (took
  *     which item, or emptied the layer), on which layer, how long ago, and what of this take
  *     was not done; with the login off it says "Outra mesa" with no role.
@@ -49,17 +51,21 @@ import {
   refusalOfTheChiefOverTheCaptain,
 } from './twoConsolesOnOneLayerFixtures.testSupport.js';
 
-/** "Tarja"'s last change as made by the given console, this many milliseconds before 14:32:05. */
+/**
+ * "Tarja"'s last change as made by the given console, this many milliseconds before 14:32:05
+ * (negative: after it), while the server clock had made this many steps (none unless given).
+ */
 function buildChangeOfTheLowerThirdBy(
   consoleId: string | undefined,
   millisecondsBeforeTheTake: number,
+  serverClockStepCount = 0,
 ): ProgramChangeOfALayer {
   const momentOfTheTake = Date.parse('2026-10-09T14:32:05.000Z');
   const changedAt = new Date(momentOfTheTake - millisecondsBeforeTheTake).toISOString();
   if (consoleId === undefined) {
-    return { changedAt };
+    return { changedAt, serverClockStepCount };
   }
-  return { changedAt, consoleId, consoleRole: 'produtor' };
+  return { changedAt, serverClockStepCount, consoleId, consoleRole: 'produtor' };
 }
 
 type TableRow = {
@@ -68,6 +74,8 @@ type TableRow = {
   lastChangeOfTheLowerThirdLayer: ProgramChangeOfALayer | undefined;
   sentFrom: 'Mesa 2' | 'the command API';
   instanceIdSeenOnAir: string | null | undefined;
+  /** The server clock's step count at the take; none (0) unless the row is about a step. */
+  serverClockStepCountAtTheTake?: number;
   expectedStatus: 'applied' | 'refused';
 };
 
@@ -178,14 +186,49 @@ const casesOfTheBrief: TableRow[] = [
   },
 ];
 
+const casesOfAServerClockStep: TableRow[] = [
+  {
+    // The clock was stepped back 1,5 s after Mesa 1's take: on the clock the take now reads
+    // 0,7 s in the future. No time measured across a step counts, so it is old.
+    name: 'lets a take through when the server clock stepped back since the other change',
+    instancesOnAir: [buildCaptainOnProgram()],
+    lastChangeOfTheLowerThirdLayer: buildChangeOfTheLowerThirdBy(consoleAtMesa1, -700, 0),
+    sentFrom: 'Mesa 2',
+    instanceIdSeenOnAir: null,
+    serverClockStepCountAtTheTake: 1,
+    expectedStatus: 'applied',
+  },
+  {
+    // The clock was stepped forward since Mesa 1's take; the 0,3 s it reads is not real time.
+    name: 'lets a take through when the server clock stepped forward since the other change',
+    instancesOnAir: [buildCaptainOnProgram()],
+    lastChangeOfTheLowerThirdLayer: buildChangeOfTheLowerThirdBy(consoleAtMesa1, 300, 0),
+    sentFrom: 'Mesa 2',
+    instanceIdSeenOnAir: null,
+    serverClockStepCountAtTheTake: 1,
+    expectedStatus: 'applied',
+  },
+  {
+    // A change stamped after the take with no step counted cannot be measured: only
+    // 0 ≤ elapsed < 2 s is recent, never a negative time.
+    name: 'lets a take through over a change stamped after it, with no step counted',
+    instancesOnAir: [buildCaptainOnProgram()],
+    lastChangeOfTheLowerThirdLayer: buildChangeOfTheLowerThirdBy(consoleAtMesa1, -400, 0),
+    sentFrom: 'Mesa 2',
+    instanceIdSeenOnAir: null,
+    expectedStatus: 'applied',
+  },
+];
+
 describe('a take on a layer another console just changed, case by case', () => {
-  it.each(casesOfTheBrief)('$name', (row) => {
+  it.each([...casesOfTheBrief, ...casesOfAServerClockStep])('$name', (row) => {
     // Arrange: the race day with what is on air, and the context of the sender.
     const slicesBefore = buildRaceDayWithBothLowerThirds({ instances: row.instancesOnAir });
     const context: ReducerContext =
       row.sentFrom === 'Mesa 2'
         ? buildContextOfMesa2({
             lastChangeOfTheLowerThirdLayer: row.lastChangeOfTheLowerThirdLayer,
+            serverClockStepCount: row.serverClockStepCountAtTheTake ?? 0,
           })
         : buildContextOfTheCommandApi({
             lastChangeOfTheLowerThirdLayer: row.lastChangeOfTheLowerThirdLayer,
@@ -274,6 +317,7 @@ describe('the refusal of a take over another console unseen change', () => {
       actor: 'operador:3f2a9c1e-8b47-4d06-9e15-7c0d2b6a4f81',
       lastChangeOfTheLowerThirdLayer: {
         changedAt: momentMesa1TookTheCaptain,
+        serverClockStepCount: 0,
         consoleId: consoleAtMesa1,
       },
     });

@@ -17,7 +17,7 @@ import {
 } from '../db/commandOutcomeStorage.js';
 import { findEventLogDetailsOfCommand } from '../events/eventLogDetailsOfACommand.js';
 import { appendToEventLogSlice } from '../events/eventLogSlice.js';
-import { readServerTime } from '../time/serverClock.js';
+import { readServerTime, serverClockOfTheProcess } from '../time/serverClock.js';
 import { allowCommandForActorRole } from './authorizeCommand.js';
 import { refuseAutomationTheActorMayNotChange } from './automationAndTheDataRole.js';
 import {
@@ -93,6 +93,8 @@ export type StateStore = EventLogReaders & {
 export function createStateStore(options: StateStoreOptions): StateStore {
   const isCommandAllowed = options.isCommandAllowed ?? allowCommandForActorRole;
   const readCurrentTime = options.readCurrentTime ?? readServerTime;
+  const readServerClockStepCount =
+    options.readServerClockStepCount ?? serverClockOfTheProcess.readStepCount;
   const createInstanceId = options.createInstanceId ?? (() => randomUUID());
   const createItemId = options.createItemId ?? (() => randomUUID());
   const createQuickFirePanelId = options.createQuickFirePanelId ?? (() => randomUUID());
@@ -116,6 +118,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   // fields skip only the log (see the exception below).
   function applyCommand(commandInput: unknown, actor: string, consoleId?: string): CommandOutcome {
     const now = readCurrentTime().toISOString();
+    const serverClockStepCount = readServerClockStepCount();
 
     // Step 1, validate: the command's shape, with the first bad field named.
     const validation = CommandSchema.safeParse(commandInput);
@@ -163,6 +166,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       sourceHostAllowlist,
       consoleId,
       lastProgramChangeOfEachLayer,
+      serverClockStepCount,
     };
     const reducerOutcome = reduceCommand(currentSlices, command, reducerContext);
     if (reducerOutcome.status === 'refused') {
@@ -197,7 +201,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       lastProgramChangeOfEachLayer,
       currentSlices.instances,
       reducerOutcome.slices.instances,
-      signProgramChangeOfACommand({ now, actor, consoleId }),
+      signProgramChangeOfACommand({ now, serverClockStepCount, actor, consoleId }),
     );
     // A step the command's new data no longer has was moved by the reducer itself: the
     // event-log row names only the command, so this line says which step moved and why.

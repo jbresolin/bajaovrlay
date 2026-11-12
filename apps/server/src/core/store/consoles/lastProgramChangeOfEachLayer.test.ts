@@ -14,8 +14,9 @@
  *     very same record is handed back.
  *   - A change made by no console (a macro, a trigger, the API) is recorded without one, so
  *     it never makes a later take look like the loser of a race.
- *   - A command is signed with its console and the role of that console's login, and with
- *     no role when the login is off.
+ *   - A command is signed with its moment, the server clock's step count at that moment (so a
+ *     step since makes the change old), its console and the role of that console's login,
+ *     and with no role when the login is off.
  *
  * What these tests deliberately do not cover:
  *   - The rule that reads it: unseenChangeByAnotherConsole.test.ts.
@@ -35,9 +36,10 @@ import {
   consoleAtMesa2,
 } from './twoConsolesOnOneLayerFixtures.testSupport.js';
 
-/** The change Mesa 2 makes at 14:32:05, signed as the store signs it. */
+/** The change Mesa 2 makes at 14:32:05, after the server clock's second step, signed as the store signs it. */
 const mesa2At143205 = {
   changedAt: '2026-10-09T14:32:05.000Z',
+  serverClockStepCount: 2,
   consoleId: consoleAtMesa2,
   consoleRole: 'produtor' as const,
 };
@@ -56,7 +58,14 @@ describe('rememberLastProgramChangeOfEachLayer', () => {
   it("records a take on its layer and leaves the other layers' entries as they were", () => {
     // Arrange: "Relógio" last changed by Mesa 1; "Tarja" empty.
     const recordBefore: LastProgramChangeOfEachLayer = new Map([
-      ['clock', { changedAt: '2026-10-09T14:30:00.000Z', consoleId: consoleAtMesa1 }],
+      [
+        'clock',
+        {
+          changedAt: '2026-10-09T14:30:00.000Z',
+          serverClockStepCount: 2,
+          consoleId: consoleAtMesa1,
+        },
+      ],
     ]);
 
     // Act: Mesa 2 takes the captain on "Tarja".
@@ -124,14 +133,16 @@ describe('rememberLastProgramChangeOfEachLayer', () => {
       [buildCaptainOnProgram()],
       signProgramChangeOfACommand({
         now: '2026-10-09T14:32:05.000Z',
+        serverClockStepCount: 2,
         actor: 'sistema:macro:macro-abertura-do-enduro',
         consoleId: undefined,
       }),
     );
 
-    // Assert: recorded with its moment and no console.
+    // Assert: recorded with its moment, the clock's step count and no console.
     expect(recordAfter.get('lower-third'), 'a macro is no console').toEqual({
       changedAt: '2026-10-09T14:32:05.000Z',
+      serverClockStepCount: 2,
     });
   });
 });
@@ -143,11 +154,12 @@ describe('signProgramChangeOfACommand', () => {
     // Act: sign a command of the Produtor at "Mesa 2".
     const change = signProgramChangeOfACommand({
       now: '2026-10-09T14:32:05.000Z',
+      serverClockStepCount: 2,
       actor: 'produtor:Mesa 2',
       consoleId: consoleAtMesa2,
     });
 
-    // Assert: moment, console and role.
+    // Assert: moment, the clock's step count, console and role.
     expect(change, 'a logged-in console is signed with its role').toEqual(mesa2At143205);
   });
 
@@ -157,13 +169,15 @@ describe('signProgramChangeOfACommand', () => {
     // Act: sign a command of a console whose actor is its connection.
     const change = signProgramChangeOfACommand({
       now: '2026-10-09T14:32:05.000Z',
+      serverClockStepCount: 2,
       actor: 'operador:3f2a9c1e-8b47-4d06-9e15-7c0d2b6a4f81',
       consoleId: consoleAtMesa2,
     });
 
-    // Assert: moment and console, no role.
+    // Assert: moment, step count and console, no role.
     expect(change, 'with no login there is no role').toEqual({
       changedAt: '2026-10-09T14:32:05.000Z',
+      serverClockStepCount: 2,
       consoleId: consoleAtMesa2,
     });
   });

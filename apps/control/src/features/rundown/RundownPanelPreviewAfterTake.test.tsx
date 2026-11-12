@@ -58,10 +58,12 @@ vi.mock('@/features/items/ItemEditorPanel', () => import('./itemEditorStandIn.te
 // Saturday of the endurance race, the minute of the start.
 const momentOfTheTake = '2026-10-10T13:00:00.000Z';
 
-// Each take starts with nothing on air on the clock layer, and says so (BAJAOVRLAY-69).
+// Space on the start: it says the page showed the start under the cursor (gate 2 of PR #64)
+// and nothing on air on the clock layer (BAJAOVRLAY-69).
 const takeNextOfTheMainRundown = {
   type: 'takeNext',
   rundownId: 'sessao-principal',
+  cursorItemIdSeen: 'item-largada-do-enduro',
   instanceIdSeenOnAir: null,
 };
 const previewTheYellowFlagAutomatically = {
@@ -208,7 +210,7 @@ describe('a take that must not be followed by a preview', () => {
     expect(
       fakeServer.listCommandsReceived(),
       'at the end of the rundown there is no item to preview after the take',
-    ).toEqual([takeNextOfTheMainRundown]);
+    ).toEqual([{ ...takeNextOfTheMainRundown, cursorItemIdSeen: 'item-chegada-do-enduro' }]);
   });
 
   it('previews nothing when the server refuses the take', async () => {

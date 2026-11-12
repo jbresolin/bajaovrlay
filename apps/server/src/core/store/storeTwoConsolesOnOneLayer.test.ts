@@ -12,7 +12,8 @@
  *   - Mesa 2's take 0,8 s after Mesa 1's, made on a page that still showed the layer empty,
  *     is refused with the pt-BR sentence; the air keeps Mesa 1's take; the event-log row is
  *     failed and names both consoles' roles and the moment of Mesa 1's take.
- *   - The same take 2,1 s after Mesa 1's goes through.
+ *   - The same take 2,1 s after Mesa 1's goes through, and so does one after the server
+ *     clock stepped back since Mesa 1's (the store signs each change with the step count).
  *   - One console pressing two takes 0,3 s apart: both go through.
  *   - A take from the command API between them is recorded with no console, so Mesa 2's
  *     take right after it goes through (automation stays unguarded).
@@ -40,15 +41,19 @@ const producerAtMesa2 = 'produtor:Mesa 2';
 const consoleAtMesa1 = 'c0a8f1e2-3b4d-4c5e-8f90-1a2b3c4d5e6f';
 const consoleAtMesa2 = '7e6d5c4b-3a29-4180-9f7e-6d5c4b3a2918';
 
-/** A store on a new database whose server clock reads whatever `clock.now` holds. */
+/**
+ * A store on a new database whose server clock reads whatever `clock.now` holds, and has
+ * made `clock.stepCount` steps (none until a test steps it).
+ */
 function openStoreWithAClockMovedByHand() {
-  const clock = { now: new Date('2026-10-09T14:32:00.000Z') };
+  const clock = { now: new Date('2026-10-09T14:32:00.000Z'), stepCount: 0 };
   const { database } = openTemporaryDatabase();
   const store = createStateStore({
     database,
     logger: createLogger({ level: 'silent' }),
     graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     readCurrentTime: () => clock.now,
+    readServerClockStepCount: () => clock.stepCount,
   });
   return { store, clock };
 }
@@ -148,6 +153,34 @@ describe('two consoles taking on "Relógio" through the store', () => {
     // Assert: accepted; the yellow flag is on air.
     expect(outcome, 'after 2 s the take must go through').toEqual({ ok: true });
     expect(readItemOnTheClockLayer(store), 'the yellow flag must be on air').toBe(yellowFlagItemId);
+  });
+
+  it("lets Mesa 2's take through when the server clock stepped back since Mesa 1's", () => {
+    // Arrange: Mesa 1 takes the green flag at 14:32:04.200; then NTP steps the server clock
+    // back 1 s.
+    const { store, clock } = openStoreWithAClockMovedByHand();
+    const { greenFlagItemId, yellowFlagItemId } = createTheTwoFlagButtons(store);
+    clock.now = new Date('2026-10-09T14:32:04.200Z');
+    store.applyCommand(
+      { type: 'takeItem', itemId: greenFlagItemId, instanceIdSeenOnAir: null },
+      producerAtMesa1,
+      consoleAtMesa1,
+    );
+    clock.stepCount = 1;
+
+    // Act: Mesa 2 takes the yellow flag at what the stepped clock reads 14:32:03.900, a
+    // moment before Mesa 1's on that clock, its page still showing nothing.
+    clock.now = new Date('2026-10-09T14:32:03.900Z');
+    const outcome = store.applyCommand(
+      { type: 'takeItem', itemId: yellowFlagItemId, instanceIdSeenOnAir: null },
+      producerAtMesa2,
+      consoleAtMesa2,
+    );
+
+    // Assert: accepted: no time measured across a step counts as recent.
+    expect(outcome, 'a step of the clock since the other take must make it old').toEqual({
+      ok: true,
+    });
   });
 
   it('lets one console take twice, 0,3 s apart', () => {

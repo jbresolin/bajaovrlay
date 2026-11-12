@@ -4,12 +4,15 @@ import { readRoleOfLoggedInOperatorActor } from '../commandActors.js';
 
 /**
  * The last change of one layer's program output (BAJAOVRLAY-69): when it happened, on the
- * server clock, and which console made it. `consoleId` is left out when no console did (a
- * macro's step, a trigger, the command API, the auto-out); `consoleRole` is left out when
- * that console had no login (the PINs unset).
+ * server clock, how many steps that clock had made then (a step since makes the change old:
+ * the two moments are then on different clocks; gate 2 of PR #64), and which console made
+ * it. `consoleId` is left out when no console did (a macro's step, a trigger, the command
+ * API, the auto-out); `consoleRole` is left out when that console had no login (the PINs
+ * unset).
  */
 export type ProgramChangeOfALayer = {
   changedAt: string;
+  serverClockStepCount: number;
   consoleId?: string;
   consoleRole?: OperatorRole;
 };
@@ -17,7 +20,9 @@ export type ProgramChangeOfALayer = {
 /**
  * Each layer's last program change, by layer id. A layer never changed has no entry, and a
  * store starts with an empty one (a new Map of its own: a module-level one would be state
- * shared between the store of every test file).
+ * shared between the store of every test file). The entry of a layer deleted since stays:
+ * it is never read again, and the record is bounded by the layers ever created while the
+ * server runs, a few dozen.
  */
 export type LastProgramChangeOfEachLayer = ReadonlyMap<string, ProgramChangeOfALayer>;
 
@@ -62,15 +67,20 @@ export function rememberLastProgramChangeOfEachLayer(
 }
 
 /**
- * The change one command makes, signed: its moment on the server clock, and, when a console
- * sent it, that console's id and the role of its login (none with the PINs unset).
+ * The change one command makes, signed: its moment on the server clock and that clock's
+ * step count, and, when a console sent it, that console's id and the role of its login (none
+ * with the PINs unset).
  */
 export function signProgramChangeOfACommand(command: {
   now: string;
+  serverClockStepCount: number;
   actor: string;
   consoleId: string | undefined;
 }): ProgramChangeOfALayer {
-  const change: ProgramChangeOfALayer = { changedAt: command.now };
+  const change: ProgramChangeOfALayer = {
+    changedAt: command.now,
+    serverClockStepCount: command.serverClockStepCount,
+  };
   if (command.consoleId === undefined) {
     return change;
   }

@@ -6,7 +6,7 @@ import type {
   TakeRefusedForAnotherConsole,
 } from '@bajaovrlay/shared';
 
-import { ptBR } from '../../messages/ptBR.js';
+import { ptBRConsoleErrors } from '../../messages/ptBRConsoles.js';
 import { readRoleOfLoggedInOperatorActor } from '../commandActors.js';
 import type { ReducerContext, SlicesChangedByCommands } from '../reducers/reducerTypes.js';
 import type { ProgramChangeOfALayer } from './lastProgramChangeOfEachLayer.js';
@@ -36,7 +36,8 @@ export type UnseenChangeByAnotherConsole = {
  * when the take may go through. It goes through (as before BAJAOVRLAY-69) unless all of these
  * hold: the command came from a console and says what it saw on air; the layer's program
  * output now shows something else; the layer's last change came from another console; and
- * that change is less than 2 s old. So one operator's quick presses, a macro, a trigger,
+ * that change is 0 to less than 2 s old on the same server clock, no step of it since. So
+ * one operator's quick presses, a macro, a trigger,
  * the command API and the D200 buttons are never refused, and neither is a take made after
  * the page had shown the other console's.
  */
@@ -71,10 +72,17 @@ export function findUnseenChangeByAnotherConsole(parts: {
     return undefined;
   }
 
-  // A server clock stepped back since the change gives a negative time: it counts as
-  // within the 2 s, so a take is refused rather than replacing the other console's unseen.
+  // Time is measured only on one clock: after a step of the server clock (NTP, "Acertar
+  // relógio agora") the two moments are on different clocks and the change counts as old,
+  // so a step back can neither widen the window nor read "há 0,0 s" (gate 2 of PR #64).
+  const serverClockStepCountNow = context.serverClockStepCount ?? 0;
+  const hasTheClockSteppedSince = lastChange.serverClockStepCount !== serverClockStepCountNow;
+  if (hasTheClockSteppedSince) {
+    return undefined;
+  }
   const elapsedMs = Date.parse(context.now) - Date.parse(lastChange.changedAt);
-  if (elapsedMs >= anotherConsolesChangeCountsAsUnseenForMs) {
+  const isRecent = elapsedMs >= 0 && elapsedMs < anotherConsolesChangeCountsAsUnseenForMs;
+  if (!isRecent) {
     return undefined;
   }
   return { change: lastChange, elapsedMs, instanceOnAirNow };
@@ -101,7 +109,7 @@ export function refuseTakeOverAnUnseenChange(parts: {
   whatWasNotDone: { kind: 'take'; itemLabel: string } | { kind: 'clear' };
 }): RefusalForAnUnseenChange {
   const { unseenChange, layerId, slices, context } = parts;
-  const texts = ptBR.consoleErrors;
+  const texts = ptBRConsoleErrors;
   const layerName = slices.layers.find((layer) => layer.id === layerId)?.name ?? layerId;
 
   const otherConsoleRole = unseenChange.change.consoleRole;

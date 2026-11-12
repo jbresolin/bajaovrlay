@@ -9,11 +9,13 @@ import { ptBR } from '@/i18n/ptBR';
 export type CommandFailureCode = CommandErrorCode | 'COMMAND_TIMED_OUT' | 'NOT_CONNECTED';
 
 /**
- * The part of the page whose buttons sent a command, when two parts send the same type: a
- * `takeItem` comes from the rundown column or from the quick-fire strip, and each shows its
- * refusals (BAJAOVRLAY-69). Left out, a refusal shows in every part listing its type.
+ * The part of the page whose buttons sent a command, when several parts send the same type:
+ * a `takeItem` comes from the rundown column, the quick-fire strip, a Camadas row
+ * (`layerPanel`) or the item editor, and each shows its own refusals beside its buttons
+ * (BAJAOVRLAY-69; the last two since gate 2 of PR #64). Left out, a refusal shows in every
+ * part listing its type.
  */
-export type AreaOfThePage = 'rundown' | 'quickFire';
+export type AreaOfThePage = 'rundown' | 'quickFire' | 'layerPanel' | 'itemEditor';
 
 /** The last failed command, as the store keeps it for the page to show. */
 export type LastCommandError = {

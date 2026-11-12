@@ -95,6 +95,11 @@ export type ReducerContext = {
    * no change is known and no take is refused for one.
    */
   lastProgramChangeOfEachLayer?: LastProgramChangeOfEachLayer;
+  /**
+   * How many steps the server clock has made at this command (core/time): a layer's change
+   * signed with another count is on another clock and counts as old. Left out, none (0).
+   */
+  serverClockStepCount?: number;
 };
 
 /**

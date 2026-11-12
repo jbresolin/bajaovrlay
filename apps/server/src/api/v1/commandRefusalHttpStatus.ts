@@ -63,6 +63,8 @@ const httpStatusOfEachRefusalCode: Record<CommandErrorCode, CommandRefusalHttpSt
   OBS_SCENE_NOT_FOUND: 422,
   // The state right now is in the way.
   RUNDOWN_CURSOR_EMPTY: 409,
+  // Another press moved the cursor first (gate 2 of PR #64); the command API never names one.
+  RUNDOWN_CURSOR_MOVED: 409,
   LAYER_PREVIEW_EMPTY: 409,
   NOTHING_IN_PREVIEW: 409,
   NOTHING_ON_AIR_ON_LAYER: 409,

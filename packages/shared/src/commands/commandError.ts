@@ -45,6 +45,11 @@ export const CommandErrorCodeSchema = z.enum([
   /** takeNext was sent while the rundown's cursor is on nothing. */
   'RUNDOWN_CURSOR_EMPTY',
   /**
+   * takeNext named the cursor item its page saw, and the server's cursor is on another item
+   * now: another press moved it first (gate 2 of PR #64). The message names the new one.
+   */
+  'RUNDOWN_CURSOR_MOVED',
+  /**
    * An item has a field value of a kind the server cannot resolve: a guard kept for a
    * kind added to the schema before the resolver has its case (entity references had
    * it until BAJAOVRLAY-19).

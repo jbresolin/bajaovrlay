@@ -100,6 +100,7 @@ export function buildChiefOnPreview(): Instance {
 export function buildMesa1TookTheCaptain(): ProgramChangeOfALayer {
   return {
     changedAt: momentMesa1TookTheCaptain,
+    serverClockStepCount: 0,
     consoleId: consoleAtMesa1,
     consoleRole: 'produtor',
   };
@@ -107,17 +108,20 @@ export function buildMesa1TookTheCaptain(): ProgramChangeOfALayer {
 
 /**
  * Builds the context the store hands a command from Mesa 2's console at 14:32:05, with
- * "Tarja"'s last change as given (none when left out). `actor` may be replaced, for a
- * console with the login off (`operador:<connection id>`).
+ * "Tarja"'s last change as given (none when left out), the server clock having made no step
+ * unless told. `actor` may be replaced, for a console with the login off
+ * (`operador:<connection id>`).
  */
 export function buildContextOfMesa2(parts: {
   lastChangeOfTheLowerThirdLayer?: ProgramChangeOfALayer;
   actor?: string;
+  serverClockStepCount?: number;
 }): ReducerContext {
   return {
     ...contextOfTheRundownCommand,
     actor: parts.actor ?? 'produtor:Mesa 2',
     consoleId: consoleAtMesa2,
+    serverClockStepCount: parts.serverClockStepCount ?? 0,
     lastProgramChangeOfEachLayer: buildLastChangesWithTheLowerThird(
       parts.lastChangeOfTheLowerThirdLayer,
     ),
