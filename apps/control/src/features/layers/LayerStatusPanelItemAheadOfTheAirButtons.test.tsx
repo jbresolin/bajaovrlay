@@ -134,9 +134,14 @@ describe('"Atualizar no ar" and "Disparar" on a row behind its item', () => {
     // Act: "Disparar" on the lower third's row.
     fireEvent.click(findLayerRow('Tarja').getByRole('button', { name: 'Disparar' }));
 
-    // Assert: the take of the item, as the rundown sends it.
+    // Assert: the take of the item, as the rundown sends it, saying the page showed the
+    // lower third on air there (BAJAOVRLAY-69).
     expect(fakeServer.listCommandsReceived(), 'the item must be taken again').toEqual([
-      { type: 'takeItem', itemId: buildInterviewLowerThirdItem().id },
+      {
+        type: 'takeItem',
+        itemId: buildInterviewLowerThirdItem().id,
+        instanceIdSeenOnAir: idOfTheLowerThirdOnAir,
+      },
     ]);
   });
 

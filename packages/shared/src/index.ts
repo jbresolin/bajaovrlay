@@ -56,13 +56,16 @@ export {
   PreviewClearedLayerIdsSchema,
 } from './slices/previewClearedLayerIds.js';
 // The `eventLog` slice: one line per command that changed something or was refused.
-// Its details: what the server knew when it applied the command (gate 2 of PR #44).
+// Its details: what the server knew when it applied the command (gate 2 of PR #44), and a
+// take refused because another console had just changed its layer (BAJAOVRLAY-69).
 export {
   type EventLogDetails,
   EventLogDetailsSchema,
   type EventLogEntry,
   EventLogEntrySchema,
   EventLogResultSchema,
+  type TakeRefusedForAnotherConsole,
+  TakeRefusedForAnotherConsoleSchema,
 } from './slices/eventLogEntry.js';
 // Every slice together (GET /api/v1/state, WS hello) and the list of slice names.
 export { type SliceName, SliceNameSchema, type Slices, SlicesSchema } from './slices/slices.js';
@@ -260,3 +263,5 @@ export * from './programHistory/index.js';
 export * from './eventLogReading/index.js';
 // The operator login (BAJAOVRLAY-29): the two roles, the login body and the session answer.
 export * from './operatorLogin/index.js';
+// Two consoles on one layer (BAJAOVRLAY-69): a console's id and what it saw on air at a take.
+export * from './consoles/index.js';

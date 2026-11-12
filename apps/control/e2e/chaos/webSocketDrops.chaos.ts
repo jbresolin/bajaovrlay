@@ -89,7 +89,7 @@ test.describe('a WebSocket drop in the middle of a take', () => {
       // item on air; on air, one entrance, not two.
       await waitUntilTheConsoleIsConnected(consolePage);
       await expect(
-        // The rundown and the quick fire strip both show a failed take; the first suffices.
+        // The quick-fire strip shows its own failed take (since BAJAOVRLAY-69, there only).
         consolePage.getByRole('alert').filter({ hasText: answerTimedOutMessage }).first(),
         'the console must say the server did not answer, so the operator checks Camadas',
       ).toBeVisible({ timeout: waitForTheTimedOutSentenceInMilliseconds });

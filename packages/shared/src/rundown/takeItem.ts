@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { InstanceIdSeenOnAirSchema } from '../consoles/whatTheConsoleSawOnAir.js';
 import { TriggerFillOfTakeSchema } from '../triggers/triggerDataField.js';
 
 /**
@@ -17,6 +18,12 @@ export const TakeItemCommandSchema = z.object({
    * authorisation refuses it from anyone else.
    */
   triggerFill: TriggerFillOfTakeSchema.optional(),
+  /**
+   * From a console only (BAJAOVRLAY-69): the instance it showed on the program output of the
+   * item's layer at the press, or null for an empty layer (../consoles/). Left out by the
+   * command API and a macro's step, which are never refused for what they did not see.
+   */
+  instanceIdSeenOnAir: InstanceIdSeenOnAirSchema.optional(),
 });
 
 /** A takeItem command after validation. */

@@ -42,14 +42,24 @@ import { ClearAllButton } from '@/features/playout/ClearAllButton';
 import { QuickEditPanel } from '@/features/playout/QuickEditPanel';
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildSlicesWithTheEnduranceRundown } from '@/state/rundownLikeTheServerSends.testSupport';
-import { buildRaceClockInstanceOnTheClockLayer } from '@/state/slicesLikeTheServerSends.testSupport';
+import {
+  buildRaceClockInstanceOnTheClockLayer,
+  idOfTheRaceClockOnAir,
+} from '@/state/slicesLikeTheServerSends.testSupport';
 
 import { RundownPanel } from './RundownPanel';
 
 // The item editor has its own tests; a stand-in takes its place here.
 vi.mock('@/features/items/ItemEditorPanel', () => import('./itemEditorStandIn.testSupport'));
 
-const takeNextOfTheMainRundown = { type: 'takeNext', rundownId: 'sessao-principal' };
+// Space with the cursor on the start: it says which cursor item the page showed (gate 2 of
+// PR #64), and that the race clock was on air on that item's layer (BAJAOVRLAY-69).
+const takeNextOfTheMainRundown = {
+  type: 'takeNext',
+  rundownId: 'sessao-principal',
+  cursorItemIdSeen: 'item-largada-do-enduro',
+  instanceIdSeenOnAir: idOfTheRaceClockOnAir,
+};
 
 /**
  * Draws the rundown panel with its neighbours on the real page: the race clock on air,
@@ -125,10 +135,11 @@ describe('the Space key', () => {
     });
 
     // Assert: the page did not decide by itself; it asked, and shows the server's answer.
+    // With no cursor item there is no layer, so the take says nothing of what was on air.
     expect(
       fakeServer.listCommandsReceived(),
       'the page must ask the server even with no cursor, because the server owns the cursor',
-    ).toEqual([takeNextOfTheMainRundown]);
+    ).toEqual([{ type: 'takeNext', rundownId: 'sessao-principal' }]);
     expect(
       await screen.findByRole('alert'),
       'the refusal must be explained in the rundown panel in pt-BR',
@@ -354,7 +365,13 @@ describe('the "Disparar" button and the keyboard focus', () => {
     expect(
       fakeServer.listCommandsReceived(),
       '"Disparar" must still send takeItem for its row',
-    ).toEqual([{ type: 'takeItem', itemId: 'item-chegada-do-enduro' }]);
+    ).toEqual([
+      {
+        type: 'takeItem',
+        itemId: 'item-chegada-do-enduro',
+        instanceIdSeenOnAir: idOfTheRaceClockOnAir,
+      },
+    ]);
     expect(
       takeButtonOfTheFinish,
       '"Disparar" must not keep the focus after a click',

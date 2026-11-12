@@ -156,13 +156,17 @@ export function LayerStatusPanel() {
             </LayerGroupOfOutput>
           ))
         )}
-        {/* "Limpar" and "Limpar tudo" show their refusals below the panel (AppShell.tsx). */}
+        {/* "Limpar" and "Limpar tudo" show their refusals below the panel (AppShell.tsx). A
+            row's "Disparar" (an item saved since its take) sends its take as Camadas', so its
+            refusal shows here only (gate 2 of PR #64). */}
         <CommandErrorMessage
+          areaOfThePage="layerPanel"
           commandTypes={[
             'previewClearLayer',
             'saveOnAirChangesIntoItem',
             'nextOnLayer',
             'undoOnLayer',
+            'takeItem',
           ]}
         />
         {saves.noteAboutTheLastSave !== null && (

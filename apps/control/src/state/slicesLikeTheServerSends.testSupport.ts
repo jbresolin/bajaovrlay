@@ -81,10 +81,16 @@ export function buildRaceClockGraphic(): Graphic {
   };
 }
 
+/**
+ * The id the server gave the race clock on air on the clock layer: what a take on that
+ * layer says the page showed there (BAJAOVRLAY-69).
+ */
+export const idOfTheRaceClockOnAir = '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11';
+
 /** The race clock on air on the clock layer, showing the endurance race under green. */
 export function buildRaceClockInstanceOnTheClockLayer(takenAt: string): Instance {
   return {
-    id: '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11',
+    id: idOfTheRaceClockOnAir,
     layerId: 'clock',
     graphicId: 'race-clock',
     target: 'program',

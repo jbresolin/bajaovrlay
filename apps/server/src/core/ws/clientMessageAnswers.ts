@@ -30,8 +30,10 @@ export function answerClientMessage(options: {
   logger: ServerLogger;
   /** The server clock a probe is answered with; the store's clock, as in startServer. */
   readCurrentTime?: (() => Date) | undefined;
+  /** The console this connection is (BAJAOVRLAY-69); left out for a screen. */
+  consoleId?: string | undefined;
 }): CommandResultMessage | ClockProbeAnswerMessage {
-  const { messageText, stateStore, actor, logger } = options;
+  const { messageText, stateStore, actor, logger, consoleId } = options;
   const readCurrentTime = options.readCurrentTime ?? readServerTime;
   // `messageText` is undefined for a binary frame, which the protocol does not use.
   if (messageText === undefined) {
@@ -84,6 +86,7 @@ export function answerClientMessage(options: {
     stateStore,
     actor,
     logger,
+    consoleId,
   });
 }
 
@@ -118,12 +121,17 @@ export function applyCommandAndBuildCommandResult(options: {
   stateStore: StateStore;
   actor: string;
   logger: ServerLogger;
+  /** The console that sent it (BAJAOVRLAY-69); left out for the command API and screens. */
+  consoleId?: string | undefined;
 }): CommandResultMessage {
-  const { commandInput, requestId, stateStore, actor, logger } = options;
+  const { commandInput, requestId, stateStore, actor, logger, consoleId } = options;
   try {
-    const outcome = stateStore.applyCommand(commandInput, actor);
+    const outcome = stateStore.applyCommand(commandInput, actor, consoleId);
     if (outcome.ok) {
-      return buildOkCommandResult(requestId, outcome.createdItemId);
+      return buildOkCommandResult(requestId, {
+        createdItemId: outcome.createdItemId,
+        layersNotTaken: outcome.layersNotTaken,
+      });
     }
     return buildErrorCommandResult(requestId, outcome.error);
   } catch (commandError) {

@@ -41,7 +41,10 @@ import {
   buildSlicesWithTheEnduranceRundown,
   enduranceStartItemId,
 } from '@/state/rundownLikeTheServerSends.testSupport';
-import { buildRaceClockInstanceOnTheClockLayer } from '@/state/slicesLikeTheServerSends.testSupport';
+import {
+  buildRaceClockInstanceOnTheClockLayer,
+  idOfTheRaceClockOnAir,
+} from '@/state/slicesLikeTheServerSends.testSupport';
 
 // The item editor has its own tests; a stand-in takes its place here.
 vi.mock(
@@ -156,9 +159,9 @@ describe('the monitors’ "Tomar"', () => {
     // Act: press "Tomar" on the clock's preview.
     fireEvent.click(previewLine.getByRole('button', { name: 'Tomar' }));
 
-    // Assert: the take of the preview went out.
+    // Assert: the take of the preview went out, saying the clock was on air (BAJAOVRLAY-69).
     expect(fakeServer.listCommandsReceived(), 'the Produtor takes the preview').toEqual([
-      { type: 'takePreview', layerId: 'clock' },
+      { type: 'takePreview', layerId: 'clock', instanceIdSeenOnAir: idOfTheRaceClockOnAir },
     ]);
   });
 });
@@ -269,7 +272,7 @@ describe('a button that prepares the show, and the login off', () => {
 
     // Assert: the take went out, as before the login existed.
     expect(fakeServer.listCommandsReceived(), 'no PINs, no roles').toEqual([
-      { type: 'takePreview', layerId: 'clock' },
+      { type: 'takePreview', layerId: 'clock', instanceIdSeenOnAir: idOfTheRaceClockOnAir },
     ]);
   });
 });

@@ -40,7 +40,7 @@ Two operators:
 - `twoOperators.chaos.ts` — "Próximo" on two consoles at once: one step; the late console says the step had moved.
 - the same — a name fixed in the editor while the other operator takes the item: old name on air, "item mudou" on both.
 - the same — Produtor takes while Dados edits, on a server with the login: both applied, each named in the log.
-- `twoTakesOnOneLayer.chaos.ts` — QUARANTINED, BAJAOVRLAY-69: both take on one layer at once; one must win and the other be told why.
+- `twoTakesOnOneLayer.chaos.ts` — both take on one layer at once: the first take stays on air with one entrance; the other console's take is refused, and it says why (BAJAOVRLAY-69).
 
 Clock (`faults/fakeNtpForTheServer.ts`):
 
