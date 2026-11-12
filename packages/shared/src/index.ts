@@ -7,6 +7,14 @@ export {
   type ServerClockHealth,
   ServerClockHealthSchema,
 } from './health/healthResponse.js';
+// Which source the server clock follows (NTP, HTTPS Date headers, or none) and its last
+// answer, for "Verificar servidor" and the header's menu (BAJAOVRLAY-76).
+export {
+  type ServerClockLastAnswer,
+  ServerClockLastAnswerSchema,
+  type ServerClockSource,
+  ServerClockSourceSchema,
+} from './health/serverClockSource.js';
 // The answer of "Acertar relógio agora" (POST /api/v1/server-clock/set-now).
 export {
   type ServerClockSetAnswer,

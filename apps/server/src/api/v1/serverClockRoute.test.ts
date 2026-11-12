@@ -10,14 +10,16 @@
  * What these tests prove (the real app in memory, with a stand-in for the server clock's
  *   NTP, so no test asks the internet):
  *   - set-now answers 200 with how far the clock was stepped.
- *   - With no NTP answer it answers 503 NTP_GAVE_NO_ANSWER in pt-BR; with NTP off, 503
- *     NTP_OFF in pt-BR.
- *   - /health carries the last NTP answer and the offset left; with NTP off it says so.
+ *   - With no answer from NTP nor HTTPS (BAJAOVRLAY-76) it answers 503
+ *     NTP_GAVE_NO_ANSWER in pt-BR; with NTP off, 503 NTP_OFF in pt-BR.
+ *   - /health carries the last NTP answer, the offset left and the source the clock
+ *     follows (BAJAOVRLAY-76); with NTP off it says so.
  *
  * What these tests deliberately do not cover:
  *   - Who may call set-now; operatorRouteAccess.test.ts (Produtor only).
  *   - How the clock is stepped; core/time/serverClockDiscipline.test.ts.
  */
+import type { ServerClockSource } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { openTemporaryDatabase } from '../../core/db/temporaryDatabase.testSupport.js';
@@ -30,10 +32,21 @@ import {
   type ServerClockControl,
   serverClockWithNtpOff,
 } from '../../core/time/serverClockControl.js';
-import type { SetToRealTimeOutcome } from '../../core/time/serverClockDiscipline.js';
+import type { SetToRealTimeOutcome } from '../../core/time/serverClockStatus.js';
 
 /** 10 October 2026, 13:00:04 UTC: when the last NTP answer of these tests arrived. */
 const momentOfTheLastNtpAnswerMs = Date.parse('2026-10-10T13:00:04.000Z');
+
+/** What the stand-in's clock follows: a.st1.ntp.br, 2.35 s behind real time. */
+const followingNtpBehindByTwoSeconds: ServerClockSource = {
+  following: 'ntp',
+  lastAnswer: {
+    source: 'ntp',
+    serverName: 'a.st1.ntp.br',
+    atMs: momentOfTheLastNtpAnswerMs,
+    differenceMs: 2_350,
+  },
+};
 
 /**
  * A stand-in for the server clock on NTP: its last answer came from a.st1.ntp.br, the
@@ -50,8 +63,10 @@ function createServerClockOnNtpThatAnswers(outcome: SetToRealTimeOutcome): Serve
         roundTripMs: 9,
       },
       offFromRealTimeMs: 2_350,
+      source: followingNtpBehindByTwoSeconds,
     }),
     readOffFromRealTimeMs: () => 2_350,
+    readServerClockSource: () => followingNtpBehindByTwoSeconds,
     setToRealTimeNow: () => Promise.resolve(outcome),
     stepToRealTimeAtBoot: () => Promise.resolve(),
     stop: () => {},
@@ -93,15 +108,16 @@ describe('POST /api/v1/server-clock/set-now', () => {
   const refusalScenarios = [
     // The uplink at the track is down: nothing to set the clock to.
     {
-      name: 'answers 503 NTP_GAVE_NO_ANSWER when no NTP server answered',
+      name: 'answers 503 NTP_GAVE_NO_ANSWER when no time server answered, NTP or HTTPS',
       serverClockControl: createServerClockOnNtpThatAnswers({
         isSet: false,
         reason: 'noAnswer',
-        problems: ['a.st1.ntp.br:123: timeout'],
+        problems: ['a.st1.ntp.br:123: timeout', 'www.cloudflare.com: timeout'],
       }),
       expectedError: {
         code: 'NTP_GAVE_NO_ANSWER',
-        message: 'Nenhum servidor NTP respondeu; o relógio do servidor ficou como estava.',
+        message:
+          'Nenhum servidor de hora (NTP ou HTTPS) respondeu; o relógio do servidor ficou como estava.',
       },
     },
     // A server started with BAJAOVRLAY_NTP_SERVERS=off has no real time to go by.
@@ -130,7 +146,7 @@ describe('POST /api/v1/server-clock/set-now', () => {
 });
 
 describe('GET /health and the server clock', () => {
-  it('carries the last NTP answer and the offset left', async () => {
+  it('carries the last NTP answer, the offset left and the source followed', async () => {
     // Arrange: a server clock on NTP, 2.35 s behind.
     const app = createServerAppWithTheClock(
       createServerClockOnNtpThatAnswers({ isSet: true, steppedByMs: 0 }),
@@ -152,6 +168,7 @@ describe('GET /health and the server clock', () => {
           roundTripMs: 9,
         },
         offFromRealTimeMs: 2_350,
+        source: followingNtpBehindByTwoSeconds,
       },
     });
   });

@@ -1,9 +1,13 @@
 import { z } from 'zod';
 
+import { ServerClockSourceSchema } from './serverClockSource.js';
+
 /**
  * What the server says about its clock (BAJAOVRLAY-62), for "Verificar servidor": NTP
- * off, or on with its last answer (null until one came) and how far the server clock is
- * still from real time (real time minus the server clock, in ms; null until an answer).
+ * off, or on with its last NTP answer (null until one came) and how far the server clock
+ * is still from real time (real time minus the server clock, in ms; null until an
+ * answer). `source` (BAJAOVRLAY-76) says what the clock follows now: NTP, HTTPS Date
+ * headers while NTP is quiet, or nothing; a server from before it leaves it out.
  */
 export const ServerClockHealthSchema = z.discriminatedUnion('isNtpOn', [
   z.object({ isNtpOn: z.literal(false) }),
@@ -20,6 +24,7 @@ export const ServerClockHealthSchema = z.discriminatedUnion('isNtpOn', [
       })
       .nullable(),
     offFromRealTimeMs: z.number().int().nullable(),
+    source: ServerClockSourceSchema.optional(),
   }),
 ]);
 

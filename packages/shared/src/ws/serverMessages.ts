@@ -12,6 +12,7 @@ import { SponsorsSchema } from '../entities/sponsor.js';
 import { TeamsSchema } from '../entities/team.js';
 import { EventRulesSchema } from '../eventInbox/eventRule.js';
 import { InboxEventsSchema } from '../eventInbox/inboxEventsSlice.js';
+import { ServerClockSourceSchema } from '../health/serverClockSource.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
 import { MacroStopsSchema } from '../macros/macroStop.js';
@@ -331,12 +332,15 @@ export type CommandResultMessage = z.infer<typeof CommandResultMessageSchema>;
  * time by NTP (real time minus the server clock), left out until NTP has answered and
  * when NTP is off; the control page's header warns from 2 s on. `serverClockStepCount`
  * as in `hello`; the server also sends a `time` at once after each step of its clock.
+ * `serverClockSource` (BAJAOVRLAY-76) is what the server clock follows now and its last
+ * answer, which the header's menu shows; a server from before it leaves it out.
  */
 export const TimeMessageSchema = z.object({
   type: z.literal('time'),
   serverNowMs: z.number().int(),
   offFromRealTimeMs: z.number().int().optional(),
   serverClockStepCount: ServerClockStepCountSchema,
+  serverClockSource: ServerClockSourceSchema.optional(),
 });
 
 /** One time message after validation. */

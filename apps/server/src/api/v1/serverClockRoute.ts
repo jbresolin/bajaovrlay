@@ -1,5 +1,6 @@
-// "Acertar relógio agora" (BAJAOVRLAY-62): POST /api/v1/server-clock/set-now asks NTP and
-// steps the server clock to real time at once, whatever counts time on air. Produtor alone
+// "Acertar relógio agora" (BAJAOVRLAY-62): POST /api/v1/server-clock/set-now asks NTP (and,
+// when NTP gives no answer, the HTTPS servers' Date headers: BAJAOVRLAY-76) and steps the
+// server clock to real time at once, whatever counts time on air. Produtor alone
 // (core/operatorLogin/routeAccess.ts). Thin: authorise, call the server clock, answer.
 import { ServerClockSetAnswerSchema } from '@bajaovrlay/shared';
 import { createRoute, type OpenAPIHono } from '@hono/zod-openapi';
@@ -22,7 +23,8 @@ export const postServerClockSetNowRoute = createRoute({
   path: '/server-clock/set-now',
   summary: 'Step the server clock to real time from NTP now ("Acertar relógio agora")',
   description:
-    'Asks the NTP servers and steps the server clock to real time at once, even while a ' +
+    'Asks the NTP servers (then, when none answers, the HTTPS servers of ' +
+    'BAJAOVRLAY_HTTP_TIME_SERVERS) and steps the server clock to real time at once, even while a ' +
     'race clock runs or a countdown counts on program or preview, which then jump by the ' +
     'difference. The control page asks the producer to confirm first.',
   responses: {
@@ -33,7 +35,7 @@ export const postServerClockSetNowRoute = createRoute({
     401: { description: 'With the login on, no session (pt-BR).', content: errorAnswerContent },
     403: { description: 'A Dados session: Produtor only (pt-BR).', content: errorAnswerContent },
     503: {
-      description: 'NTP is off on this server, or no NTP server answered (pt-BR).',
+      description: 'NTP is off on this server, or no NTP or HTTPS server answered (pt-BR).',
       content: errorAnswerContent,
     },
   },

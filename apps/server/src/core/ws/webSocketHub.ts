@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, Server } from 'node:http';
 import type { Duplex } from 'node:stream';
 
-import type { SliceNameSentWhole, Slices } from '@bajaovrlay/shared';
+import type { ServerClockSource, SliceNameSentWhole, Slices } from '@bajaovrlay/shared';
 import { type WebSocket, WebSocketServer } from 'ws';
 
 import { isOriginOfAnotherSite } from '../http/originOfAnotherSite.js';
@@ -52,6 +52,8 @@ export type WebSocketHubOptions = {
   readCurrentTime?: (() => Date) | undefined;
   /** How far the server clock is off real time by NTP (core/time), for each `time`. */
   readOffFromRealTimeMs?: (() => number | undefined) | undefined;
+  /** What the server clock follows and its last answer (core/time), for each `time`. */
+  readServerClockSource?: (() => ServerClockSource) | undefined;
   /** The server clock's step count for `hello` and `time`; defaults to core/time's. */
   readServerClockStepCount?: (() => number) | undefined;
   /**
@@ -120,6 +122,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     webSocketServer,
     readCurrentTime,
     readOffFromRealTimeMs: options.readOffFromRealTimeMs,
+    readServerClockSource: options.readServerClockSource,
     readServerClockStepCount,
     startRepeatingTimer: options.startRepeatingTimer,
     cancelRepeatingTimer: options.cancelRepeatingTimer,

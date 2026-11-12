@@ -1,12 +1,15 @@
 // Test support: a machine and the real world, on Vitest's fake time. The machine's
 // monotonic time (fake performance) runs as fast as the test says against real time; NTP
-// (a fake poll, answering at once) tells real time; the machine may sleep (real time goes
-// on, monotonic time does not) and its wall clock may be stepped as timesyncd does. A
-// server clock and its discipline run on that machine, as startServer wires them.
+// (a fake poll, answering at once) tells real time, and so do HTTPS Date headers (another
+// fake poll, when the test turns that fallback on: BAJAOVRLAY-76); the machine may sleep
+// (real time goes on, monotonic time does not) and its wall clock may be stepped as
+// timesyncd does. A server clock and its discipline run on that machine, as startServer
+// wires them.
 // Every call builds fresh objects, so no test sees another's.
 import { onTestFinished, vi } from 'vitest';
 
 import { createRecordingLogger } from '../logger/recordingLogger.testSupport.js';
+import type { HttpDatePollOutcome } from './httpDateClient.js';
 import type { NtpPollOutcome, NtpPollRequest } from './ntpPolls.js';
 import { createServerClock, type ServerClock } from './serverClock.js';
 import { startServerClockDiscipline } from './serverClockDiscipline.js';
@@ -16,6 +19,22 @@ export const tenOClockOfTheEnduroMs = Date.parse('2026-10-10T13:00:00.000Z');
 
 /** The NTP server the fake answers as. */
 export const nameOfTheFakeNtpServer = 'a.st1.ntp.br:123';
+
+/** The web server the fake HTTPS poll answers as. */
+export const nameOfTheFakeHttpsServer = 'www.cloudflare.com';
+
+/**
+ * HTTPS answers from the track, in turn: the Date-header method is as good as the network
+ * is even, so tens of ms either way, and the round trip of a kept-alive connection.
+ */
+export const httpsAnswersFromTheTrack: readonly NetworkOfOneAnswer[] = [
+  { roundTripMs: 31, offsetErrorMs: 8 },
+  { roundTripMs: 28, offsetErrorMs: -12 },
+  { roundTripMs: 35, offsetErrorMs: 21 },
+  { roundTripMs: 30, offsetErrorMs: -4 },
+  { roundTripMs: 33, offsetErrorMs: 15 },
+  { roundTripMs: 29, offsetErrorMs: -18 },
+];
 
 /** How one answer of the fake NTP came back: its round trip and how wrong its offset was. */
 export type NetworkOfOneAnswer = { roundTripMs: number; offsetErrorMs: number };
@@ -49,6 +68,10 @@ export type MachineOfTheTest = {
   wallClockAheadOfRealTimeAtBootMs: number;
   /** How the fake NTP's answers come back, in turn; one 12 ms round trip, exact, unless given. */
   networkOfEachAnswer?: readonly NetworkOfOneAnswer[];
+  /** Whether the HTTPS fallback is on (BAJAOVRLAY_HTTP_TIME_SERVERS); off unless given. */
+  isHttpsFallbackOn?: boolean;
+  /** How the fake HTTPS answers come back, in turn; httpsAnswersFromTheTrack unless given. */
+  networkOfEachHttpsAnswer?: readonly NetworkOfOneAnswer[];
 };
 
 /** One poll the discipline made: when (monotonic ms since the boot) and what it asked for. */
@@ -79,7 +102,11 @@ export function startAServerClockInAFakeWorld(machine: MachineOfTheTest) {
   let howWrongNtpIsMs = 0;
   let isAnythingCountingTimeOnAir = false;
   let stepsToldToThePages = 0;
+  let httpsAnswersGiven = 0;
+  let isHttpsReachable = true;
+  let howWrongHttpsIsMs = 0;
   const pollsMade: PollMade[] = [];
+  const httpsPollsMadeAtMs: number[] = [];
   const stepsConsidered: number[] = [];
 
   /** Real time now: what NTP would tell. */
@@ -126,6 +153,34 @@ export function startAServerClockInAFakeWorld(machine: MachineOfTheTest) {
     });
   }
 
+  /** The fake HTTPS poll: real time at once, through the next answer's network; or none. */
+  function pollHttpDateServers(): Promise<HttpDatePollOutcome> {
+    const monotonicNowMs = serverClock.readMonotonicTimeMs();
+    httpsPollsMadeAtMs.push(monotonicNowMs - monotonicAtBootMs);
+    if (!isHttpsReachable) {
+      return Promise.resolve({
+        isAnswered: false,
+        problems: [`${nameOfTheFakeHttpsServer}: timeout`, 'only one server answered (www.ntp.br)'],
+      });
+    }
+    const networkInTurn = machine.networkOfEachHttpsAnswer ?? httpsAnswersFromTheTrack;
+    const network = networkInTurn[httpsAnswersGiven % networkInTurn.length] ?? {
+      roundTripMs: 30,
+      offsetErrorMs: 0,
+    };
+    httpsAnswersGiven += 1;
+    const realTimeToldMs = readRealTimeMs() + howWrongHttpsIsMs + network.offsetErrorMs;
+    return Promise.resolve({
+      isAnswered: true,
+      serverName: nameOfTheFakeHttpsServer,
+      answer: {
+        offsetMs: realTimeToldMs - monotonicNowMs,
+        roundTripMs: network.roundTripMs,
+        localTimeAtArrivalMs: monotonicNowMs,
+      },
+    });
+  }
+
   const { logger, readRecordedLines } = createRecordingLogger();
   const discipline = startServerClockDiscipline({
     serverClock,
@@ -137,6 +192,7 @@ export function startAServerClockInAFakeWorld(machine: MachineOfTheTest) {
     afterEachStep: () => {
       stepsToldToThePages += 1;
     },
+    pollHttpDateServers: machine.isHttpsFallbackOn === true ? pollHttpDateServers : undefined,
     logger,
   });
   onTestFinished(() => {
@@ -150,6 +206,8 @@ export function startAServerClockInAFakeWorld(machine: MachineOfTheTest) {
     readRecordedLines,
     /** Every poll the discipline made, in order. */
     readPollsMade: () => [...pollsMade],
+    /** When each HTTPS poll was made, in monotonic ms since the boot. */
+    readHttpsPollsMadeAtMs: () => [...httpsPollsMadeAtMs],
     /** Each step the discipline asked about before stepping (what is on air may veto it). */
     readStepsConsidered: () => [...stepsConsidered],
     /** How many steps were reported for the pages to line up again. */
@@ -169,6 +227,14 @@ export function startAServerClockInAFakeWorld(machine: MachineOfTheTest) {
     /** From now on every poll also brings a RATE kiss of death from one server. */
     makeNtpAskToSlowDown: (isAsking: boolean) => {
       isNtpAskingToSlowDown = isAsking;
+    },
+    /** The HTTPS servers stop answering, or answer again. */
+    setHttpsReachable: (isReachable: boolean) => {
+      isHttpsReachable = isReachable;
+    },
+    /** HTTPS tells a time this far from real time. */
+    makeHttpsWrongBy: (wrongByMs: number) => {
+      howWrongHttpsIsMs = wrongByMs;
     },
     /** NTP tells a time this far from real time: a box without its GPS fix. */
     makeNtpWrongBy: (wrongByMs: number) => {

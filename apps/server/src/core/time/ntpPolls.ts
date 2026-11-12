@@ -57,7 +57,7 @@ function lookUpIpv4AddressesThroughDns(hostName: string): Promise<string[]> {
 export type WaitBetweenQuestions = (waitMs: number, abortSignal?: AbortSignal) => Promise<void>;
 
 /** The default wait between two questions: a timer, cleared and ended early by an abort. */
-function waitFor(waitMs: number, abortSignal?: AbortSignal): Promise<void> {
+export function waitFor(waitMs: number, abortSignal?: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
     if (abortSignal?.aborted === true) {
       resolve();
