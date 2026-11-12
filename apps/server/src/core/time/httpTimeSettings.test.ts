@@ -73,7 +73,11 @@ describe('parseHttpTimeSettings', () => {
       isValid: true,
       httpTimeSettings: {
         isHttpTimeOn: true,
-        serverAddresses: ['http://192.168.10.5:8080', 'https://www.ntp.br', 'https://www.google.com'],
+        serverAddresses: [
+          'http://192.168.10.5:8080',
+          'https://www.ntp.br',
+          'https://www.google.com',
+        ],
       },
     });
   });
@@ -81,9 +85,17 @@ describe('parseHttpTimeSettings', () => {
   // Each row is a mistake someone could write in .env; the boot must name it.
   it.each([
     // A host without its scheme: written as for BAJAOVRLAY_NTP_SERVERS.
-    { name: 'a bare host', text: 'www.cloudflare.com,https://www.ntp.br', badEntry: 'www.cloudflare.com' },
+    {
+      name: 'a bare host',
+      text: 'www.cloudflare.com,https://www.ntp.br',
+      badEntry: 'www.cloudflare.com',
+    },
     // NTP's own scheme is not a web address.
-    { name: 'an ntp:// address', text: 'https://www.ntp.br,ntp://a.st1.ntp.br', badEntry: 'ntp://a.st1.ntp.br' },
+    {
+      name: 'an ntp:// address',
+      text: 'https://www.ntp.br,ntp://a.st1.ntp.br',
+      badEntry: 'ntp://a.st1.ntp.br',
+    },
     // A doubled comma leaves an empty entry.
     { name: 'an empty entry', text: 'https://www.ntp.br,,https://www.google.com', badEntry: '' },
   ])('names $name as the bad entry', ({ text, badEntry }) => {

@@ -67,6 +67,7 @@ function createServerClockOnNtpThatAnswers(outcome: SetToRealTimeOutcome): Serve
     }),
     readOffFromRealTimeMs: () => 2_350,
     readServerClockSource: () => followingNtpBehindByTwoSeconds,
+    readIsServerClockWithoutSync: () => false,
     setToRealTimeNow: () => Promise.resolve(outcome),
     stepToRealTimeAtBoot: () => Promise.resolve(),
     stop: () => {},

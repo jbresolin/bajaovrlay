@@ -76,6 +76,8 @@ export default defineConfig({
         // No NTP: a browser test never waits on the internet, and the clock it checks is
         // the machine's own (BAJAOVRLAY-62).
         BAJAOVRLAY_NTP_SERVERS: 'off',
+        // Nor HTTPS Date headers, NTP's fallback (BAJAOVRLAY-76).
+        BAJAOVRLAY_HTTP_TIME_SERVERS: 'off',
         // The command API on, with a made-up token, so a test can call an HTTP trigger's
         // address as a D200 does (BAJAOVRLAY-48).
         BAJAOVRLAY_API_TOKENS: apiTokensVariableOfTheBrowserTests,
@@ -99,6 +101,8 @@ export default defineConfig({
         // No NTP: a browser test never waits on the internet, and the clock it checks is
         // the machine's own (BAJAOVRLAY-62).
         BAJAOVRLAY_NTP_SERVERS: 'off',
+        // Nor HTTPS Date headers, NTP's fallback (BAJAOVRLAY-76).
+        BAJAOVRLAY_HTTP_TIME_SERVERS: 'off',
         BAJAOVRLAY_PIN_PRODUCER: producerPinOfTheBrowserTests,
         BAJAOVRLAY_PIN_DATA: dataRolePinOfTheBrowserTests,
       },

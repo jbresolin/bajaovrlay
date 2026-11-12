@@ -114,11 +114,12 @@ describe('the HTTP Date client', () => {
     ).toBeLessThanOrEqual(maximumRequestsPerServer);
   });
 
-  it("times its requests so that they reach the server as its second ticks over", async () => {
+  it('times its requests so that they reach the server as its second ticks over', async () => {
     // Arrange: two servers on real time, behind the same uneven delays.
-    const serverSettings = ['https://www.cloudflare.com', 'https://www.ntp.br'].map(
-      (address) => ({ address, delaysOfEachRequest: unevenDelaysOfAGoodUplink }),
-    );
+    const serverSettings = ['https://www.cloudflare.com', 'https://www.ntp.br'].map((address) => ({
+      address,
+      delaysOfEachRequest: unevenDelaysOfAGoodUplink,
+    }));
 
     // Act: one poll.
     const { fakeServers } = await pollTheFakeServers(serverSettings);
@@ -218,7 +219,11 @@ describe('the HTTP Date client', () => {
   // Each row is a Date header a server could send that says no time.
   it.each([
     // Not a date at all: a proxy filling the header with its own text.
-    { name: 'a Date that will not parse', dateHeader: 'ontem à tarde', expected: 'www.ntp.br: unreadable Date header ("ontem à tarde")' },
+    {
+      name: 'a Date that will not parse',
+      dateHeader: 'ontem à tarde',
+      expected: 'www.ntp.br: unreadable Date header ("ontem à tarde")',
+    },
     // A server that sends no Date header (allowed when it has no clock).
     { name: 'no Date header', dateHeader: undefined, expected: 'www.ntp.br: no Date header' },
   ])('names $name in the problems', async ({ dateHeader, expected }) => {

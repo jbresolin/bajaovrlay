@@ -32,6 +32,7 @@
  *
  * What these tests deliberately do not cover:
  *   - The Date-header method itself; httpDateClient.test.ts.
+ *   - When the header is told the clock is without sync; serverClockWithoutSync.test.ts.
  *   - The NTP-only rules these share; serverClockDiscipline.test.ts and
  *     serverClockDisciplinePolls.test.ts.
  */
@@ -164,9 +165,7 @@ describe('with NTP quiet', () => {
     expect(world.readHttpsPollsMadeAtMs().slice(0, 2), 'a confirmation 16 s later').toEqual([
       64_000, 80_000,
     ]);
-    expect(measureHowFarFromRealTimeNow(world), 'on real time, as HTTPS tells it').toBeLessThan(
-      30,
-    );
+    expect(measureHowFarFromRealTimeNow(world), 'on real time, as HTTPS tells it').toBeLessThan(30);
     expect(world.countStepsToldToThePages(), 'one step, told to the pages').toBe(1);
   });
 

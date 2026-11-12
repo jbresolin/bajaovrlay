@@ -44,7 +44,7 @@ Two operators:
 
 Clock (`faults/fakeNtpForTheServer.ts`):
 
-- `serverClock.chaos.ts` — NTP out of reach: the server starts, "O NTP ainda não respondeu.", the clock runs on.
+- `serverClock.chaos.ts` — NTP out of reach: the server starts, "Relógio: sem sincronização — hora do computador.", the clock runs on.
 - the same — real time found 30 s ahead with a clock on air: the step is held, the clock does not jump, the header warns.
 - the same — "Acertar relógio agora": the confirm says what jumps; only the race clock and the countdown jump, by 30 s.
 

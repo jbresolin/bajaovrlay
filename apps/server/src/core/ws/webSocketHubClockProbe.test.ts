@@ -74,9 +74,11 @@ async function startHubOnAClockMovedByHand(
     logger,
     heartbeatIntervalInMilliseconds: 15_000,
     readCurrentTime: clockAndTimer.readCurrentTime,
-    readOffFromRealTimeMs: () => offFromRealTimeMs,
-    readServerClockSource:
-      serverClockSource === undefined ? undefined : () => serverClockSource,
+    serverClockReports: {
+      readOffFromRealTimeMs: () => offFromRealTimeMs,
+      readServerClockSource: serverClockSource === undefined ? undefined : () => serverClockSource,
+      readIsServerClockWithoutSync: serverClockSource === undefined ? undefined : () => false,
+    },
     readServerClockStepCount: () => serverClockStepCount,
     startRepeatingTimer: clockAndTimer.startRepeatingTimer,
     cancelRepeatingTimer: clockAndTimer.cancelRepeatingTimer,
@@ -239,6 +241,7 @@ describe('the source of the server clock in the time message', () => {
     expect(timeMessage, 'the header menu reads the source from here').toMatchObject({
       type: 'time',
       serverClockSource: followingHttps,
+      isServerClockWithoutSync: false,
     });
   });
 });

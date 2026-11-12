@@ -1,7 +1,11 @@
 import type { ServerClockLastAnswer } from '@bajaovrlay/shared';
 
 import type { ServerLogger } from '../logger/createLogger.js';
-import { type AnsweredPoll, type AnswerTaken, readAnAnsweredPoll } from './answeredPollOfRealTime.js';
+import {
+  type AnsweredPoll,
+  type AnswerTaken,
+  readAnAnsweredPoll,
+} from './answeredPollOfRealTime.js';
 import { pollForRealTimeWithinTheBootWait } from './bootPollForRealTime.js';
 import type { HttpDatePollOutcome } from './httpDateClient.js';
 import { type NtpPollOutcome, type NtpPollRequest, questionsPerPoll } from './ntpPolls.js';
@@ -274,7 +278,8 @@ export function startServerClockDiscipline(
   }
 
   function scheduleARegularPoll(): void {
-    const isFollowingHttps = options.pollHttpDateServers !== undefined && sourceFollowed.isNtpQuiet();
+    const isFollowingHttps =
+      options.pollHttpDateServers !== undefined && sourceFollowed.isNtpQuiet();
     const intervalMs = isFollowingHttps
       ? httpsPollIntervalMs
       : findTheNextPollIntervalMs({ answersTaken, slowDownFactor });
@@ -380,6 +385,7 @@ export function startServerClockDiscipline(
           : Math.round(differenceNotTakenMs ?? serverClock.readSlewLeftMs()),
       rate: serverClock.readRate(),
       source: sourceFollowed.readSourceFollowed(),
+      isWithoutSync: sourceFollowed.isWithoutSync(),
     }),
     stop: () => {
       isStopped = true;

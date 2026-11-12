@@ -104,6 +104,7 @@ export function startAServerClockInAFakeWorld(machine: MachineOfTheTest) {
   let stepsToldToThePages = 0;
   let httpsAnswersGiven = 0;
   let isHttpsReachable = true;
+  let isHttpsAnsweringAtAll = true;
   let howWrongHttpsIsMs = 0;
   const pollsMade: PollMade[] = [];
   const httpsPollsMadeAtMs: number[] = [];
@@ -157,6 +158,10 @@ export function startAServerClockInAFakeWorld(machine: MachineOfTheTest) {
   function pollHttpDateServers(): Promise<HttpDatePollOutcome> {
     const monotonicNowMs = serverClock.readMonotonicTimeMs();
     httpsPollsMadeAtMs.push(monotonicNowMs - monotonicAtBootMs);
+    if (!isHttpsAnsweringAtAll) {
+      // A poll that never ends, like one waiting on a slow uplink.
+      return new Promise(() => {});
+    }
     if (!isHttpsReachable) {
       return Promise.resolve({
         isAnswered: false,
@@ -231,6 +236,10 @@ export function startAServerClockInAFakeWorld(machine: MachineOfTheTest) {
     /** The HTTPS servers stop answering, or answer again. */
     setHttpsReachable: (isReachable: boolean) => {
       isHttpsReachable = isReachable;
+    },
+    /** Every HTTPS poll from now on hangs, as on a very slow uplink. */
+    makeHttpsNeverAnswer: () => {
+      isHttpsAnsweringAtAll = false;
     },
     /** HTTPS tells a time this far from real time. */
     makeHttpsWrongBy: (wrongByMs: number) => {

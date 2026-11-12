@@ -61,6 +61,9 @@ export async function startOwnServer(settings: OwnServerSettings): Promise<OwnSe
         LOG_LEVEL: 'warn',
         DATABASE_PATH: settings.databasePath,
         DATA_DIR: settings.dataFolder,
+        // No HTTPS Date headers (BAJAOVRLAY-76): a browser test never asks the internet,
+        // and a test that points NTP at a fake must not fall back past it.
+        BAJAOVRLAY_HTTP_TIME_SERVERS: 'off',
         ...settings.moreVariables,
       },
     },

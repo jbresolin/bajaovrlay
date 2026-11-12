@@ -7,17 +7,27 @@ import { buildTimeMessage, serializeServerMessage } from './serverMessageBuildin
 export const serverTimeIntervalInMilliseconds = 10_000;
 
 /**
- * What the broadcast needs: the clients, the clock, and (for tests) the two timer
- * functions, which default to Node's setInterval and clearInterval.
+ * What each `time` message says of the server clock beyond its time (core/time's
+ * serverClockControl.ts); each reader left out leaves its field out of the message.
+ */
+export type ServerClockReportsForTime = {
+  /** How far the server clock is from real time by NTP; undefined when not known. */
+  readOffFromRealTimeMs?: (() => number | undefined) | undefined;
+  /** What the server clock follows and its last answer (BAJAOVRLAY-76). */
+  readServerClockSource?: (() => ServerClockSource) | undefined;
+  /** Whether neither NTP nor HTTPS has answered for a full poll interval (the header's chip). */
+  readIsServerClockWithoutSync?: (() => boolean) | undefined;
+};
+
+/**
+ * What the broadcast needs: the clients, the clock, what to say of it, and (for tests)
+ * the two timer functions, which default to Node's setInterval and clearInterval.
  */
 export type ServerTimeBroadcastOptions = {
   webSocketServer: WebSocketServer;
   /** The clock the store stamps commands with; see WebSocketHubOptions.readCurrentTime. */
   readCurrentTime: () => Date;
-  /** How far the server clock is from real time by NTP; undefined when not known. */
-  readOffFromRealTimeMs?: (() => number | undefined) | undefined;
-  /** What the server clock follows (BAJAOVRLAY-76); left out of `time` when not given. */
-  readServerClockSource?: (() => ServerClockSource) | undefined;
+  serverClockReports?: ServerClockReportsForTime | undefined;
   /** How many steps the server clock has made (serverClock.ts). */
   readServerClockStepCount: () => number;
   /** Starts a timer that fires again and again; returns what cancelRepeatingTimer takes. */
@@ -44,7 +54,7 @@ export type ServerTimeBroadcast = { sendTheTimeToEveryClientNow: () => void; sto
  * gets the next tick; its `hello` has already lined it up.
  */
 export function startServerTimeBroadcast(options: ServerTimeBroadcastOptions): ServerTimeBroadcast {
-  const { webSocketServer, readCurrentTime } = options;
+  const { webSocketServer, readCurrentTime, serverClockReports } = options;
   const startRepeatingTimer = options.startRepeatingTimer ?? startNodeRepeatingTimer;
   const cancelRepeatingTimer = options.cancelRepeatingTimer ?? cancelNodeRepeatingTimer;
 
@@ -52,9 +62,10 @@ export function startServerTimeBroadcast(options: ServerTimeBroadcastOptions): S
   function sendTimeToEveryClient(): void {
     const timeMessage = buildTimeMessage({
       serverNowMs: readCurrentTime().getTime(),
-      offFromRealTimeMs: options.readOffFromRealTimeMs?.(),
+      offFromRealTimeMs: serverClockReports?.readOffFromRealTimeMs?.(),
       serverClockStepCount: options.readServerClockStepCount(),
-      serverClockSource: options.readServerClockSource?.(),
+      serverClockSource: serverClockReports?.readServerClockSource?.(),
+      isServerClockWithoutSync: serverClockReports?.readIsServerClockWithoutSync?.(),
     });
     const messageText = serializeServerMessage(timeMessage);
     for (const client of webSocketServer.clients) {

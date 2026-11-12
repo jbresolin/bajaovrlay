@@ -18,6 +18,11 @@ export type ServerClockControl = {
   readOffFromRealTimeMs: () => number | undefined;
   /** For the `time` message (the header's menu): what the clock follows (BAJAOVRLAY-76). */
   readServerClockSource: () => ServerClockSource;
+  /**
+   * For the `time` message (the header's "Relógio sem sincronização"): neither NTP nor
+   * HTTPS has answered for a full poll interval. False with NTP off: that is chosen.
+   */
+  readIsServerClockWithoutSync: () => boolean;
   /** "Acertar relógio agora"; with NTP off it answers so, without asking anyone. */
   setToRealTimeNow: (actor: string) => Promise<SetToRealTimeOutcome>;
   /** The boot's step to real time (waits up to 3 s); nothing with NTP off. */
@@ -31,6 +36,7 @@ export const serverClockWithNtpOff: ServerClockControl = {
   readServerClockHealth: () => ({ isNtpOn: false }),
   readOffFromRealTimeMs: () => undefined,
   readServerClockSource: () => ({ following: 'none', lastAnswer: null }),
+  readIsServerClockWithoutSync: () => false,
   setToRealTimeNow: () => Promise.resolve({ isSet: false, reason: 'ntpOff' }),
   stepToRealTimeAtBoot: () => Promise.resolve(),
   stop: () => {},
@@ -112,6 +118,7 @@ export function startTheServerClockOnNtp(options: {
     },
     readOffFromRealTimeMs: () => discipline.readStatus().offFromRealTimeMs,
     readServerClockSource: () => discipline.readStatus().source,
+    readIsServerClockWithoutSync: () => discipline.readStatus().isWithoutSync,
     setToRealTimeNow: discipline.setToRealTimeNow,
     stepToRealTimeAtBoot: discipline.stepToRealTimeAtBoot,
     stop: discipline.stop,

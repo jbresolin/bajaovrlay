@@ -31,6 +31,8 @@ export type ServerClockStatus = {
   rate: number;
   /** NTP, HTTPS (NTP quiet for 64 s), or none; with the last answer (BAJAOVRLAY-76). */
   source: ServerClockSource;
+  /** Neither NTP nor HTTPS has answered for a full poll interval (the header's chip). */
+  isWithoutSync: boolean;
 };
 
 /** What "Acertar relógio agora" did: stepped by how much, or why it could not. */

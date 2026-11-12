@@ -100,8 +100,17 @@ Desktop may use the network: allow **private** networks.
 3. The control page shows "Conectado".
 4. A test take: an item on the program output shows in OBS, then "Limpar" clears it.
 5. "Fontes de dados": each source the session needs is on and "Ok".
-6. With the uplink cable out, steps 3 and 4 still work and nothing on air changes. The
+6. The clock: the header shows no "Relógio sem sincronização", and the top of the header's
+   **Menu** says what the server clock follows, such as "Relógio: NTP (a.st1.ntp.br), última
+   resposta às 09:58:12, diferença de +3 ms." "HTTPS (www.cloudflare.com)" there means the
+   venue blocks NTP (UDP 123 out) and the clock follows web servers' time instead, good to
+   tens of ms: fine for the show, but ask the venue to let UDP 123 out. "Relógio sem
+   sincronização" in the header means neither answered for a minute: every clock on air
+   counts on the PC's own time; check the uplink.
+7. With the uplink cable out, steps 3 and 4 still work and nothing on air changes. The
    external sources turn "Atrasada", then "Erro", and are "Ok" again once it is back in.
+   After a minute the header shows "Relógio sem sincronização", and it goes once the cable
+   is back in.
 
 ## 7. Update at the track
 

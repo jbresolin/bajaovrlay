@@ -318,8 +318,11 @@ async function startServingFromDatabase(
       heartbeatIntervalInMilliseconds:
         options.heartbeatIntervalInMilliseconds ?? defaultHeartbeatIntervalInMilliseconds,
       readCurrentTime,
-      readOffFromRealTimeMs: serverClockControl.readOffFromRealTimeMs,
-      readServerClockSource: serverClockControl.readServerClockSource,
+      serverClockReports: {
+        readOffFromRealTimeMs: serverClockControl.readOffFromRealTimeMs,
+        readServerClockSource: serverClockControl.readServerClockSource,
+        readIsServerClockWithoutSync: serverClockControl.readIsServerClockWithoutSync,
+      },
       buildId,
       operatorLogin,
       publicOrigins: options.publicOrigins,

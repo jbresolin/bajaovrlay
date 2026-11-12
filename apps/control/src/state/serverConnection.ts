@@ -193,10 +193,14 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
         // its clock, whose new step count starts four probes that line up at once): one
         // probe keeps the alignment fresh, and how far the server clock is off real time
         // goes to the store, which only changes (and redraws the header) when the whole
-        // seconds change. No log line.
+        // seconds change; so do what the clock follows and whether it is without sync
+        // (BAJAOVRLAY-76). No log line.
         startLiningUpAgainIfTheServerClockStepped(message.serverClockStepCount);
         sendClockProbe();
         serverStateStore.getState().noteServerClockOffRealTime(message.offFromRealTimeMs);
+        serverStateStore
+          .getState()
+          .noteServerClockSource(message.serverClockSource, message.isServerClockWithoutSync);
         break;
       case 'clockProbeAnswer': {
         const { isAnotherProbeNeeded } = recordClockProbeAnswer({

@@ -11,9 +11,7 @@ export type DelaysOfOneRequest = { outMs: number; backMs: number };
 
 /** What a fake server does with each request. */
 export type FakeServerBehaviour =
-  | 'answers'
-  | 'neverAnswers'
-  | { answersWithTheDateHeader: string | undefined };
+  'answers' | 'neverAnswers' | { answersWithTheDateHeader: string | undefined };
 
 /** One fake web server: its address, its clock, its network, what it does. */
 export type FakeHttpDateServerSettings = {
@@ -110,9 +108,7 @@ export function createFakeHttpDateServers(
       timers.push(
         setTimeout(() => {
           const dateHeader = writeTheDateHeaderNow(server);
-          timers.push(
-            setTimeout(() => finish({ isAnswered: true, dateHeader }), delays.backMs),
-          );
+          timers.push(setTimeout(() => finish({ isAnswered: true, dateHeader }), delays.backMs));
         }, delays.outMs),
       );
     });

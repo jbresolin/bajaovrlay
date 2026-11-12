@@ -9,6 +9,10 @@ through `ntpPolls.ts` (DNS, 2 s between questions) and `ntpClient.ts` (one conne
 question, bad answers refused), on the servers of `ntpSettings.ts`. It ramps to the rate of
 `realTimeRate.ts`, slews under 1 s, and steps a confirmed 1 s or more unless the step would
 make something on air jump (`timeCountedOnAnOutput.ts`); never over 24 h on its own.
+While NTP is quiet for a full poll interval (64 s), `httpDateClient.ts` feeds the same
+discipline from HTTPS Date headers (BAJAOVRLAY-76; `httpHeadRequest.ts` makes the requests,
+`httpTimeSettings.ts` reads the servers); `serverClockSourceFollowed.ts` keeps which source
+is followed and whether the clock is without sync, `realTimeRateWindow.ts` the rate's window.
 `serverClockControl.ts` is what /health, the `time` message and "Acertar relógio agora" see.
 On the server clock: reference moments, take times, `serverNowMs`, a replay's moments, an
 inbox event's `atMs`, the event log and the history. On the wall clock (with reasons in

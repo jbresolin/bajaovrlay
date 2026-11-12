@@ -25,7 +25,10 @@ import type { AddressInfo, Socket } from 'node:net';
 
 import { describe, expect, it, onTestFinished } from 'vitest';
 
-import { type ConnectionsForHeadRequests, openConnectionsForHeadRequests } from './httpHeadRequest.js';
+import {
+  type ConnectionsForHeadRequests,
+  openConnectionsForHeadRequests,
+} from './httpHeadRequest.js';
 
 /** The Date header the local server writes: 10 October 2026, 13:00:04 UTC. */
 const dateHeaderOfTheLocalServer = 'Sat, 10 Oct 2026 13:00:04 GMT';

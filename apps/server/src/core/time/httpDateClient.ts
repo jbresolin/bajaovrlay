@@ -224,7 +224,10 @@ function findTheWaitBeforeTheNextRequestMs(
  * one-sided delay moved a midpoint: the truth is where they meet, within that delay, so
  * the range closes there rather than keeping either whole.
  */
-function narrowTheRange(range: RangeOfTheOffset, rangeOfAnAnswer: RangeOfTheOffset): RangeOfTheOffset {
+function narrowTheRange(
+  range: RangeOfTheOffset,
+  rangeOfAnAnswer: RangeOfTheOffset,
+): RangeOfTheOffset {
   const lowestMs = Math.max(range.lowestMs, rangeOfAnAnswer.lowestMs);
   const highestMs = Math.min(range.highestMs, rangeOfAnAnswer.highestMs);
   if (lowestMs <= highestMs) {
@@ -260,14 +263,23 @@ function describeWhyNoTwoServersAgree(measuredServers: readonly MeasuredServer[]
   if (secondServer === undefined) {
     return `only one server answered (${firstServer.serverName})`;
   }
-  const apartMs = Math.round(
-    Math.abs(firstServer.answer.offsetMs - secondServer.answer.offsetMs),
-  );
+  const apartMs = Math.round(Math.abs(firstServer.answer.offsetMs - secondServer.answer.offsetMs));
   return `no two servers agree within ${largestDisagreementMs} ms: ${firstServer.serverName} and ${secondServer.serverName} disagree by ${apartMs} ms`;
 }
 
 const monthNumbers: Record<string, number> = {
-  Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+  Jan: 0,
+  Feb: 1,
+  Mar: 2,
+  Apr: 3,
+  May: 4,
+  Jun: 5,
+  Jul: 6,
+  Aug: 7,
+  Sep: 8,
+  Oct: 9,
+  Nov: 10,
+  Dec: 11,
 };
 
 // RFC 9110's date, which every current web server sends: "Sat, 10 Oct 2026 13:00:04 GMT".

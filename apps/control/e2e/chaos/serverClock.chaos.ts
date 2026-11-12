@@ -11,8 +11,10 @@
  *   which answers this machine's time moved by an offset, so nobody touches a real clock.
  *
  * What these tests prove:
- *   - NTP out of reach: the server starts all the same, "Verificar servidor" says NTP has
- *     not answered, and a race clock on air runs on with real time.
+ *   - NTP out of reach: the server starts all the same, "Verificar servidor" says the
+ *     clock follows nothing ("sem sincronização — hora do computador": the HTTPS fallback
+ *     of BAJAOVRLAY-76 is off in every browser test), and a race clock on air runs on with
+ *     real time.
  *   - Real time found 30 s ahead, with a race clock on air: once the step is confirmed (a
  *     second answer, 16 s after the first), the server holds it: the clock on air, read
  *     every second through it all, keeps counting without a jump, never blanks nor replays
@@ -123,12 +125,12 @@ test.describe('the server clock when NTP misbehaves', () => {
       // Act: a running race clock is taken.
       await takeRunningEnduroClock(server.port);
 
-      // Assert: "Verificar servidor" says NTP has not answered; the clock counts on with
-      // real time.
+      // Assert: "Verificar servidor" says the clock follows nothing; the clock counts on
+      // with real time.
       await expect(
         await checkTheServerFromTheMenu(consolePage),
-        '"Verificar servidor" must say NTP has not answered',
-      ).toContainText('O NTP ainda não respondeu.');
+        '"Verificar servidor" must say no source answers',
+      ).toContainText('Relógio: sem sincronização — hora do computador.');
       await waitUntilTheRaceClockShowsATime(output.page);
       const clockSecondsFirst = await readRaceClockSecondsOnTheOutput(output.page);
       const firstReadingAtMs = Date.now();

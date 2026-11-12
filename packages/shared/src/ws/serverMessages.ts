@@ -334,6 +334,8 @@ export type CommandResultMessage = z.infer<typeof CommandResultMessageSchema>;
  * as in `hello`; the server also sends a `time` at once after each step of its clock.
  * `serverClockSource` (BAJAOVRLAY-76) is what the server clock follows now and its last
  * answer, which the header's menu shows; a server from before it leaves it out.
+ * `isServerClockWithoutSync` is true once neither NTP nor HTTPS has answered for a full
+ * poll interval: the header shows "Relógio sem sincronização" (left out by older servers).
  */
 export const TimeMessageSchema = z.object({
   type: z.literal('time'),
@@ -341,6 +343,7 @@ export const TimeMessageSchema = z.object({
   offFromRealTimeMs: z.number().int().optional(),
   serverClockStepCount: ServerClockStepCountSchema,
   serverClockSource: ServerClockSourceSchema.optional(),
+  isServerClockWithoutSync: z.boolean().optional(),
 });
 
 /** One time message after validation. */

@@ -26,6 +26,12 @@ export type SourceFollowedRecord = {
   readLastAnswer: () => ServerClockLastAnswer | undefined;
   /** What "Verificar servidor" and the header's menu say the clock follows. */
   readSourceFollowed: () => ServerClockSource;
+  /**
+   * Whether neither NTP nor HTTPS has answered for a full poll interval: NTP quiet for
+   * 64 s, and HTTPS off or its last poll unanswered. The header's "Relógio sem
+   * sincronização" (the addition of 2026-11-12); cleared by the first good answer.
+   */
+  isWithoutSync: () => boolean;
 };
 
 /**
@@ -47,6 +53,9 @@ export function createSourceFollowedRecord(options: {
   let didNtpAnswerTheLastPoll = true;
   let isNtpQuietForAFullInterval = false;
   let didHttpsAnswerTheLastPoll = false;
+  // Not the same as "did not answer": while the first HTTPS poll is under way it has
+  // neither answered nor failed, and the header must not flash "sem sincronização".
+  let didHttpsFailItsLastPoll = false;
   // Whether HTTPS's silence was warned in this outage; reset when it answers.
   let wasHttpsSilenceWarned = false;
   let lastAnswer: ServerClockLastAnswer | undefined;
@@ -60,6 +69,7 @@ export function createSourceFollowedRecord(options: {
       monotonicOfTheLastNtpAnswerMs = readMonotonicTimeMs();
       didNtpAnswerTheLastPoll = true;
       isNtpQuietForAFullInterval = false;
+      didHttpsFailItsLastPoll = false;
       return;
     }
     if (didNtpAnswerTheLastPoll) {
@@ -82,6 +92,7 @@ export function createSourceFollowedRecord(options: {
 
   function noteHttpsPoll(outcome: HttpDatePollOutcome): void {
     didHttpsAnswerTheLastPoll = outcome.isAnswered;
+    didHttpsFailItsLastPoll = !outcome.isAnswered;
     if (outcome.isAnswered) {
       wasHttpsSilenceWarned = false;
       return;
@@ -121,6 +132,8 @@ export function createSourceFollowedRecord(options: {
       lastAnswer = answer;
     },
     isNtpQuiet: () => isNtpQuietForAFullInterval,
+    isWithoutSync: () =>
+      isNtpQuietForAFullInterval && (!isHttpsFallbackOn || didHttpsFailItsLastPoll),
     readLastAnswer: () => lastAnswer,
     readSourceFollowed,
   };

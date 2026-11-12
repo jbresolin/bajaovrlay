@@ -29,10 +29,9 @@ describe('readServerEnvironment and BAJAOVRLAY_HTTP_TIME_SERVERS', () => {
     // Assert: on, www.cloudflare.com first.
     const settings = environment.BAJAOVRLAY_HTTP_TIME_SERVERS;
     expect(settings.isHttpTimeOn, 'the fallback is on unless turned off').toBe(true);
-    expect(
-      settings.isHttpTimeOn && settings.serverAddresses[0],
-      'Cloudflare is asked first',
-    ).toBe('https://www.cloudflare.com');
+    expect(settings.isHttpTimeOn && settings.serverAddresses[0], 'Cloudflare is asked first').toBe(
+      'https://www.cloudflare.com',
+    );
   });
 
   it('reads "off" as the fallback off', () => {
