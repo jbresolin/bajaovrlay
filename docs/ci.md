@@ -155,9 +155,40 @@ browser tests at the same time sets `BAJAOVRLAY_E2E_PORT_OFFSET` (apps/control/e
   work in it. Remove the worktree (`git worktree remove ../bajaovrlay-<n>`) after the PR
   merges.
 - **Ports**: each worktree runs its browser tests with a `BAJAOVRLAY_E2E_PORT_OFFSET` of its
-  own (apps/control/e2e/README.md).
+  own (apps/control/e2e/README.md), from the table below.
 - **One `pnpm verify` at a time**: `flock /tmp/bajaovrlay-verify.lock pnpm verify`, so two
   full runs do not compete for the machine's cores and fail on timing.
+
+### Offsets in use
+
+One row per open task that runs browser tests. Add yours when you start, pick an offset no
+row uses, and remove the row when the PR merges.
+
+| Task          | Worktree          | Offset                          |
+| ------------- | ----------------- | ------------------------------- |
+| BAJAOVRLAY-76 | `~/bajaovrlay-76` | 190 (moved from 140, see below) |
+| BAJAOVRLAY-72 | `~/bajaovrlay-72` | none (runs no browser tests)    |
+| BAJAOVRLAY-75 | `~/bajaovrlay-75` | not recorded yet                |
+| BAJAOVRLAY-69 |                   | not recorded yet                |
+| BAJAOVRLAY-31 | `~/bajaovrlay-31` | not recorded yet                |
+
+### Offsets that cannot work
+
+On 2026-11-12 BAJAOVRLAY-76's `pnpm verify` failed twice with offset 140: the intermission
+board's preview port 5217 moved to 5357, which Windows' WSD service holds, busy through
+WSL. Windows also keeps ranges of ports excluded (Hyper-V and others), listed by
+`netsh.exe interface ipv4 show excludedportrange protocol=tcp`. So `pnpm verify` (`--quick`
+too) and `pnpm test:chaos` first run `scripts/checkPortOffset.js`, which refuses such an
+offset in one line and names the nearest that work:
+
+```text
+BAJAOVRLAY_E2E_PORT_OFFSET=140 cannot work: it moves port 5217 (packages/graphics/intermission-board/playwright.config.ts) to 5357, held by Windows' WSD service. Nearest offsets that work: 139 and 141.
+```
+
+It reads the ports from `scripts/browserTestPorts.js`, the one list of every port the browser
+tests open (`browserTestPorts.test.ts` fails when a file adds or moves a port without it).
+5357 is checked on every machine; Windows' excluded ranges only where netsh.exe runs (WSL),
+and quietly skipped elsewhere, CI included.
 
 On WSL a connection to a closed port on 127.0.0.1 may hang for about two minutes instead of
 being refused. Playwright checks each server's port before starting it, so a local browser

@@ -25,6 +25,13 @@ Small plain-Node scripts run from the root `package.json`, with no dependency of
 - `e2ePortOffset.ts` (not a script: every Playwright config and e2e helper imports it):
   reads `BAJAOVRLAY_E2E_PORT_OFFSET` once, a whole number or else 0, tested by
   `e2ePortOffset.test.ts`.
+- `checkPortOffset.js` (the first thing `pnpm verify` and `pnpm test:chaos` run,
+  BAJAOVRLAY-72): refuses, in one line naming the nearest offsets that work, an offset
+  that moves a browser test's port onto 5357 (Windows' WSD service) or into a range
+  Windows has excluded (read with netsh.exe on WSL, skipped elsewhere). The judging is in
+  `portOffsetSafety.js` (tested by `portOffsetSafety.test.ts`); the ports come from
+  `browserTestPorts.js`, the one list of them, which `browserTestPorts.test.ts` holds
+  to the files that write each port.
 - `uniqueDevPorts.test.ts` (a test, no script): reads every `vite.config.ts` and
   `playwright.config.ts` under `apps/` and `packages/` and fails when two packages write
   the same port, which made `pnpm dev` fail as a whole after PRs #27 and #28.

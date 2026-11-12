@@ -8,8 +8,9 @@
 // would not run.
 //
 // Run it from the repository root before every push (CLAUDE.md, "Git and process"). The
-// browser tests need the e2e ports free (5176-5189, 5181 the login server, 5230-5233 the chaos suite); a second
-// checkout running them at the same time sets BAJAOVRLAY_E2E_PORT_OFFSET (apps/control/e2e/README.md).
+// browser tests need their ports free (every one listed in scripts/browserTestPorts.js); a
+// second checkout running them at the same time sets BAJAOVRLAY_E2E_PORT_OFFSET
+// (apps/control/e2e/README.md), which checkPortOffset.js checks before the first step.
 import { spawnSync } from 'node:child_process';
 import { performance } from 'node:perf_hooks';
 
@@ -19,6 +20,18 @@ import {
   formatStepDuration,
   writeVerifySummary,
 } from './verifySteps.js';
+
+// Before any step: an offset that moves a browser test's port onto one Windows holds
+// (5357, or an excluded range) fails only after minutes of other steps, with a port-in-use
+// error that does not name the offset (BAJAOVRLAY-72). checkPortOffset.js prints its one
+// line itself. Checked on --quick too, so the same offset is never accepted by one and
+// refused by the other.
+const portOffsetCheck = spawnSync(process.execPath, ['scripts/checkPortOffset.js'], {
+  stdio: 'inherit',
+});
+if (portOffsetCheck.status !== 0) {
+  process.exit(1);
+}
 
 const isQuick = process.argv.includes('--quick');
 const stepsToRun = chooseStepsToRun(isQuick);
