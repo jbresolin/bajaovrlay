@@ -19,6 +19,20 @@ On a draft every job, "CI passed" included, shows as **skipped** (grey). Skipped
 green: it means nothing was checked. A pull request is ready to merge only when "CI passed"
 is green on its latest push, after it was marked ready.
 
+### A skipped draft run never cancels a real one
+
+On #62 (2026-11-10) a push of a merge of main landed within a second of João marking the
+PR ready. Two runs started on the same commit: the real one (ready for review), and one for
+the push whose event still read the PR as a draft, so every job of it was skipped. Both were
+in one concurrency group, where a newer run on a pull request cancels the older, so the
+skipped run cancelled the real one and the PR was left with only skipped and cancelled
+checks. Since BAJAOVRLAY-72 the group ends in `-draft` or `-ready`, read from the run's own
+event: draft runs cancel only draft runs, and a newer push to a ready PR still cancels its
+older ready run. A push to `main` keeps one run per commit, as before.
+
+**If a PR shows only skipped checks after being marked ready**, open its cancelled run and
+use "Re-run all jobs", or "Run workflow" on the PR's branch from the Actions page.
+
 ## `pnpm verify` runs with CI's settings
 
 Every step of `pnpm verify` runs with `CI=1` (`scripts/verifySteps.js`): Vitest and
@@ -131,6 +145,19 @@ pnpm --filter @bajaovrlay/control test:e2e --shard=1/2
 
 `pnpm test:e2e:control --shard=2/2` does the same from the root. Another checkout running
 browser tests at the same time sets `BAJAOVRLAY_E2E_PORT_OFFSET` (apps/control/e2e/README.md).
+
+## Several agents on one machine
+
+- **One worktree per task**, `~/bajaovrlay-<n>`:
+  `git worktree add ../bajaovrlay-<n> -b BAJAOVRLAY-<n>-<slug> origin/main`, then
+  `pnpm install --offline` inside it. The main checkout `~/bajaovrlay` stays on `main` and
+  no agent switches its branch: on 2026-11-11 one agent did, while another had uncommitted
+  work in it. Remove the worktree (`git worktree remove ../bajaovrlay-<n>`) after the PR
+  merges.
+- **Ports**: each worktree runs its browser tests with a `BAJAOVRLAY_E2E_PORT_OFFSET` of its
+  own (apps/control/e2e/README.md).
+- **One `pnpm verify` at a time**: `flock /tmp/bajaovrlay-verify.lock pnpm verify`, so two
+  full runs do not compete for the machine's cores and fail on timing.
 
 On WSL a connection to a closed port on 127.0.0.1 may hang for about two minutes instead of
 being refused. Playwright checks each server's port before starting it, so a local browser

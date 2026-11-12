@@ -111,6 +111,11 @@ green. CI blocks merge on lint, typecheck or any test failure.
 
 - Branch `BAJAOVRLAY-<n>-<slug>` off `main`; one task = one PR; squash merge; delete
   the branch on merge. Never stack a branch on another unmerged branch.
+- Every task runs in its own worktree, `~/bajaovrlay-<n>`
+  (`git worktree add ../bajaovrlay-<n> -b BAJAOVRLAY-<n>-<slug> origin/main`). The main
+  checkout `~/bajaovrlay` stays on `main` and is never switched by an agent: another
+  agent's uncommitted work may be in it. Remove the worktree after the PR merges
+  (docs/ci.md, "Several agents on one machine").
 - Never commit real env values; `.env.example` documents every variable.
 - A task brief lives in the Plane work item. If it is also pasted into the session,
   the pasted copy is the one to follow. Decisions the brief flags for João are not
