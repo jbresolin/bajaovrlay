@@ -11,7 +11,7 @@ import type { OperatorLogin } from '../operatorLogin/operatorLogin.js';
 import type { StateStore } from '../store/createStateStore.js';
 import { readServerTime, serverClockOfTheProcess } from '../time/serverClock.js';
 import { answerClientMessage } from './clientMessageAnswers.js';
-import { buildActorForConnection, isScreenConnectionActor } from './connectionActor.js';
+import { identifyTheConnection, readUpgradeRequestPath } from './connectionIdentity.js';
 import { startHeartbeat } from './heartbeat.js';
 import { readOutputIdFromRequestTarget } from './screenOutput.js';
 import {
@@ -177,15 +177,18 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   webSocketServer.on('connection', (client: WebSocket, request: IncomingMessage) => {
     // A connection is a renderer or a monitor by the address it chose, a logged-in operator
     // by its session, or (the login off) an operator told apart by its own id, so the event
-    // log can say which one sent what.
+    // log can say which one sent what; a control page is also a console (BAJAOVRLAY-69).
     const connectionId = randomUUID();
     const session = sessionsOfConnections.findSessionOfTheUpgrade(request);
-    const actor = buildActorForConnection(request.url, connectionId, session);
+    const { actor, isScreen, consoleId } = identifyTheConnection({
+      requestTarget: request.url,
+      connectionId,
+      session,
+    });
     const connectionLogger = logger.child({ connection_id: connectionId, actor });
     connectionLogger.info('websocket client connected');
 
     heartbeat.trackClient(client);
-    const isScreen = isScreenConnectionActor(actor);
     const outputIdOfTheScreen = readOutputIdFromRequestTarget(request.url);
     if (isScreen) {
       outputIdOfEachScreen.set(client, outputIdOfTheScreen);
@@ -210,6 +213,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
       serverNowMs: readCurrentTime().getTime(),
       serverClockStepCount: readServerClockStepCount(),
       buildId: options.buildId,
+      consoleId,
     });
     client.send(serializeServerMessage(helloMessage));
     if (isScreen) {
@@ -229,6 +233,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
         actor,
         logger: connectionLogger,
         readCurrentTime,
+        consoleId,
       });
       client.send(serializeServerMessage(answer));
     });
@@ -382,17 +387,4 @@ function serializeChangeOfSlicesOrNothing(
       ? buildSlicesMessage(changedSliceNames, slices, serverNowMs)
       : buildSliceMessage(onlyChangedSliceName, slices, serverNowMs);
   return serializeServerMessage(changeMessage);
-}
-
-/**
- * The path an upgrade request asked for, or undefined when its target is not a URL.
- * Node accepts absolute-form targets such as `http://[`, and `new URL` throws on those;
- * inside the 'upgrade' listener that throw would crash the server that owns the state.
- */
-function readUpgradeRequestPath(requestTarget: string | undefined): string | undefined {
-  try {
-    return new URL(requestTarget ?? '/', 'http://localhost').pathname;
-  } catch {
-    return undefined;
-  }
 }

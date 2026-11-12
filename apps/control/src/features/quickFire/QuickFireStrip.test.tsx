@@ -110,11 +110,12 @@ describe('the quick-fire strip', () => {
     fakeServer.acceptLastCommand();
     await letThePageFinishWhatItStarted();
 
-    // Assert: one takeItem; no cursor move and no preview follow a panel button.
+    // Assert: one takeItem, saying the page showed nothing on air on the logo's layer
+    // (BAJAOVRLAY-69); no cursor move and no preview follow a panel button.
     expect(
       fakeServer.listCommandsReceived(),
       'a panel button must send takeItem only: it never moves the cursor nor previews',
-    ).toEqual([{ type: 'takeItem', itemId: bajaLogoItemId }]);
+    ).toEqual([{ type: 'takeItem', itemId: bajaLogoItemId, instanceIdSeenOnAir: null }]);
   });
 
   it('shows the server’s refusal of a take in the strip', () => {

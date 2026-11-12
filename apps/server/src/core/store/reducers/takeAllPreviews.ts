@@ -1,10 +1,25 @@
+import type {
+  LayerNotTaken,
+  TakeAllPreviewsCommand,
+  TakeRefusedForAnotherConsole,
+} from '@bajaovrlay/shared';
+
 import { refuseUnknownLayer } from '../commandRefusals.js';
-import { refuseTakeAllAtLayer, refuseTakeAllWithNothingInPreview } from '../previewRefusals.js';
+import {
+  findUnseenChangeByAnotherConsole,
+  refuseTakeOverAnUnseenChange,
+} from '../consoles/unseenChangeByAnotherConsole.js';
+import {
+  refuseTakeAllAtLayer,
+  refuseTakeAllOnEveryLayerChangedByAnotherConsole,
+  refuseTakeAllWithNothingInPreview,
+} from '../previewRefusals.js';
 import { buildContextForInstanceOnLayer } from './instanceIdForEachLayer.js';
 import { removeEveryPreviewClearedMarker } from './previewMarkersAndDiscards.js';
 import { clearProgramOfMarkedLayer, takePreviewInstanceToProgram } from './previewPromotion.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 import { moveRundownCursorsPastItemsTakenTogether } from './rundownCursor.js';
+import { nameItemOfThePreview } from './takePreview.js';
 
 /**
  * takeAllPreviews ("Tomar tudo"): makes program what Prévia shows, in one reducer call,
@@ -35,9 +50,15 @@ import { moveRundownCursorsPastItemsTakenTogether } from './rundownCursor.js';
  * the data or a stamp no longer fitting its schema). Deliberate: one refused layer
  * refuses the whole set, with a message naming that layer and carrying its reason,
  * because a half-taken set on air is worse than none.
+ * The one exception (BAJAOVRLAY-69, the brief's rule 4): a layer another console changed
+ * less than 2 s ago, unseen by this console (../consoles/), is checked on its own. It is
+ * left as it is, its preview and marker kept so the operator can look and take it again,
+ * and the other layers are taken; the outcome lists it in `layersNotTaken`. Only when every
+ * layer is left that way is the command refused (LAYER_CHANGED_BY_ANOTHER_CONSOLE).
  */
 export function reduceTakeAllPreviews(
   slices: SlicesChangedByCommands,
+  command: TakeAllPreviewsCommand,
   context: ReducerContext,
 ): ReducerOutcome {
   const previewInstances = slices.instances.filter((instance) => instance.target === 'preview');
@@ -68,11 +89,43 @@ export function reduceTakeAllPreviews(
   );
   let slicesSoFar = slices;
   const takenItemIds: string[] = [];
+  let numberOfLayersTakenOrCleared = 0;
+  const layersNotTaken: LayerNotTaken[] = [];
+  const takesRefusedForAnotherConsole: TakeRefusedForAnotherConsole[] = [];
   for (const layer of layersLowestFirst) {
     const previewInstanceOnLayer = slicesSoFar.instances.find(
       (instance) => instance.layerId === layer.id && instance.target === 'preview',
     );
     const isLayerMarkedToBeCleared = slicesSoFar.previewClearedLayerIds.includes(layer.id);
+    const isSomethingShownInPreview =
+      previewInstanceOnLayer !== undefined || isLayerMarkedToBeCleared;
+    if (!isSomethingShownInPreview) {
+      continue;
+    }
+
+    // Each layer's program is compared as the command found it: taking one layer never
+    // changes another layer's program, so this is also what is on air at this step.
+    const unseenChange = findUnseenChangeByAnotherConsole({
+      layerId: layer.id,
+      instanceIdSeenOnAir: command.instanceIdsSeenOnAir?.[layer.id],
+      instances: slices.instances,
+      context,
+    });
+    if (unseenChange !== undefined) {
+      const refusal = refuseTakeOverAnUnseenChange({
+        unseenChange,
+        layerId: layer.id,
+        slices,
+        context,
+        whatWasNotDone:
+          previewInstanceOnLayer === undefined
+            ? { kind: 'clear' }
+            : { kind: 'take', itemLabel: nameItemOfThePreview(previewInstanceOnLayer, slices) },
+      });
+      layersNotTaken.push({ layerId: layer.id, error: refusal.error });
+      takesRefusedForAnotherConsole.push(refusal.takeRefused);
+      continue;
+    }
 
     if (previewInstanceOnLayer !== undefined) {
       const promotion = takePreviewInstanceToProgram(
@@ -87,21 +140,47 @@ export function reduceTakeAllPreviews(
       if (previewInstanceOnLayer.itemId !== undefined) {
         takenItemIds.push(previewInstanceOnLayer.itemId);
       }
-    } else if (isLayerMarkedToBeCleared) {
+    } else {
       slicesSoFar = clearProgramOfMarkedLayer(slicesSoFar, layer.id);
     }
+    numberOfLayersTakenOrCleared += 1;
   }
 
-  // Every marker was carried out above; this also drops one that sat beside a preview on
-  // the same layer, which no command makes, so that "nothing is left" holds regardless.
-  const markersAfter = removeEveryPreviewClearedMarker(slicesSoFar.previewClearedLayerIds);
+  if (numberOfLayersTakenOrCleared === 0) {
+    return {
+      status: 'refused',
+      error: refuseTakeAllOnEveryLayerChangedByAnotherConsole(
+        layersNotTaken.map((layerNotTaken) => layerNotTaken.error),
+      ),
+      takesRefusedForAnotherConsole,
+    };
+  }
+
+  // Every marker was carried out above, but those of the layers left for another console;
+  // this also drops one that sat beside a preview on the same layer, which no command
+  // makes, so that "nothing is left" holds regardless.
+  const layerIdsNotTaken = layersNotTaken.map((layerNotTaken) => layerNotTaken.layerId);
+  const markersAfter =
+    layerIdsNotTaken.length === 0
+      ? removeEveryPreviewClearedMarker(slicesSoFar.previewClearedLayerIds)
+      : slicesSoFar.previewClearedLayerIds.filter((layerId) => layerIdsNotTaken.includes(layerId));
   const rundownsAfter = moveRundownCursorsPastItemsTakenTogether(
     slicesSoFar.rundowns,
     slicesSoFar.items,
     takenItemIds,
   );
+  const slicesAfter = {
+    ...slicesSoFar,
+    previewClearedLayerIds: markersAfter,
+    rundowns: rundownsAfter,
+  };
+  if (layersNotTaken.length === 0) {
+    return { status: 'applied', slices: slicesAfter };
+  }
   return {
     status: 'applied',
-    slices: { ...slicesSoFar, previewClearedLayerIds: markersAfter, rundowns: rundownsAfter },
+    slices: slicesAfter,
+    layersNotTaken,
+    takesRefusedForAnotherConsole,
   };
 }

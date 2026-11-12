@@ -3,7 +3,9 @@ import { randomUUID } from 'node:crypto';
 import {
   type CommandError,
   CommandSchema,
+  type EventLogDetails,
   type EventLogEntry,
+  type LayerNotTaken,
   type SliceName,
   type Slices,
 } from '@bajaovrlay/shared';
@@ -15,7 +17,7 @@ import {
 } from '../db/commandOutcomeStorage.js';
 import { findEventLogDetailsOfCommand } from '../events/eventLogDetailsOfACommand.js';
 import { appendToEventLogSlice } from '../events/eventLogSlice.js';
-import { readServerTime } from '../time/serverClock.js';
+import { readServerTime, serverClockOfTheProcess } from '../time/serverClock.js';
 import { allowCommandForActorRole } from './authorizeCommand.js';
 import { refuseAutomationTheActorMayNotChange } from './automationAndTheDataRole.js';
 import {
@@ -24,6 +26,12 @@ import {
   readCommandNameAsSent,
 } from './commandEventLogPayload.js';
 import { refuseCommandNotAllowedForTheActor, refuseInvalidCommand } from './commandRefusals.js';
+import {
+  type LastProgramChangeOfEachLayer,
+  rememberLastProgramChangeOfEachLayer,
+  signProgramChangeOfACommand,
+} from './consoles/lastProgramChangeOfEachLayer.js';
+import { addTakesRefusedToTheDetails } from './consoles/unseenChangeByAnotherConsole.js';
 import {
   buildRowChangesOfDataSnapshots,
   type DataSnapshotChange,
@@ -37,7 +45,7 @@ import type { StateStoreOptions } from './stateStoreOptions.js';
 import {
   buildAllSlices,
   buildRowsOfChangedSlicesToSave,
-  sliceNamesChangedByCommands,
+  findNamesOfChangedSlices,
 } from './storeSliceSaving.js';
 
 /**
@@ -46,7 +54,8 @@ import {
  * preview that item next ("Salvar e disparar", BAJAOVRLAY-37).
  */
 export type CommandOutcome =
-  { ok: true; createdItemId?: string } | { ok: false; error: CommandError };
+  | { ok: true; createdItemId?: string; layersNotTaken?: LayerNotTaken[] }
+  | { ok: false; error: CommandError };
 
 /**
  * Called after every command that changed a slice or was refused, with the names of the
@@ -68,8 +77,11 @@ export type SliceChangeListener = (
 export type StateStore = EventLogReaders & {
   /** Every slice as it is now. Treat the result as read-only. */
   readAllSlices: () => Slices;
-  /** Runs one command through the single command path; see createStateStore. */
-  applyCommand: (commandInput: unknown, actor: string) => CommandOutcome;
+  /**
+   * Runs one command through the single command path; see createStateStore. `consoleId`
+   * names the control page tab that sent it (BAJAOVRLAY-69), left out for anything else.
+   */
+  applyCommand: (commandInput: unknown, actor: string, consoleId?: string) => CommandOutcome;
   /** Registers a listener for slice changes; returns a function that removes it. */
   subscribeToSliceChanges: (listener: SliceChangeListener) => () => void;
 };
@@ -81,6 +93,8 @@ export type StateStore = EventLogReaders & {
 export function createStateStore(options: StateStoreOptions): StateStore {
   const isCommandAllowed = options.isCommandAllowed ?? allowCommandForActorRole;
   const readCurrentTime = options.readCurrentTime ?? readServerTime;
+  const readServerClockStepCount =
+    options.readServerClockStepCount ?? serverClockOfTheProcess.readStepCount;
   const createInstanceId = options.createInstanceId ?? (() => randomUUID());
   const createItemId = options.createItemId ?? (() => randomUUID());
   const createQuickFirePanelId = options.createQuickFirePanelId ?? (() => randomUUID());
@@ -92,6 +106,9 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   const sourceHostAllowlist = options.sourceHostAllowlist ?? noSourceHostAllowlist;
   const listeners = new Set<SliceChangeListener>();
   let currentSlices = loadInitialSlices({ ...options, readCurrentTime });
+  // Each layer's last program change and its console (BAJAOVRLAY-69), in memory only (why:
+  // consoles/lastProgramChangeOfEachLayer.ts); changed only after a command's save succeeded.
+  let lastProgramChangeOfEachLayer: LastProgramChangeOfEachLayer = new Map();
 
   // Always in this order: validate → authorise → apply the pure reducer → save the
   // changed slices and the event-log row (one transaction) → update memory → tell
@@ -99,8 +116,9 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   // An accepted command that changes nothing skips the save, the log and the listeners;
   // a routine data-source poll, a recording's progress and a routine refresh of bound
   // fields skip only the log (see the exception below).
-  function applyCommand(commandInput: unknown, actor: string): CommandOutcome {
+  function applyCommand(commandInput: unknown, actor: string, consoleId?: string): CommandOutcome {
     const now = readCurrentTime().toISOString();
+    const serverClockStepCount = readServerClockStepCount();
 
     // Step 1, validate: the command's shape, with the first bad field named.
     const validation = CommandSchema.safeParse(commandInput);
@@ -146,6 +164,9 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       newTriggerId: createTriggerId(),
       newTriggerFiringId: createTriggerFiringId(),
       sourceHostAllowlist,
+      consoleId,
+      lastProgramChangeOfEachLayer,
+      serverClockStepCount,
     };
     const reducerOutcome = reduceCommand(currentSlices, command, reducerContext);
     if (reducerOutcome.status === 'refused') {
@@ -155,6 +176,10 @@ export function createStateStore(options: StateStoreOptions): StateStore {
         commandName: command.type,
         payload: buildEventLogPayloadOfCommand(command),
         error: reducerOutcome.error,
+        details: addTakesRefusedToTheDetails(
+          undefined,
+          reducerOutcome.takesRefusedForAnotherConsole,
+        ),
       });
     }
 
@@ -165,11 +190,19 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     // What could go wrong: the event log no longer shows that such a command was sent
     // at all, so "did the second renderer ever report?" cannot be answered from it.
     // recordBackup changes no slice on purpose: its row is the record (BAJAOVRLAY-33).
-    const isAnySliceChanged = findNamesOfChangedSlices(reducerOutcome.slices).length > 0;
+    const isAnySliceChanged =
+      findNamesOfChangedSlices(currentSlices, reducerOutcome.slices).length > 0;
     const isLoggedAllTheSame = reducerOutcome.isLoggedWithoutAChange === true;
     if (!isAnySliceChanged && !isLoggedAllTheSame) {
       return { ok: true };
     }
+    // The layers whose program this command changed, signed with its console (if any).
+    const lastProgramChangeOfEachLayerAfter = rememberLastProgramChangeOfEachLayer(
+      lastProgramChangeOfEachLayer,
+      currentSlices.instances,
+      reducerOutcome.slices.instances,
+      signProgramChangeOfACommand({ now, serverClockStepCount, actor, consoleId }),
+    );
     // A step the command's new data no longer has was moved by the reducer itself: the
     // event-log row names only the command, so this line says which step moved and why.
     for (const stepBroughtBack of reducerOutcome.stepsBroughtBack ?? []) {
@@ -218,10 +251,12 @@ export function createStateStore(options: StateStoreOptions): StateStore {
           result: { status: 'failed', error: reducerOutcome.refusalWrittenToTheEventLog },
         },
       });
+      lastProgramChangeOfEachLayer = lastProgramChangeOfEachLayerAfter;
       return { ok: true };
     }
     if (reducerOutcome.isLeftOutOfTheEventLog === true) {
       recordOutcomeWithoutEventLogRow(reducerOutcome.slices, now);
+      lastProgramChangeOfEachLayer = lastProgramChangeOfEachLayerAfter;
       return { ok: true };
     }
 
@@ -235,18 +270,22 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       payload: buildEventLogPayloadOfCommand(command),
       result: { status: 'ok' },
     };
-    const details = findEventLogDetailsOfCommand(
-      command,
-      reducerOutcome.slices,
-      reducerContext.newInstanceId,
+    // A "Tomar tudo" that left layers for another console keeps both roles of each too.
+    const details = addTakesRefusedToTheDetails(
+      findEventLogDetailsOfCommand(command, reducerOutcome.slices, reducerContext.newInstanceId),
+      reducerOutcome.takesRefusedForAnotherConsole,
     );
     if (details !== undefined) {
       logEntry.details = details;
     }
     recordOutcome({ nextSlices: reducerOutcome.slices, logEntry });
+    lastProgramChangeOfEachLayer = lastProgramChangeOfEachLayerAfter;
     // A createItem that was applied made exactly one item, with the id it was handed.
     if (command.type === 'createItem') {
       return { ok: true, createdItemId: reducerContext.newItemId };
+    }
+    if (reducerOutcome.layersNotTaken !== undefined) {
+      return { ok: true, layersNotTaken: reducerOutcome.layersNotTaken };
     }
     return { ok: true };
   }
@@ -261,17 +300,19 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     commandName: string;
     payload: unknown;
     error: CommandError;
+    details?: EventLogDetails | undefined;
   }): CommandOutcome {
-    recordOutcome({
-      nextSlices: currentSlices,
-      logEntry: {
-        ts: refusal.now,
-        actor: refusal.actor,
-        command: refusal.commandName,
-        payload: refusal.payload,
-        result: { status: 'failed', error: refusal.error },
-      },
-    });
+    const logEntry: Omit<EventLogEntry, 'id'> = {
+      ts: refusal.now,
+      actor: refusal.actor,
+      command: refusal.commandName,
+      payload: refusal.payload,
+      result: { status: 'failed', error: refusal.error },
+    };
+    if (refusal.details !== undefined) {
+      logEntry.details = refusal.details;
+    }
+    recordOutcome({ nextSlices: currentSlices, logEntry });
     return { ok: false, error: refusal.error };
   }
 
@@ -286,7 +327,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     nextSlices: SlicesChangedByCommands;
     logEntry: Omit<EventLogEntry, 'id'>;
   }): void {
-    const changedSliceNames = findNamesOfChangedSlices(outcome.nextSlices);
+    const changedSliceNames = findNamesOfChangedSlices(currentSlices, outcome.nextSlices);
     const changedSliceRows = buildRowsOfChangedSlicesToSave(
       outcome.nextSlices,
       changedSliceNames,
@@ -319,7 +360,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
    * tells listeners, without 'eventLog' because it did not change.
    */
   function recordOutcomeWithoutEventLogRow(nextSlices: SlicesChangedByCommands, now: string): void {
-    const changedSliceNames = findNamesOfChangedSlices(nextSlices);
+    const changedSliceNames = findNamesOfChangedSlices(currentSlices, nextSlices);
     const changedSliceRows = buildRowsOfChangedSlicesToSave(nextSlices, changedSliceNames, now);
     const changedDataSnapshots = findChangedDataSnapshots(
       currentSlices.dataSnapshots,
@@ -331,22 +372,6 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     });
     currentSlices = buildAllSlices(nextSlices, currentSlices.eventLog);
     tellListeners(changedSliceNames, changedDataSnapshots);
-  }
-
-  /**
-   * Names the slices a reducer changed. A reducer hands back an unchanged slice as the
-   * very same array, so comparing the two arrays themselves is enough.
-   * What could go wrong: a reducer that builds a new array with equal contents counts as
-   * a change here, so it would be saved, logged and broadcast although nothing on screen
-   * moves. Each reducer therefore compares by content where a command can repeat what is
-   * already there (updateInstanceData, updateItemFields) and hands back the same slices.
-   */
-  function findNamesOfChangedSlices(
-    nextSlices: SlicesChangedByCommands,
-  ): Array<keyof SlicesChangedByCommands> {
-    return sliceNamesChangedByCommands.filter(
-      (sliceName) => nextSlices[sliceName] !== currentSlices[sliceName],
-    );
   }
 
   /** Calls every listener; one that throws is logged and does not stop the others. */

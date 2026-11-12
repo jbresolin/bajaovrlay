@@ -2,12 +2,17 @@ import type { SourceHostAllowlist } from '../../modules/dataSources/index.js';
 import type { IsCommandAllowed } from './authorizeCommand.js';
 import type { LoadInitialSlicesOptions } from './loadInitialSlices.js';
 
-/** What a store needs. The last eight have production defaults; tests replace them. */
+/** What a store needs. The optional ones have production defaults; tests replace them. */
 export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'> & {
   /** The authorisation step; defaults to allowCommandForActorRole (roles included). */
   isCommandAllowed?: IsCommandAllowed | undefined;
   /** The clock for every timestamp, at boot and per command; the server clock by default. */
   readCurrentTime?: (() => Date) | undefined;
+  /**
+   * How many steps that clock has made (BAJAOVRLAY-69: a change of a layer made before a step
+   * is never "moments ago"); the server clock's own count by default.
+   */
+  readServerClockStepCount?: (() => number) | undefined;
   /** Makes the id of each new instance; defaults to a random UUID. */
   createInstanceId?: (() => string) | undefined;
   /** Makes the id of each new item (createItem); defaults to a random UUID. */

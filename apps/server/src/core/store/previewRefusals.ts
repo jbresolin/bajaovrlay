@@ -3,6 +3,7 @@
 import type { CommandError } from '@bajaovrlay/shared';
 
 import { ptBR } from '../messages/ptBR.js';
+import { ptBRConsoleErrors } from '../messages/ptBRConsoles.js';
 
 /** The refusal for "Tomar tudo" with no preview instance and no "will be cleared" marker. */
 export function refuseTakeAllWithNothingInPreview(): CommandError {
@@ -21,6 +22,22 @@ export function refuseTakeAllAtLayer(
   return {
     code: reasonOfTheLayer.code,
     message: ptBR.previewErrors.takeAllRefusedAtLayer(layerName, reasonOfTheLayer.message),
+  };
+}
+
+/**
+ * The refusal for "Tomar tudo" when every layer it would take or clear was just changed by
+ * another console, unseen by this one (BAJAOVRLAY-69): the code of those layers, and their
+ * sentences one after another, so the operator reads what happened on each.
+ */
+export function refuseTakeAllOnEveryLayerChangedByAnotherConsole(
+  refusalsOfTheLayers: CommandError[],
+): CommandError {
+  return {
+    code: 'LAYER_CHANGED_BY_ANOTHER_CONSOLE',
+    message: ptBRConsoleErrors.takeAllRefusedOnEveryLayer(
+      refusalsOfTheLayers.map((refusal) => refusal.message),
+    ),
   };
 }
 

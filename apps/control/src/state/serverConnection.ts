@@ -5,7 +5,6 @@ import {
   readBuildIdOfAHello,
   type ServerBuildWatch,
   type ServerMessage,
-  ServerMessageSchema,
   startServerBuildWatch,
 } from '@bajaovrlay/shared';
 import {
@@ -18,8 +17,17 @@ import {
 import { ptBR } from '@/i18n/ptBR';
 import { type LogControlEvent, logControlEvent } from '@/logging/controlLog';
 
-import { CommandFailedError, type CommandFailureCode } from './commandFailure';
+import {
+  type AreaOfThePage,
+  buildErrorOfLayersNotTaken,
+  buildLastCommandError,
+  CommandFailedError,
+  type FailureOfACommand,
+} from './commandFailure';
+import { addConsoleIdToWebSocketAddress, type ConsoleIdMemory } from './consoleIdOfThisTab';
+import { readJsonOfMessage, readServerMessage } from './serverMessageReading';
 import type { ServerStateStore } from './serverStateStore';
+import { addWhatThisPageSawOnAir } from './whatThisPageSawOnAir';
 
 /** What the connection wants to be told about one socket. */
 export type ServerSocketHandlers = {
@@ -50,8 +58,14 @@ export type OpenServerSocket = (
  */
 export type CommandResult = { ok: true; requestId: string; createdItemId?: string };
 
-/** Sends one command and waits for the server's answer to it. */
-export type SendCommand = (command: CommandInput) => Promise<CommandResult>;
+/**
+ * Sends one command and waits for the server's answer to it. `areaOfThePage` names the part
+ * of the page whose button sent it, so its refusal is shown there only (commandFailure.ts).
+ */
+export type SendCommand = (
+  command: CommandInput,
+  areaOfThePage?: AreaOfThePage,
+) => Promise<CommandResult>;
 
 /** A live connection: the way to send commands, and the way to hang up. */
 export type ServerConnection = {
@@ -82,6 +96,12 @@ export type ServerConnectionOptions = {
    * tests): nothing but the redialling.
    */
   onLineDropped?: (() => void) | undefined;
+  /**
+   * Where the tab keeps the console id a hello hands it (BAJAOVRLAY-69): main.tsx hands in
+   * sessionStorage. Each dial names the id kept, so a reload or a reconnect is the same
+   * console. Left out (most tests), the page names none and keeps none.
+   */
+  consoleIdMemory?: ConsoleIdMemory | undefined;
   logEvent?: LogControlEvent;
 };
 
@@ -97,6 +117,7 @@ const longestWaitBeforeRedialInMilliseconds = 5_000;
 /** A command that was sent and whose answer has not arrived yet. */
 type CommandAwaitingItsResult = {
   commandType: CommandInput['type'];
+  areaOfThePage: AreaOfThePage | undefined;
   resolve: (commandResult: CommandResult) => void;
   reject: (failure: CommandFailedError) => void;
   timeoutTimer: ReturnType<typeof setTimeout>;
@@ -122,7 +143,10 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
   const serverBuildWatch = startWatchOnTheServerBuild(options.pageReloadForNewBuild, logEvent);
 
   function dialTheServer(): void {
-    currentSocket = openSocket(webSocketAddress, {
+    // Read at each dial: the first hello of the tab is what writes it.
+    const consoleIdKept = options.consoleIdMemory?.readConsoleId() ?? null;
+    const addressOfThisConsole = addConsoleIdToWebSocketAddress(webSocketAddress, consoleIdKept);
+    currentSocket = openSocket(addressOfThisConsole, {
       // Nothing to do when the socket opens: the page is only "connected" once the
       // hello has arrived, because until then it has no state to show.
       onOpen: () => undefined,
@@ -170,6 +194,10 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
         startLiningUpAtAHello(message, localTimeAtArrivalMs);
         sendClockProbe();
         numberOfFailedCallsInARow = 0;
+        // The console this tab is (BAJAOVRLAY-69), kept for the next dial.
+        if (message.consoleId !== undefined) {
+          options.consoleIdMemory?.keepConsoleId(message.consoleId);
+        }
         // Taken in first, so a page that does not reload (same build, or already reloaded
         // for this one) is connected as always; one that reloads loses nothing.
         serverStateStore.getState().replaceEverySlice(message.slices);
@@ -248,7 +276,18 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     commandsAwaitingTheirResult.delete(requestId);
 
     if (message.ok) {
-      if (serverStateStore.getState().lastCommandError !== null) {
+      // "Tomar tudo" that left layers another console had just changed (BAJAOVRLAY-69): it
+      // was accepted, and the layers left are shown where its refusals are, one per line.
+      if (message.layersNotTaken !== undefined) {
+        serverStateStore
+          .getState()
+          .rememberCommandError(
+            buildErrorOfLayersNotTaken(
+              commandAwaitingThisResult.commandType,
+              message.layersNotTaken,
+            ),
+          );
+      } else if (serverStateStore.getState().lastCommandError !== null) {
         serverStateStore.getState().forgetCommandError();
       }
       const commandResult: CommandResult =
@@ -259,35 +298,38 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       return;
     }
     commandAwaitingThisResult.reject(
-      rememberCommandFailure(
-        commandAwaitingThisResult.commandType,
-        message.error.code,
-        message.error.message,
-      ),
+      rememberCommandFailure({
+        commandType: commandAwaitingThisResult.commandType,
+        areaOfThePage: commandAwaitingThisResult.areaOfThePage,
+        code: message.error.code,
+        operatorMessage: message.error.message,
+      }),
     );
   }
 
   /** Leaves the failure in the store for the page to show, and builds the rejection. */
-  function rememberCommandFailure(
-    commandType: CommandInput['type'],
-    code: CommandFailureCode,
-    operatorMessage: string,
-  ): CommandFailedError {
-    serverStateStore.getState().rememberCommandError({
-      commandType,
-      code,
-      message: operatorMessage,
-    });
-    return new CommandFailedError(code, operatorMessage);
+  function rememberCommandFailure(failure: FailureOfACommand): CommandFailedError {
+    serverStateStore.getState().rememberCommandError(buildLastCommandError(failure));
+    return new CommandFailedError(failure.code, failure.operatorMessage);
   }
 
-  function sendCommand(command: CommandInput): Promise<CommandResult> {
+  function sendCommand(
+    commandAsPressed: CommandInput,
+    areaOfThePage?: AreaOfThePage,
+  ): Promise<CommandResult> {
     const isConnected = serverStateStore.getState().connectionStatus === 'connected';
     if (!isConnected || currentSocket === undefined) {
       return Promise.reject(
-        rememberCommandFailure(command.type, 'NOT_CONNECTED', ptBR.commandFailures.notConnected),
+        rememberCommandFailure({
+          commandType: commandAsPressed.type,
+          areaOfThePage,
+          code: 'NOT_CONNECTED',
+          operatorMessage: ptBR.commandFailures.notConnected,
+        }),
       );
     }
+    // A take carries what this page showed on air on its layer at this moment (BAJAOVRLAY-69).
+    const command = addWhatThisPageSawOnAir(commandAsPressed, serverStateStore.getState());
 
     // A counter is enough: the server echoes the id only to the socket that sent it.
     // (crypto.randomUUID is not used because browsers only offer it on https or
@@ -302,12 +344,18 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
         // message therefore tells the operator to check the layers.
         commandsAwaitingTheirResult.delete(requestId);
         reject(
-          rememberCommandFailure(command.type, 'COMMAND_TIMED_OUT', ptBR.commandFailures.timedOut),
+          rememberCommandFailure({
+            commandType: command.type,
+            areaOfThePage,
+            code: 'COMMAND_TIMED_OUT',
+            operatorMessage: ptBR.commandFailures.timedOut,
+          }),
         );
       }, commandTimeoutInMilliseconds);
 
       commandsAwaitingTheirResult.set(requestId, {
         commandType: command.type,
+        areaOfThePage,
         resolve,
         reject,
         timeoutTimer,
@@ -346,25 +394,4 @@ function startWatchOnTheServerBuild(
       return () => clearTimeout(timer);
     },
   });
-}
-
-/** Reads the JSON of one message; undefined when it is not text or not JSON. */
-function readJsonOfMessage(text: unknown): unknown {
-  if (typeof text !== 'string') {
-    return undefined;
-  }
-  try {
-    return JSON.parse(text);
-  } catch {
-    return undefined;
-  }
-}
-
-/** Reads one message as the protocol defines it, or undefined when it is not one. */
-function readServerMessage(parsedJson: unknown): ServerMessage | undefined {
-  const parsedMessage = ServerMessageSchema.safeParse(parsedJson);
-  if (!parsedMessage.success) {
-    return undefined;
-  }
-  return parsedMessage.data;
 }

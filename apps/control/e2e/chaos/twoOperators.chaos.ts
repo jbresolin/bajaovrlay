@@ -23,8 +23,7 @@
  *     "Disparar" stays greyed out.
  *
  * What these tests deliberately do not cover:
- *   - Two takes on one layer at once: twoTakesOnOneLayer.chaos.ts, quarantined under
- *     BAJAOVRLAY-69.
+ *   - Two takes on one layer at once: twoTakesOnOneLayer.chaos.ts (BAJAOVRLAY-69).
  *   - What Dados may and may not send, one command at a time: authorizeCommandsByRole.test.ts
  *     and loginRolesWalk.e2e.ts.
  *   - The HTTP shortcut "next-on-layer", which reads the step at arrival on purpose

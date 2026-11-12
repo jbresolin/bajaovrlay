@@ -54,7 +54,8 @@ export function RundownPanel() {
   const itemsInOrder = rundown === undefined ? [] : listItemsOfRundownInOrder(items, rundown.id);
 
   const moveCursorByHand = useMoveCursorByHand(rundown?.id);
-  const sendTakeByThisOperator = useTakeThenPreviewNextItem();
+  // Takes from this column say so, so their refusals show here only (BAJAOVRLAY-69).
+  const sendTakeByThisOperator = useTakeThenPreviewNextItem('rundown');
   useRundownKeyboardShortcuts(rundown, itemsInOrder, moveCursorByHand, sendTakeByThisOperator);
 
   if (rundown === undefined) {
@@ -165,6 +166,7 @@ export function RundownPanel() {
       )}
 
       <CommandErrorMessage
+        areaOfThePage="rundown"
         commandTypes={[
           'takeItem',
           'takeNext',
