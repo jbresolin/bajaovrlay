@@ -6,7 +6,8 @@
     // Vite and Playwright bundle these files before running them, hence bundler-style
     // import resolution.
     // src/fonts' guard test reads the font file and the page's source from the disk, so it is
-    // checked here too, with Node's types, and left out of tsconfig.json's browser code.
+    // checked here too, with Node's types, and left out of tsconfig.json's browser code; the
+    // same for src/i18n's operator guide label check.
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "noEmit": true,
@@ -19,7 +20,12 @@
     "vitest.config.ts",
     "playwright.config.ts",
     "playwright.chaos.config.ts",
+    "playwright.operatorGuide.config.ts",
     "e2e",
-    "src/fonts/controlPageFontCoversPtBR.test.ts"
+    "src/fonts/controlPageFontCoversPtBR.test.ts",
+    // The operator guide (BAJAOVRLAY-31): its label check reads the guide and the server's
+    // catalog, and its Playwright scripts live beside the guide in docs/operador.
+    "src/i18n/operatorGuideLabels.test.ts",
+    "../../docs/operador/*.ts"
   ]
 }

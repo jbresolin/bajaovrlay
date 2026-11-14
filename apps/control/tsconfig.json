@@ -13,6 +13,6 @@
     }
   },
   "include": ["src"],
-  // Checked by tsconfig.node.json, with Node's types: it reads files from the disk.
-  "exclude": ["src/fonts/controlPageFontCoversPtBR.test.ts"]
+  // Checked by tsconfig.node.json, with Node's types: they read files from the disk.
+  "exclude": ["src/fonts/controlPageFontCoversPtBR.test.ts", "src/i18n/operatorGuideLabels.test.ts"]
 }

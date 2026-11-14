@@ -28,6 +28,8 @@ apps/control/e2e-data/
 apps/control/e2e-data-login/
 # ...and of the chaos suite's servers, one data folder per scenario (BAJAOVRLAY-32)
 apps/control/e2e-data-chaos/
+# ...and of the operator guide's pictures (docs/operador/screenshots.e2e.ts, BAJAOVRLAY-31)
+apps/control/e2e-data-guide/
 # Database and data folder (DATA_DIR) of the renderer's browser tests
 apps/renderer/.e2e-data/
 # Database and data folder of the built server's browser tests (apps/server/e2e)
