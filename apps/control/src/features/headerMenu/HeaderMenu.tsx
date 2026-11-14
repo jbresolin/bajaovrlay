@@ -3,10 +3,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { BackupDialog } from '@/features/backup/BackupDialog';
 import { useBackupDialog } from '@/features/backup/useBackupDialog';
+import { describeTheServerClockSource } from '@/features/serverClock/serverClockSourceSentence';
 import { SetServerClockDialog } from '@/features/serverClock/SetServerClockDialog';
 import { useServerClockSetting } from '@/features/serverClock/useServerClockSetting';
 import { useServerHealthCheck } from '@/features/serverHealth/useServerHealthCheck';
@@ -27,6 +29,8 @@ const pauseTexts = ptBR.triggers.pause;
  * clock to NTP's real time; Produtor alone may, as the server checks.
  * For Dados the pause entry and "Acertar relógio agora" are greyed out with the reason
  * under each: a disabled entry gets no hover, so a tooltip would never show.
+ * At the top, not an action, what the server clock follows (NTP, HTTPS or nothing) and
+ * its last answer, from the server's `time` message (BAJAOVRLAY-76).
  */
 export function HeaderMenu() {
   const serverHealthCheck = useServerHealthCheck();
@@ -37,6 +41,7 @@ export function HeaderMenu() {
   const pauseEntryText = isPaused ? pauseTexts.resumeMenuEntry : pauseTexts.pauseMenuEntry;
   const serverClockSetting = useServerClockSetting();
   const isTheDataRoleLoggedIn = useIsTheDataRoleLoggedIn();
+  const serverClockSource = useServerState((state) => state.serverClockSource);
 
   return (
     <div className="flex items-center gap-2">
@@ -52,6 +57,11 @@ export function HeaderMenu() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {serverClockSource !== null && (
+            <DropdownMenuLabel className="max-w-80 font-normal text-muted-foreground">
+              {describeTheServerClockSource(serverClockSource)}
+            </DropdownMenuLabel>
+          )}
           <DropdownMenuItem onSelect={() => void serverHealthCheck.checkServer()}>
             {ptBR.serverHealth.checkButton}
           </DropdownMenuItem>

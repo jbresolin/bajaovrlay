@@ -109,6 +109,8 @@ async function startServerProcess(
       DATA_DIR: dataFolder,
       // No NTP unless the scenario points it at a fake one: never the internet in a test.
       BAJAOVRLAY_NTP_SERVERS: 'off',
+      // Nor HTTPS Date headers, NTP's fallback (BAJAOVRLAY-76): never the internet.
+      BAJAOVRLAY_HTTP_TIME_SERVERS: 'off',
       // Pages opened through a connection proxy may open the console's WebSocket.
       BAJAOVRLAY_PUBLIC_ORIGINS: addressesOfTheProxies,
       ...extraSettings,

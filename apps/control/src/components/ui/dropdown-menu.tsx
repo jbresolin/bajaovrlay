@@ -1,7 +1,7 @@
 // shadcn/ui component "dropdown-menu" (style new-york-v4), written in by hand and kept
 // close to the original so later shadcn updates diff cleanly. Local changes: `cn` comes
 // from the cn package; only the parts this app uses are kept (root, trigger, content,
-// item), so the check/radio items, sub-menus, labels, separators and shortcuts, with
+// item, label), so the check/radio items, sub-menus, separators and shortcuts, with
 // their lucide-react icons, are left out. The `animate-in`/`fade-in` classes belong to
 // tw-animate-css, which is not installed: without it they do nothing.
 import { cn } from 'cn';
@@ -58,4 +58,24 @@ function DropdownMenuItem({
   );
 }
 
-export { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger };
+/** A line of text at the top of the menu, not an action (no `onSelect`, not focusable). */
+function DropdownMenuLabel({
+  className,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Label>) {
+  return (
+    <DropdownMenuPrimitive.Label
+      data-slot="dropdown-menu-label"
+      className={cn('px-2 py-1.5 text-sm font-medium', className)}
+      {...props}
+    />
+  );
+}
+
+export {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+};

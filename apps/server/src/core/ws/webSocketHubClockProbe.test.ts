@@ -17,6 +17,8 @@
  *   - A probe changes no state: the event log stays as it was.
  *   - The `time` message carries `offFromRealTimeMs` when the server clock knows it, and
  *     leaves it out when it does not.
+ *   - It carries what the server clock follows (NTP, HTTPS or none) and the last answer,
+ *     for the header's menu (BAJAOVRLAY-76).
  *   - The hello and every `time` message carry how many steps the server clock has made;
  *     after a step, every page gets a `time` message at once, so it lines up again then,
  *     not up to ten seconds later.
@@ -28,7 +30,7 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import type { ServerMessage } from '@bajaovrlay/shared';
+import type { ServerClockSource, ServerMessage } from '@bajaovrlay/shared';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
 import { openTemporaryDatabase } from '../db/temporaryDatabase.testSupport.js';
@@ -50,7 +52,10 @@ const momentTheServerClockStartsAtInMilliseconds = 1_791_556_325_000;
  * (undefined: not known), and has made the steps the test counts with `countAStep`.
  * Everything is closed when the test ends.
  */
-async function startHubOnAClockMovedByHand(offFromRealTimeMs: number | undefined) {
+async function startHubOnAClockMovedByHand(
+  offFromRealTimeMs: number | undefined,
+  serverClockSource?: ServerClockSource,
+) {
   let serverClockStepCount = 0;
   const clockAndTimer = createClockAndTimerMovedByHand(momentTheServerClockStartsAt);
   const logger = createLogger({ level: 'silent' });
@@ -69,7 +74,11 @@ async function startHubOnAClockMovedByHand(offFromRealTimeMs: number | undefined
     logger,
     heartbeatIntervalInMilliseconds: 15_000,
     readCurrentTime: clockAndTimer.readCurrentTime,
-    readOffFromRealTimeMs: () => offFromRealTimeMs,
+    serverClockReports: {
+      readOffFromRealTimeMs: () => offFromRealTimeMs,
+      readServerClockSource: serverClockSource === undefined ? undefined : () => serverClockSource,
+      readIsServerClockWithoutSync: serverClockSource === undefined ? undefined : () => false,
+    },
     readServerClockStepCount: () => serverClockStepCount,
     startRepeatingTimer: clockAndTimer.startRepeatingTimer,
     cancelRepeatingTimer: clockAndTimer.cancelRepeatingTimer,
@@ -202,6 +211,38 @@ describe('the NTP offset in the time message', () => {
             serverClockStepCount: 0,
           };
     expect(timeMessage, 'the header reads the offset from here').toEqual(expectedTimeMessage);
+  });
+});
+
+describe('the source of the server clock in the time message', () => {
+  it('carries what the clock follows and its last answer', async () => {
+    // Arrange: a server clock following www.cloudflare.com's Date header, NTP blocked; a page.
+    const followingHttps: ServerClockSource = {
+      following: 'https',
+      lastAnswer: {
+        source: 'https',
+        serverName: 'www.cloudflare.com',
+        atMs: momentTheServerClockStartsAtInMilliseconds + 4_000,
+        differenceMs: -41,
+      },
+    };
+    const { clockAndTimer, port } = await startHubOnAClockMovedByHand(-41, followingHttps);
+    const controlPage = await connectWebSocketTestClient(port);
+    await controlPage.waitForMessage('hello', (message) => message.type === 'hello');
+
+    // Act: ten seconds pass.
+    clockAndTimer.letTimePass(10_000);
+    const timeMessage = await controlPage.waitForMessage(
+      'time',
+      (message) => message.type === 'time',
+    );
+
+    // Assert: the source as the server clock says it.
+    expect(timeMessage, 'the header menu reads the source from here').toMatchObject({
+      type: 'time',
+      serverClockSource: followingHttps,
+      isServerClockWithoutSync: false,
+    });
   });
 });
 

@@ -7,12 +7,7 @@ import {
   type ServerMessage,
   startServerBuildWatch,
 } from '@bajaovrlay/shared';
-import {
-  readThisMachineMonotonicTimeMs,
-  recordClockProbeAnswer,
-  startLiningUpAgainIfTheServerClockStepped,
-  startLiningUpAtAHello,
-} from '@bajaovrlay/shared/clock';
+import { readThisMachineMonotonicTimeMs, startLiningUpAtAHello } from '@bajaovrlay/shared/clock';
 
 import { ptBR } from '@/i18n/ptBR';
 import { type LogControlEvent, logControlEvent } from '@/logging/controlLog';
@@ -25,6 +20,7 @@ import {
   type FailureOfACommand,
 } from './commandFailure';
 import { addConsoleIdToWebSocketAddress, type ConsoleIdMemory } from './consoleIdOfThisTab';
+import { takeInAClockProbeAnswer, takeInTheServerTimeMessage } from './serverClockMessages';
 import { readJsonOfMessage, readServerMessage } from './serverMessageReading';
 import type { ServerStateStore } from './serverStateStore';
 import { addWhatThisPageSawOnAir } from './whatThisPageSawOnAir';
@@ -217,21 +213,12 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
         settleCommandAwaitingThisResult(message);
         break;
       case 'time':
-        // The server's ten-second time message (or the one sent at once after a step of
-        // its clock, whose new step count starts four probes that line up at once): one
-        // probe keeps the alignment fresh, and how far the server clock is off real time
-        // goes to the store, which only changes (and redraws the header) when the whole
-        // seconds change. No log line.
-        startLiningUpAgainIfTheServerClockStepped(message.serverClockStepCount);
+        // One probe per time message keeps the alignment fresh (serverClockMessages.ts).
+        takeInTheServerTimeMessage(message, serverStateStore);
         sendClockProbe();
-        serverStateStore.getState().noteServerClockOffRealTime(message.offFromRealTimeMs);
         break;
       case 'clockProbeAnswer': {
-        const { isAnotherProbeNeeded } = recordClockProbeAnswer({
-          pageSentAtMs: message.pageSentAtMs,
-          serverNowMs: message.serverNowMs,
-          pageReceivedAtMs: localTimeAtArrivalMs,
-        });
+        const { isAnotherProbeNeeded } = takeInAClockProbeAnswer(message, localTimeAtArrivalMs);
         if (isAnotherProbeNeeded) {
           sendClockProbe();
         }

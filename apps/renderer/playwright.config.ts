@@ -28,6 +28,8 @@ const realServerEnvironment = {
   // No NTP: a browser test never waits on the internet, and the clock it checks is the
   // machine's own (BAJAOVRLAY-62).
   BAJAOVRLAY_NTP_SERVERS: 'off',
+  // Nor HTTPS Date headers, NTP's fallback (BAJAOVRLAY-76).
+  BAJAOVRLAY_HTTP_TIME_SERVERS: 'off',
 };
 
 export default defineConfig({
