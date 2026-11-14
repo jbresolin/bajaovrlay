@@ -3,11 +3,12 @@
 At the event the server runs on the stream PC (Windows, Docker Desktop). BajaOvrLay runs
 entirely there: the control page, the renderer OBS loads and the graphics are served by
 that one server. The PC has internet, since it streams, but only BajaOvrLay's external
-data sources use that uplink (the Baja app's API, a scoring poll). When the uplink drops,
-those sources go stale and the last good data stays on air; nothing on screen is drawn
-from elsewhere. The image is carried there on a USB stick. Steps 1–5 are the install; step
-6 is the check before every broadcast; step 7 is an update at the track; step 8 puts a
-backup of the database back; step 9 restores a whole copy saved from the control page.
+data sources (the Baja app's API, a scoring poll) and its clock (NTP, step 5) use that
+uplink. When the uplink drops, those sources go stale and the last good data stays on air;
+nothing on screen is drawn from elsewhere. The image is carried there on a USB stick.
+Steps 1–6 are the install; step 7 is the check before every broadcast; step 8 is an update
+at the track; step 9 puts a backup of the database back; step 10 restores a whole copy
+saved from the control page.
 
 ## 1. Install Docker Desktop (once, with internet)
 
@@ -58,7 +59,7 @@ At every session break, save a copy onto the USB stick from the control page: **
 segurança** in the header → **Baixar**, and pick the stick in the browser's save dialog. It
 is one zip (`bajaovrlay-AAAA-MM-DD-HHMM.zip`) of the database, the images and, unless
 "Incluir gravações" is unticked, the recordings, taken with the server running. It is a
-download because a stick plugged into Windows is not visible inside the container. Step 9
+download because a stick plugged into Windows is not visible inside the container. Step 10
 puts one back.
 
 To copy the whole data folder out from the PC itself (before an update), stop the
@@ -83,7 +84,77 @@ docker cp bajaovrlay:/data/backups "C:\BajaOvrLay\copias-banco-$(Get-Date -Forma
 The first time an operator laptop opens the control page, Windows may ask whether Docker
 Desktop may use the network: allow **private** networks.
 
-## 5. Point OBS at it
+## 5. Relógio
+
+Every clock on air (the race clock, the countdowns) counts on the server clock, and every
+page lines up with the server. The server keeps that clock on real time by asking NTP
+itself, about once a minute, from inside the container (`BAJAOVRLAY_NTP_SERVERS`, by default
+`a.st1.ntp.br`, `b.st1.ntp.br`, `pool.ntp.org`). Windows is set to NTP.br too, so the
+machine's own clock, which the server starts from and falls back to, is right as well, and
+OBS's and the PC's clock read the same time. Once per PC, in **PowerShell as
+administrator**.
+
+**a. The router lets NTP out.** NTP is UDP port 123, **outbound** only: the PC asks, the
+answer comes back on the same conversation. No inbound rule and no port forward are
+needed; do not add one. Check from the PC (this asks NTP.br without changing anything):
+
+```powershell
+w32tm /stripchart /computer:a.st1.ntp.br /samples:3 /dataonly
+```
+
+Three lines with a time and an offset such as `+00.0031250s` mean NTP gets through. Lines
+ending in `error: 0x800705B4` (a timeout) mean UDP 123 is blocked on the way out: the
+router, or the venue's network above it. In the router's firewall, allow outbound UDP to
+port 123 (on most home routers outbound traffic is already allowed, and the block is the
+venue's).
+
+**b. Windows time service on NTP.br.** Turn the service on, point it at NTP.br, and make it
+ask now:
+
+```powershell
+Set-Service w32time -StartupType Automatic
+Start-Service w32time
+w32tm /config /manualpeerlist:"a.st1.ntp.br,0x8 b.st1.ntp.br,0x8" /syncfromflags:manual /update
+Restart-Service w32time
+w32tm /resync /force
+w32tm /query /status
+```
+
+`/query /status` must show `Leap Indicator: 0(no warning)` and `Source: a.st1.ntp.br,0x8`
+(or `b.st1.ntp.br,0x8`). A `Source: Local CMOS Clock` or `Free-running System Clock` means
+Windows has not reached NTP.br yet: run `w32tm /resync /force` again after a minute, and if
+it stays, go back to step a. Then:
+
+```powershell
+w32tm /stripchart /computer:a.st1.ntp.br /samples:3 /dataonly
+```
+
+The offsets are now a few milliseconds (`+00.0012345s`, `-00.0045678s`), not seconds.
+
+**c. Where NTP stays blocked.** If the router cannot be changed and the venue blocks UDP 123,
+BajaOvrLay still runs: the server starts on the computer's own clock (it waits up to 3 s for
+NTP at boot) and keeps asking, so it takes real time as soon as NTP answers. The race
+clocks on every page and in OBS still agree with each other, since they all count on the
+server clock; only that clock may be some seconds off the official time of the timing tent. The header shows no clock warning in
+this case: it warns only once NTP has answered and found the server 2 s or more off. What
+says it is "Verificar servidor" in the header's menu: `O NTP ainda não respondeu.` What to
+do, in order:
+
+1. Fix the router (step a), or ask the venue to let outbound UDP 123 through.
+2. Or use a time source on the event LAN, such as the timing tent's NTP server: put it first
+   in `BAJAOVRLAY_NTP_SERVERS`, before the default list. In `C:\BajaOvrLay\compose.yaml`,
+   add these two lines under `bajaovrlay:`, with `environment:` indented as `ports:` is
+   (here the tent's server at `192.168.10.5`):
+
+   ```yaml
+   environment:
+     BAJAOVRLAY_NTP_SERVERS: 192.168.10.5,a.st1.ntp.br,b.st1.ntp.br,pool.ntp.org
+   ```
+
+   then `docker compose -f C:\BajaOvrLay\compose.yaml up -d`, and point Windows at it too
+   (step b, with `/manualpeerlist:"192.168.10.5,0x8"`).
+
+## 6. Point OBS at it
 
 - Program: a **Browser** source, URL `http://localhost:8080/render/`, width 1920, height
   1080, in every scene that carries the graphics.
@@ -93,17 +164,23 @@ Desktop may use the network: allow **private** networks.
 - The control page: `http://localhost:8080/` on the stream PC, or
   `http://<stream PC address>:8080/` from another machine on the event LAN.
 
-## 6. Before going on air
+## 7. Before going on air
 
 1. `docker ps` lists `bajaovrlay` as `Up … (healthy)`.
 2. `http://localhost:8080/health` shows `{"ok":true,…}`.
 3. The control page shows "Conectado".
 4. A test take: an item on the program output shows in OBS, then "Limpar" clears it.
 5. "Fontes de dados": each source the session needs is on and "Ok".
-6. With the uplink cable out, steps 3 and 4 still work and nothing on air changes. The
+6. The clock (step 5): "Verificar servidor", in the header's menu, shows the last NTP
+   answer with a difference under 100 ms, such as "Última resposta do NTP às 14:32:05
+   (a.st1.ntp.br:123), diferença de +3 ms.", and the header shows no "Relógio do servidor
+   … fora da hora certa". "O NTP ainda não respondeu." there means NTP is blocked (step
+   5c).
+7. With the uplink cable out, steps 3 and 4 still work and nothing on air changes. The
    external sources turn "Atrasada", then "Erro", and are "Ok" again once it is back in.
+   The clocks keep running on the server clock meanwhile.
 
-## 7. Update at the track
+## 8. Update at the track
 
 Bring a new `bajaovrlay-image.tar.gz` (step 2), copy the data out (step 4), then:
 
@@ -115,7 +192,7 @@ docker compose -f C:\BajaOvrLay\compose.yaml up -d
 Compose sees the new image and replaces the container; the volume and its data stay. Open
 pages and OBS reload themselves once the new server is up.
 
-## 8. Restore a backup of the database
+## 9. Restore a backup of the database
 
 Stop the server first, and remove the journal SQLite may have left beside the database:
 otherwise SQLite plays that leftover journal into the restored file. The volume is reached
@@ -132,7 +209,7 @@ docker start bajaovrlay
 For a backup copied out to the PC (step 4), add `-v C:\BajaOvrLay\copias-banco-<moment>:/copia`
 to the second `docker run` and copy from `/copia/<file>` instead of `/data/backups/<file>`.
 
-## 9. Restaurar uma cópia
+## 10. Restaurar uma cópia
 
 A zip saved with **Cópia de segurança** (step 4) holds `bajaovrlay.sqlite`, `media/`,
 `recordings/` when the recordings were included, and `leia-me.txt`, which says when it was
