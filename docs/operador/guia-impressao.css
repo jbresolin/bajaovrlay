@@ -1,0 +1,92 @@
+/*
+ * The printed operator guide (BAJAOVRLAY-31): one A4 sheet, both sides. printableGuide.ts
+ * puts this stylesheet in the page it builds from guia-do-operador.md, and
+ * guidePrintsOnTwoPages.e2e.ts checks that the result is two pages at most.
+ * Two columns per page: a volunteer reads it beside the keyboard, so it is dense but never
+ * smaller than 8.5 pt, and a picture never splits across a column or a page.
+ */
+@page {
+  size: A4;
+  margin: 9mm 9mm 10mm;
+}
+
+:root {
+  --ink: #111;
+  --muted-ink: #444;
+  --rule: #999;
+}
+
+html {
+  /* printableGuide.ts inlines the control page's bundled Inter, so every machine prints alike. */
+  font-family: 'Inter', sans-serif;
+  font-size: 8.5pt;
+  line-height: 1.32;
+  color: var(--ink);
+  background: #fff;
+}
+
+body {
+  margin: 0;
+  column-count: 2;
+  column-gap: 6mm;
+  column-rule: 0.3pt solid var(--rule);
+}
+
+h1 {
+  column-span: all;
+  margin: 0 0 1mm;
+  font-size: 15pt;
+}
+
+/*
+ * The two paragraphs under the title span both columns: first the blank line for the day's
+ * technical lead and phone, written by hand on the printed sheet; then what the sheet is for.
+ */
+h1 + p {
+  column-span: all;
+  margin: 1.5mm 0 2mm;
+  font-size: 10pt;
+}
+
+h1 + p + p {
+  column-span: all;
+  margin: 0 0 2.5mm;
+  color: var(--muted-ink);
+}
+
+h2 {
+  margin: 2.2mm 0 0.8mm;
+  font-size: 10pt;
+  break-after: avoid;
+}
+
+p {
+  margin: 0.8mm 0;
+}
+
+ul {
+  margin: 0.8mm 0;
+  padding-left: 4mm;
+}
+
+li {
+  margin: 0.4mm 0;
+}
+
+img {
+  display: block;
+  width: 100%;
+  margin: 1mm 0;
+  border: 0.3pt solid var(--rule);
+  break-inside: avoid;
+}
+
+/* The whole console is too small to read at a column's width: it takes both columns. */
+p:has(> .foto-console) {
+  column-span: all;
+  margin: 1.5mm 0;
+}
+
+strong {
+  font-weight: 650;
+}

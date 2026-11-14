@@ -19,6 +19,23 @@ On a draft every job, "CI passed" included, shows as **skipped** (grey). Skipped
 green: it means nothing was checked. A pull request is ready to merge only when "CI passed"
 is green on its latest push, after it was marked ready.
 
+### A skipped draft run never cancels a real one
+
+On #62 (2026-11-10) a push of a merge of main landed within a second of João marking the
+PR ready. Two runs started on the same commit: the real one (ready for review), and one for
+the push whose event still read the PR as a draft, so every job of it was skipped. Both were
+in one concurrency group, where a newer run on a pull request cancels the older, so the
+skipped run cancelled the real one and the PR was left with only skipped and cancelled
+checks. Since BAJAOVRLAY-72 the group ends in `-draft` or `-ready`, read from the run's own
+event: draft runs cancel only draft runs, and a newer push to a ready PR still cancels its
+older ready run. A push to `main` keeps one run per commit, as before.
+
+**If a PR's head shows only skipped checks after being marked ready**, the same race can
+still happen, but now nothing is cancelled: the real run finished on the previous commit,
+and the push's run skipped every job on the new one. Use Actions → CI → "Run workflow" on
+the PR's branch. Never "Re-run" the skipped run: it re-reads the same draft event and skips
+again. "Re-run all jobs" is only for a run that really was cancelled.
+
 ## `pnpm verify` runs with CI's settings
 
 Every step of `pnpm verify` runs with `CI=1` (`scripts/verifySteps.js`): Vitest and
@@ -131,6 +148,49 @@ pnpm --filter @bajaovrlay/control test:e2e --shard=1/2
 
 `pnpm test:e2e:control --shard=2/2` does the same from the root. Another checkout running
 browser tests at the same time sets `BAJAOVRLAY_E2E_PORT_OFFSET` (apps/control/e2e/README.md).
+
+## Several agents on one machine
+
+- **One worktree per task**, `~/bajaovrlay-<n>`:
+  `git -C ~/bajaovrlay fetch origin && git -C ~/bajaovrlay worktree add ~/bajaovrlay-<n> -b BAJAOVRLAY-<n>-<slug> origin/main`,
+  then `pnpm install --offline` inside it. The main checkout `~/bajaovrlay` stays on `main` and
+  no agent switches its branch: on 2026-11-11 one agent did, while another had uncommitted
+  work in it. Remove the worktree (`git -C ~/bajaovrlay worktree remove ~/bajaovrlay-<n>`) after the PR
+  merges.
+- **Ports**: each worktree runs its browser tests with a `BAJAOVRLAY_E2E_PORT_OFFSET` of its
+  own (apps/control/e2e/README.md), by the rule below.
+- **One `pnpm verify` at a time**: `flock /tmp/bajaovrlay-verify.lock pnpm verify`, so two
+  full runs do not compete for the machine's cores and fail on timing.
+
+### Which offset a task uses
+
+An agent working on BAJAOVRLAY-<n> uses `BAJAOVRLAY_E2E_PORT_OFFSET` = 100 × (n mod 10),
+and 1000 when n mod 10 is 0: -70 uses 1000, -72 uses 200, -76 uses 600. No list of offsets
+in use is kept, so nothing has to be added or removed when a task starts or ends. Two open
+tasks whose numbers end in the same digit would share an offset; the later one adds 50
+(-82 beside an open -72 uses 250).
+
+Every port of the browser tests is in 5176–5233, so steps of 100 never make two offsets'
+ports overlap. On 2026-11-14 `scripts/checkPortOffset.js` accepted all ten offsets, 100 to
+1000 (it checked 5357 there; Windows' excluded ranges are checked again on each run on WSL).
+
+### Offsets that cannot work
+
+On 2026-11-12 BAJAOVRLAY-76's `pnpm verify` failed twice with offset 140: the intermission
+board's preview port 5217 moved to 5357, which Windows' WSD service holds, busy through
+WSL. Windows also keeps ranges of ports excluded (Hyper-V and others), listed by
+`netsh.exe interface ipv4 show excludedportrange protocol=tcp`. So `pnpm verify` (`--quick`
+too) and `pnpm test:chaos` first run `scripts/checkPortOffset.js`, which refuses such an
+offset in one line and names the nearest that work:
+
+```text
+BAJAOVRLAY_E2E_PORT_OFFSET=140 cannot work: it moves port 5217 (packages/graphics/intermission-board/playwright.config.ts) to 5357, held by Windows' WSD service. Nearest offsets that work: 139 and 141.
+```
+
+It reads the ports from `scripts/browserTestPorts.js`, the one list of every port the browser
+tests open (`browserTestPorts.test.ts` fails when a file adds or moves a port without it).
+5357 is checked on every machine; Windows' excluded ranges only where netsh.exe runs (WSL),
+and quietly skipped elsewhere, CI included.
 
 On WSL a connection to a closed port on 127.0.0.1 may hang for about two minutes instead of
 being refused. Playwright checks each server's port before starting it, so a local browser

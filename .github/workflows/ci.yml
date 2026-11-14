@@ -19,8 +19,16 @@ on:
 # On a pull request a newer push makes the older run pointless, so it is cancelled. On main
 # every merge keeps its own run, so each merge gets its own verdict: a push is grouped by its
 # commit, since GitHub keeps only one waiting run per group and would drop the others.
+#
+# The group ends in "draft" or "ready", read from the event, so a run that skips every job
+# (its event says draft) only ever cancels another draft run. Without it, a push landing
+# within a second of "ready for review" started a run whose event still read the PR as a
+# draft, and that skipped run cancelled the real one (#62, BAJAOVRLAY-72, docs/ci.md).
+# A push to main or a run by hand has no pull request, so it reads "ready".
+# What could go wrong: a ready PR turned back into a draft keeps its last ready run going
+# to the end, since the draft push that follows is in the other group.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}-${{ github.event.pull_request.draft && 'draft' || 'ready' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:

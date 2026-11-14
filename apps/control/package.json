@@ -11,7 +11,8 @@
     "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.node.json --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:chaos": "playwright test --config playwright.chaos.config.ts"
+    "test:chaos": "playwright test --config playwright.chaos.config.ts",
+    "operator-guide": "playwright test --config playwright.operatorGuide.config.ts"
   },
   "dependencies": {
     "@bajaovrlay/shared": "workspace:*",

@@ -1,5 +1,6 @@
 # BajaOvrLay on the stream PC (Docker Desktop, Windows), where it runs entirely; only its
-# external data sources use the PC's uplink (deploy/stream-pc/README.md, step 4). Keep this file in C:\BajaOvrLay\.
+# external data sources and its clock's NTP questions use the PC's uplink
+# (deploy/stream-pc/README.md, steps 4 and 5). Keep this file in C:\BajaOvrLay\.
 services:
   bajaovrlay:
     image: ghcr.io/jbresolin/bajaovrlay:latest
