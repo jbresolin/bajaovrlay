@@ -71,7 +71,8 @@ const momentOfTheTake = '2026-10-10T13:00:00.000Z';
 const nameOfTheStoredSetting = 'bajaovrlay.previaAutomatica';
 const textStoredWhenOff = 'desligada';
 
-const takeTheClockPreview = { type: 'takePreview', layerId: 'clock' };
+// The take says the page showed nothing on air on the clock layer (BAJAOVRLAY-69).
+const takeTheClockPreview = { type: 'takePreview', layerId: 'clock', instanceIdSeenOnAir: null };
 const previewTheYellowFlagAutomatically = {
   type: 'previewItem',
   itemId: yellowFlagItemId,
@@ -204,7 +205,7 @@ describe('a "Tomar" that must not be followed by a preview', () => {
     expect(
       fakeServer.listCommandsReceived(),
       'a "Tomar" that left the cursor where it was must not be followed by a preview',
-    ).toEqual([{ type: 'takePreview', layerId: 'lower-third' }]);
+    ).toEqual([{ type: 'takePreview', layerId: 'lower-third', instanceIdSeenOnAir: null }]);
   });
 
   it('previews nothing when the server refuses the take', async () => {

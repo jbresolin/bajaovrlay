@@ -229,7 +229,8 @@ describe('"Salvar e disparar" for a stored item', () => {
     // Assert: the save of the label, then the take of the item; then the editor closes.
     expect(fakeServer.listCommandsReceived(), 'the save must go before the take').toEqual([
       { type: 'updateItemFields', itemId: storedItem.id, label: 'Largada do enduro — 10h' },
-      { type: 'takeItem', itemId: storedItem.id },
+      // The take says the page showed the item's layer empty (BAJAOVRLAY-69).
+      { type: 'takeItem', itemId: storedItem.id, instanceIdSeenOnAir: null },
     ]);
     await waitFor(() => {
       expect(onClose, 'the editor must close once both were accepted').toHaveBeenCalledTimes(1);
@@ -277,7 +278,8 @@ describe('"Salvar e disparar" for a stored item', () => {
 
     // Assert: nothing to save, so the take is the one command.
     expect(fakeServer.listCommandsReceived(), 'an untouched item must just be taken').toEqual([
-      { type: 'takeItem', itemId: storedItem.id },
+      // The take says the page showed the item's layer empty (BAJAOVRLAY-69).
+      { type: 'takeItem', itemId: storedItem.id, instanceIdSeenOnAir: null },
     ]);
   });
 

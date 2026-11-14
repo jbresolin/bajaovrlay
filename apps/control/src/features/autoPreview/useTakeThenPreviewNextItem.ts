@@ -1,6 +1,7 @@
 import type { CommandInput } from '@bajaovrlay/shared';
 
 import { findRundownShownOnPage } from '@/features/rundown/rundownShownOnPage';
+import type { AreaOfThePage } from '@/state/commandFailure';
 import { useReadServerStateNow, useSendCommand } from '@/state/ControlPageStateProvider';
 
 import { useAutoPreviewSetting } from './AutoPreviewSettingProvider';
@@ -30,8 +31,13 @@ import { findItemIdToPreviewAfterTake } from './itemToPreviewAfterTake';
  * What could go wrong: if another operator moves the cursor between this take and its
  * "ok", the item previewed is the one THEY put the cursor on; it is still the item at
  * the cursor, which is what the next Space takes. The switch counts as it was at the press.
+ * `areaOfThePage` names the part of the page the takes come from (the rundown column, the
+ * quick-fire strip), so a refused take is shown there only, once (BAJAOVRLAY-69). What the
+ * page showed on air is added to every take by the connection (state/whatThisPageSawOnAir.ts).
  */
-export function useTakeThenPreviewNextItem(): (takeCommand: CommandInput) => void {
+export function useTakeThenPreviewNextItem(
+  areaOfThePage?: AreaOfThePage,
+): (takeCommand: CommandInput) => void {
   const sendCommand = useSendCommand();
   const readServerStateNow = useReadServerStateNow();
   const { isAutoPreviewOn } = useAutoPreviewSetting();
@@ -47,7 +53,7 @@ export function useTakeThenPreviewNextItem(): (takeCommand: CommandInput) => voi
   async function sendTakeThenPreviewTheNextItem(takeCommand: CommandInput): Promise<void> {
     const rundownIdAtThePress = findRundownShownOnPage(readServerStateNow().rundowns)?.id;
     const cursorItemIdBeforeTake = readCursorItemIdNow(rundownIdAtThePress);
-    const wasTheTakeAccepted = await sendCommand(takeCommand);
+    const wasTheTakeAccepted = await sendCommand(takeCommand, areaOfThePage);
     if (!wasTheTakeAccepted) {
       return;
     }

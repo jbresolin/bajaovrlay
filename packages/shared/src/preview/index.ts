@@ -13,7 +13,13 @@ export {
   type PreviewClearLayerCommand,
   PreviewClearLayerCommandSchema,
 } from './previewClearLayer.js';
-// takeAllPreviews: "Tomar tudo", every preview and every marker to program in one cut.
-export { type TakeAllPreviewsCommand, TakeAllPreviewsCommandSchema } from './takeAllPreviews.js';
+// takeAllPreviews: "Tomar tudo", every preview and every marker to program in one cut, and
+// a layer it left because another console had just changed it (BAJAOVRLAY-69).
+export {
+  type LayerNotTaken,
+  LayerNotTakenSchema,
+  type TakeAllPreviewsCommand,
+  TakeAllPreviewsCommandSchema,
+} from './takeAllPreviews.js';
 // previewMacro: show a macro's end state on the preview output, program untouched.
 export { type PreviewMacroCommand, PreviewMacroCommandSchema } from './previewMacro.js';

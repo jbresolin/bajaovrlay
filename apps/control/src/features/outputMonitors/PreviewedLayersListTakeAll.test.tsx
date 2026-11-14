@@ -24,6 +24,7 @@
  *
  * What these tests deliberately do not cover:
  *   - The lines of plain previews and their labels: PreviewedLayersList.test.tsx.
+ *   - A "Tomar tudo" that left layers for another console: PreviewedLayersListLayersNotTaken.test.tsx.
  *   - What the server does with takeAllPreviews (one state change, z-order, refusals):
  *     apps/server's takeAllPreviews.test.ts and storeTakeAllPreviews.test.ts.
  *   - What the Prévia page draws for a mark: apps/renderer's previewComposition.test.ts.
@@ -50,6 +51,7 @@ import {
 import {
   buildRaceClockGraphic,
   buildRaceClockInstanceOnTheClockLayer,
+  idOfTheRaceClockOnAir,
 } from '@/state/slicesLikeTheServerSends.testSupport';
 
 import { PreviewedLayersList } from './PreviewedLayersList';
@@ -155,11 +157,16 @@ describe('a layer marked "vai limpar" under the "Prévia" monitor', () => {
 
   const buttonScenarios = [
     // "Tomar" on a marked line is the same takePreview as on a preview: the server
-    // clears the layer's program output because the layer is marked.
+    // clears the layer's program output because the layer is marked. It says the page
+    // showed the clock on air there (BAJAOVRLAY-69).
     {
       name: '"Tomar" on the marked line sends takePreview for that layer',
       buttonName: 'Tomar',
-      expectedCommand: { type: 'takePreview', layerId: 'clock' },
+      expectedCommand: {
+        type: 'takePreview',
+        layerId: 'clock',
+        instanceIdSeenOnAir: idOfTheRaceClockOnAir,
+      },
     },
     // "Descartar" takes the mark away and leaves what is on air alone.
     {
@@ -300,11 +307,14 @@ describe('"Tomar tudo" and "Descartar tudo" under the "Prévia" monitor', () => 
     fakeServer.acceptLastCommand();
     await letThePageFinishWhatItStarted();
 
-    // Assert: one command, with nothing in it but its type, and nothing after it.
+    // Assert: one command, with nothing in it but its type and what the page showed on air on
+    // each layer it takes (nothing on either; BAJAOVRLAY-69), and nothing after it.
     expect(
       fakeServer.listCommandsReceived(),
       '"Tomar tudo" must send takeAllPreviews alone and preview nothing afterwards',
-    ).toEqual([{ type: 'takeAllPreviews' }]);
+    ).toEqual([
+      { type: 'takeAllPreviews', instanceIdsSeenOnAir: { clock: null, 'lower-third': null } },
+    ]);
   });
 
   it('"Descartar tudo" sends stopPreview for every layer at once', () => {

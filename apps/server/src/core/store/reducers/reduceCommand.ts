@@ -138,7 +138,7 @@ function reduceCommandOfItsType(
     case 'previewClearLayer':
       return reducePreviewClearLayer(slices, command);
     case 'takeAllPreviews':
-      return reduceTakeAllPreviews(slices, context);
+      return reduceTakeAllPreviews(slices, command, context);
     case 'previewMacro':
       return reducePreviewMacro(slices, command, context);
     // The item and rundown commands have a switch of their own, one reducer file each.

@@ -57,12 +57,14 @@ describe('connecting to /ws', () => {
     const hello = await client.waitForMessage('hello', (message) => message.type === 'hello');
 
     // Assert: hello carries the very slices the store holds, ten layers among them,
-    // and the time the server's clock showed.
+    // the time the server's clock showed, and the console id handed to this page
+    // (BAJAOVRLAY-69; webSocketHubConsoleId.test.ts checks its value).
     expect(hello, 'hello must carry every slice the store holds and the server clock').toEqual({
       type: 'hello',
       slices: runningServer.stateStore.readAllSlices(),
       serverNowMs: momentTheServerClockIsHeldAtInMilliseconds,
       serverClockStepCount: expect.any(Number),
+      consoleId: expect.any(String),
     });
     expect(
       hello.type === 'hello' ? hello.slices.layers.length : 0,
