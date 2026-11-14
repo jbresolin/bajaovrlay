@@ -30,8 +30,11 @@ checks. Since BAJAOVRLAY-72 the group ends in `-draft` or `-ready`, read from th
 event: draft runs cancel only draft runs, and a newer push to a ready PR still cancels its
 older ready run. A push to `main` keeps one run per commit, as before.
 
-**If a PR shows only skipped checks after being marked ready**, open its cancelled run and
-use "Re-run all jobs", or "Run workflow" on the PR's branch from the Actions page.
+**If a PR's head shows only skipped checks after being marked ready**, the same race can
+still happen, but now nothing is cancelled: the real run finished on the previous commit,
+and the push's run skipped every job on the new one. Use Actions → CI → "Run workflow" on
+the PR's branch. Never "Re-run" the skipped run: it re-reads the same draft event and skips
+again. "Re-run all jobs" is only for a run that really was cancelled.
 
 ## `pnpm verify` runs with CI's settings
 
@@ -149,28 +152,27 @@ browser tests at the same time sets `BAJAOVRLAY_E2E_PORT_OFFSET` (apps/control/e
 ## Several agents on one machine
 
 - **One worktree per task**, `~/bajaovrlay-<n>`:
-  `git worktree add ../bajaovrlay-<n> -b BAJAOVRLAY-<n>-<slug> origin/main`, then
-  `pnpm install --offline` inside it. The main checkout `~/bajaovrlay` stays on `main` and
+  `git -C ~/bajaovrlay fetch origin && git -C ~/bajaovrlay worktree add ~/bajaovrlay-<n> -b BAJAOVRLAY-<n>-<slug> origin/main`,
+  then `pnpm install --offline` inside it. The main checkout `~/bajaovrlay` stays on `main` and
   no agent switches its branch: on 2026-11-11 one agent did, while another had uncommitted
-  work in it. Remove the worktree (`git worktree remove ../bajaovrlay-<n>`) after the PR
+  work in it. Remove the worktree (`git -C ~/bajaovrlay worktree remove ~/bajaovrlay-<n>`) after the PR
   merges.
 - **Ports**: each worktree runs its browser tests with a `BAJAOVRLAY_E2E_PORT_OFFSET` of its
-  own (apps/control/e2e/README.md), from the table below.
+  own (apps/control/e2e/README.md), by the rule below.
 - **One `pnpm verify` at a time**: `flock /tmp/bajaovrlay-verify.lock pnpm verify`, so two
   full runs do not compete for the machine's cores and fail on timing.
 
-### Offsets in use
+### Which offset a task uses
 
-One row per open task that runs browser tests. Add yours when you start, pick an offset no
-row uses, and remove the row when the PR merges.
+An agent working on BAJAOVRLAY-<n> uses `BAJAOVRLAY_E2E_PORT_OFFSET` = 100 × (n mod 10),
+and 1000 when n mod 10 is 0: -70 uses 1000, -72 uses 200, -76 uses 600. No list of offsets
+in use is kept, so nothing has to be added or removed when a task starts or ends. Two open
+tasks whose numbers end in the same digit would share an offset; the later one adds 50
+(-82 beside an open -72 uses 250).
 
-| Task          | Worktree          | Offset                          |
-| ------------- | ----------------- | ------------------------------- |
-| BAJAOVRLAY-76 | `~/bajaovrlay-76` | 190 (moved from 140, see below) |
-| BAJAOVRLAY-72 | `~/bajaovrlay-72` | none (runs no browser tests)    |
-| BAJAOVRLAY-75 | `~/bajaovrlay-75` | not recorded yet                |
-| BAJAOVRLAY-69 |                   | not recorded yet                |
-| BAJAOVRLAY-31 | `~/bajaovrlay-31` | not recorded yet                |
+Every port of the browser tests is in 5176–5233, so steps of 100 never make two offsets'
+ports overlap. On 2026-11-14 `scripts/checkPortOffset.js` accepted all ten offsets, 100 to
+1000 (it checked 5357 there; Windows' excluded ranges are checked again on each run on WSL).
 
 ### Offsets that cannot work
 

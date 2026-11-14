@@ -1,7 +1,8 @@
 // `node scripts/checkPortOffset.js`: the first thing `pnpm verify` and `pnpm test:chaos`
 // run (BAJAOVRLAY-72). Exits 1 with one line when BAJAOVRLAY_E2E_PORT_OFFSET would move a
 // browser test's port onto one Windows holds: 5357 (the WSD service) always, and the
-// ranges Windows has excluded when netsh.exe can be read (WSL). Silent when the offset
+// ranges Windows has excluded when netsh.exe can be read (WSL); or past 65535, the
+// highest port there is. Silent when the offset
 // works. The judging is in portOffsetSafety.js; this file only gathers what it judges.
 import { spawnSync } from 'node:child_process';
 

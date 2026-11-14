@@ -15,6 +15,9 @@
  *   - Offset 140 is refused with the intermission board's port named, and 139 and 141
  *     offered; 0 (CI) and 190 (the offset -76 moved to) are accepted.
  *   - A range Windows has excluded refuses an offset the same way, naming the range.
+ *   - An offset that moves any port past 65535, the highest port there is, is refused
+ *     with that port named; the largest offset that keeps every port at 65535 or under
+ *     is accepted.
  *   - netsh's table is read in English and in Portuguese, and output with no table (a
  *     failed or different command) gives no ranges rather than an error.
  *   - The offset is read exactly as the browser tests read it (scripts/e2ePortOffset.ts).
@@ -87,6 +90,9 @@ describe('describeWhyThePortOffsetCannotWork', () => {
     { name: 'accepts offset 190', offset: 190 },
     // 5357 - 5188 = 169 would hit, 170 moves the control page to 5358.
     { name: 'accepts offset 170, one past the control page hitting 5357', offset: 170 },
+    // The largest offset that still fits: the chaos suite's output proxy (5233) lands on
+    // 65535, the highest port there is.
+    { name: 'accepts offset 60302, which puts the highest port on 65535', offset: 60302 },
   ];
 
   it.each(acceptedOffsets)('$name', ({ offset }) => {
@@ -97,6 +103,23 @@ describe('describeWhyThePortOffsetCannotWork', () => {
 
     // Assert: there is no reason; the offset works.
     expect(reason, 'an offset that moves no port onto 5357 is accepted').toBeNull();
+  });
+
+  it('refuses an offset that moves a port past 65535, the highest port there is', () => {
+    // Arrange: offset 60310 moves the chaos suite's output proxy (5233) to 65543, past
+    // the last port; the intermission board (5217) lands on 65527 and still fits.
+    const offset = 60310;
+
+    // Act: ask why it cannot work.
+    const reason = describeWhyThePortOffsetCannotWork(offset, someBrowserTestPorts, onlyTheWsdPort);
+
+    // Assert: only the output proxy is named, and the one offset offered is the largest
+    // that fits; none above it can work.
+    expect(reason, 'the refusal names the port that leaves the port range').toBe(
+      'BAJAOVRLAY_E2E_PORT_OFFSET=60310 cannot work: it moves port 5233 ' +
+        '(apps/control/e2e/chaos/steps/chaosPorts.ts) to 65543, ' +
+        'past 65535, the highest port there is. Nearest offsets that work: 60302.',
+    );
   });
 
   it('refuses an offset that moves a port into a range Windows has excluded', () => {

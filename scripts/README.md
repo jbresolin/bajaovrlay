@@ -28,7 +28,8 @@ Small plain-Node scripts run from the root `package.json`, with no dependency of
 - `checkPortOffset.js` (the first thing `pnpm verify` and `pnpm test:chaos` run,
   BAJAOVRLAY-72): refuses, in one line naming the nearest offsets that work, an offset
   that moves a browser test's port onto 5357 (Windows' WSD service) or into a range
-  Windows has excluded (read with netsh.exe on WSL, skipped elsewhere). The judging is in
+  Windows has excluded (read with netsh.exe on WSL, skipped elsewhere), or past 65535,
+  the highest port there is. The judging is in
   `portOffsetSafety.js` (tested by `portOffsetSafety.test.ts`); the ports come from
   `browserTestPorts.js`, the one list of them, which `browserTestPorts.test.ts` holds
   to the files that write each port.

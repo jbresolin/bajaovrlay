@@ -1,7 +1,8 @@
 // Which values of BAJAOVRLAY_E2E_PORT_OFFSET cannot work on this machine, and why, in one
-// line (BAJAOVRLAY-72). Pure functions: the ports come from browserTestPorts.js, the
-// blocked ports from the caller (checkPortOffset.js adds Windows' excluded ranges, read
-// through netsh.exe). Tested by portOffsetSafety.test.ts.
+// line (BAJAOVRLAY-72): a port moved onto one Windows holds, or past 65535. Pure
+// functions: the ports come from browserTestPorts.js, the blocked ports from the caller
+// (checkPortOffset.js adds Windows' excluded ranges, read through netsh.exe). Tested by
+// portOffsetSafety.test.ts.
 
 /**
  * @typedef {{ port: number, file: string }} BrowserTestPort
@@ -18,6 +19,22 @@ const wholeNumberPattern = /^[0-9]+$/;
 // the browser tests is in 5176–5233, so 1000 either way steps over any excluded range of
 // that size; past it the line says none was found.
 const farthestOffsetToTry = 1000;
+
+// The highest port TCP has. An offset that moves any port past it cannot work anywhere:
+// the browser tests would ask for a port that does not exist.
+const highestPortThereIs = 65535;
+
+/**
+ * Every number past the highest port, as one blocked range, so the same search that finds
+ * ports moved onto 5357 finds ports moved out of the port range. Checked always, before the
+ * caller's ranges; its sentence is written apart in describeWhyThePortOffsetCannotWork.
+ * @type {BlockedPorts}
+ */
+const portsPastTheHighestPortThereIs = {
+  firstPort: highestPortThereIs + 1,
+  lastPort: Number.POSITIVE_INFINITY,
+  heldBy: `no one: ${String(highestPortThereIs)} is the highest port there is`,
+};
 
 /**
  * Port 5357 on Windows belongs to the WSD service (Web Services on Devices), so through
@@ -73,8 +90,9 @@ export function readExcludedPortRangesOfWindows(netshOutput) {
 }
 
 /**
- * Every port of the browser tests that the offset moves onto a blocked port, each once,
- * with the first blocked range that holds it (the WSD port is passed first).
+ * Every port of the browser tests that the offset moves onto a blocked port or past 65535,
+ * each once, with the first blocked range that holds it (the ports past 65535 are looked
+ * at first, then the caller's ranges in their order: the WSD port is passed first).
  * @param {number} offset
  * @param {BrowserTestPort[]} browserTestPorts
  * @param {BlockedPorts[]} blockedPortsList
@@ -85,11 +103,12 @@ export function findPortsTheOffsetMovesOntoBlockedPorts(
   browserTestPorts,
   blockedPortsList,
 ) {
+  const everyBlockedRange = [portsPastTheHighestPortThereIs, ...blockedPortsList];
   /** @type {PortClash[]} */
   const clashes = [];
   for (const { port, file } of browserTestPorts) {
     const movedPort = port + offset;
-    const blockedPorts = blockedPortsList.find(
+    const blockedPorts = everyBlockedRange.find(
       (range) => movedPort >= range.firstPort && movedPort <= range.lastPort,
     );
     if (blockedPorts !== undefined) {
@@ -135,8 +154,8 @@ export function findNearestSafePortOffsets(offset, browserTestPorts, blockedPort
 
 /**
  * Null when the offset works; otherwise one line naming every port it moves onto a
- * blocked one, the file that writes that port, what holds it, and the nearest offsets
- * that work.
+ * blocked one or past 65535, the file that writes that port, what holds it, and the
+ * nearest offsets that work.
  * @param {number} offset
  * @param {BrowserTestPort[]} browserTestPorts
  * @param {BlockedPorts[]} blockedPortsList
@@ -152,11 +171,14 @@ export function describeWhyThePortOffsetCannotWork(offset, browserTestPorts, blo
     return null;
   }
 
-  const clashSentences = clashes.map(
-    (clash) =>
-      `it moves port ${String(clash.port)} (${clash.file}) to ${String(clash.movedPort)}, ` +
-      `held by ${clash.blockedPorts.heldBy}`,
-  );
+  const clashSentences = clashes.map((clash) => {
+    const whereThePortWent = `it moves port ${String(clash.port)} (${clash.file}) to ${String(clash.movedPort)}, `;
+    const isPastTheHighestPort = clash.movedPort > highestPortThereIs;
+    if (isPastTheHighestPort) {
+      return `${whereThePortWent}past ${String(highestPortThereIs)}, the highest port there is`;
+    }
+    return `${whereThePortWent}held by ${clash.blockedPorts.heldBy}`;
+  });
   const nearest = findNearestSafePortOffsets(offset, browserTestPorts, blockedPortsList);
   const safeOffsets = [nearest.below, nearest.above].filter((candidate) => candidate !== null);
   const wayOut =
