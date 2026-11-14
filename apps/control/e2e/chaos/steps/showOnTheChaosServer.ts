@@ -36,7 +36,8 @@ export type StateTheScenariosRead = {
   macros: Array<{ id: string; label: string }>;
   macroRuns: Array<{ macroId: string }>;
   macroStops: Array<{ macroId: string; stepIndex: number; reason: string }>;
-  events: Array<{ eventId: string; kind: string; status: string }>;
+  /** heldByThePause: why "Pausar gatilhos" made an auto event wait (BAJAOVRLAY-73). */
+  events: Array<{ eventId: string; kind: string; status: string; heldByThePause?: string }>;
 };
 
 /** The rundown every new database seeds, where the scenarios' items go. */

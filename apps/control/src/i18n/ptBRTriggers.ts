@@ -124,7 +124,10 @@ export const ptBRTriggers = {
   pause: {
     pauseMenuEntry: 'Pausar gatilhos',
     resumeMenuEntry: 'Retomar gatilhos',
-    pausedChip: 'Gatilhos pausados',
+    // Since BAJAOVRLAY-73 the pause holds the automatic events too; the chip says both.
+    pausedChip: 'Gatilhos e eventos automáticos pausados',
+    pausedChipTooltip:
+      'Nada entra no ar sozinho: os gatilhos não disparam e os eventos automáticos esperam o "No ar" na aba Eventos.',
     resumeButton: 'Retomar',
   },
   takeStep: {

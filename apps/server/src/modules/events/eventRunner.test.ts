@@ -33,97 +33,28 @@
  */
 import { readFileSync } from 'node:fs';
 
-import type { PositionsShape } from '@bajaovrlay/shared';
-import { onTestFinished } from 'vitest';
 import { describe, expect, it } from 'vitest';
 
-import { createLogger } from '../../core/logger/createLogger.js';
-import { startAutoOutScheduler } from '../../core/store/autoOut.js';
 import {
-  buildPositionsInOrder,
-  buildPositionsWithCar31Leading,
   buildShapesWithCar31Leading,
   buildStartPenaltyOfCar47,
 } from './detectors/raceSnapshots.testSupport.js';
 import {
   applyOrThrow,
-  createClockItemForEvents,
   createPlainClockItem,
-  type EventInboxOnTheStore,
-  openEventInboxOnTheStore,
   pollTheSimulator,
   readEvent,
-  startOfTheTests,
 } from './eventInboxOnTheStore.testSupport.js';
-import { gapBetweenEventsOnALayerMs, startEventRunner } from './eventRunner.js';
-
-/** Car 47's fastest lap, 4:37,900 on its lap 34, as the inbox names it. */
-const firstFastestLapEventId = 'simulador-enduro:fastestLap:enduro-2027-nacional:47:34';
-
-/** Car 31's fastest lap after it, 4:37,500 on its lap 36. */
-const secondFastestLapEventId = 'simulador-enduro:fastestLap:enduro-2027-nacional:31:36';
-
-/** The moment the tests start, in ms. */
-const startMs = Date.parse(startOfTheTests);
-
-/** The positions after car 47 set 4:37,900 on its lap 34. */
-function buildPositionsWithCar47FastestOnLap34(): PositionsShape {
-  return buildPositionsInOrder([
-    { carNumber: 31, laps: 35, bestLapMs: 278_291, bestLapNumber: 29 },
-    { carNumber: 38, laps: 34, bestLapMs: 279_596, bestLapNumber: 12 },
-    { carNumber: 47, laps: 34, bestLapMs: 277_900, bestLapNumber: 34 },
-  ]);
-}
-
-/** The positions after car 31 answered with 4:37,500 on its lap 36. */
-function buildPositionsWithCar31FastestOnLap36(): PositionsShape {
-  return buildPositionsInOrder([
-    { carNumber: 31, laps: 36, bestLapMs: 277_500, bestLapNumber: 36 },
-    { carNumber: 38, laps: 35, bestLapMs: 279_596, bestLapNumber: 12 },
-    { carNumber: 47, laps: 34, bestLapMs: 277_900, bestLapNumber: 34 },
-  ]);
-}
-
-/**
- * The inbox with the auto-out and the runner started on its clock, a race clock item
- * ("Relógio — volta mais rápida", on the clock layer) as the fastest lap's and the
- * incidents' item, and the simulator's baseline poll in. Everything is stopped when the
- * test finishes.
- */
-function openInboxWithTheRunner(): EventInboxOnTheStore & { itemId: string } {
-  const inbox = openEventInboxOnTheStore();
-  const itemId = createClockItemForEvents(inbox.stateStore, 'Relógio — volta mais rápida');
-  applyOrThrow(inbox.stateStore, { type: 'updateEventRule', kind: 'fastestLap', itemId });
-  applyOrThrow(inbox.stateStore, { type: 'updateEventRule', kind: 'newIncident', itemId });
-  const logger = createLogger({ level: 'silent' });
-  const autoOut = startAutoOutScheduler({
-    stateStore: inbox.stateStore,
-    logger,
-    startTimer: inbox.clock.startTimer,
-    cancelTimer: inbox.clock.cancelTimer,
-  });
-  const runner = startEventRunner({
-    stateStore: inbox.stateStore,
-    logger,
-    readCurrentTime: inbox.clock.readCurrentTime,
-    startTimer: inbox.clock.startTimer,
-    cancelTimer: inbox.clock.cancelTimer,
-  });
-  onTestFinished(() => {
-    runner.stop();
-    autoOut.stop();
-    inbox.shutDown();
-  });
-  pollTheSimulator(inbox, { positions: buildPositionsWithCar31Leading() });
-  return { ...inbox, itemId };
-}
-
-/** The program instance on the clock layer, if any. */
-function readClockLayerOnAir(inbox: EventInboxOnTheStore) {
-  return inbox.stateStore
-    .readAllSlices()
-    .instances.find((instance) => instance.layerId === 'clock' && instance.target === 'program');
-}
+import { gapBetweenEventsOnALayerMs } from './eventRunner.js';
+import {
+  buildPositionsWithCar31FastestOnLap36,
+  buildPositionsWithCar47FastestOnLap34,
+  firstFastestLapEventId,
+  openInboxWithTheRunner,
+  readClockLayerOnAir,
+  secondFastestLapEventId,
+  startMs,
+} from './eventRunnerOnTheStore.testSupport.js';
 
 describe('the event runner', () => {
   it('puts a fastest lap on air by itself and takes it off after its 8 s', () => {

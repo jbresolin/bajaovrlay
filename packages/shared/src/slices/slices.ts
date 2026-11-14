@@ -128,8 +128,9 @@ export const SlicesSchema = z.object({
   triggers: TriggersSchema,
   /**
    * "Pausar gatilhos", each trigger's last firing and the newest firings, those that wait
-   * for the operator among them (BAJAOVRLAY-48). Kept in the server's memory only: a boot
-   * starts unpaused with no firing. Screens never receive either trigger slice.
+   * for the operator among them (BAJAOVRLAY-48). Kept in the server's memory only, but for
+   * the pause, which a restart keeps (gate 2 of PR #70): a boot starts with no firing.
+   * Screens never receive either trigger slice.
    */
   triggerActivity: TriggerActivitySchema,
   /** The data sources the server polls for race data, with their config and health. */

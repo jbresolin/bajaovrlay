@@ -48,6 +48,10 @@ Clock (`faults/fakeNtpForTheServer.ts`):
 - the same — real time found 30 s ahead with a clock on air: the step is held, the clock does not jump, the header warns.
 - the same — "Acertar relógio agora": the confirm says what jumps; only the race clock and the countdown jump, by 30 s.
 
+The pause:
+
+- `pauseHoldsTheFastestLap.chaos.ts` — a fastest lap arrives with "Pausar gatilhos" on (BAJAOVRLAY-73): it waits in "Eventos" saying "chegou durante a pausa", the notice layer shows nothing at any frame; "No ar" puts it on, one entrance.
+
 External services:
 
 - `externalServices.chaos.ts` — OBS closes: "Sem conexão"; takes do not wait; a scene macro stops at step 1; back, it works.

@@ -9,7 +9,8 @@ The editor's values become createTrigger or updateTrigger in `triggerForm.ts`, p
 Firings that ask are drawn in the "Eventos" tab and page by `WaitingTriggerFirings.tsx`
 (rows in `TriggerFiringRow.tsx`: "Rodar", "Descartar") and `RecentlyDismissedTriggerFirings.tsx`
 ("Desfazer" for 30 s); the lists are `triggerFiringLists.ts`. `TriggersPausedChip.tsx` is
-"Gatilhos pausados" in the header while paused, with "Retomar"; pausing is an entry of the
-header's menu (features/headerMenu). A take step's "Dado do gatilho" lives with the macro editor
+"Gatilhos e eventos automáticos pausados" in the header while paused, with "Retomar" (the
+pause holds the automatic events too, BAJAOVRLAY-73); pausing is an entry of the header's
+menu (features/headerMenu). A take step's "Dado do gatilho" lives with the macro editor
 (features/macros/TakeStepTriggerFields.tsx). Everything is read from the `triggers` and
 `triggerActivity` slices; the page only sends commands.

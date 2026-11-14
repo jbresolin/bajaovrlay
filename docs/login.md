@@ -58,7 +58,7 @@ fazem nada para Dados. Mesmo que um comando desses chegue ao servidor, ele recus
 
 **Acertar o relógio é do Produtor.** "Acertar relógio agora", no Menu (☰), faz pular o relógio
 de prova e as contagens no ar; para Dados ele aparece apagado, com o motivo escrito embaixo, e o
-servidor responde 403 se o pedido chegar. Em "Gatilhos pausados" o motivo do "Retomar" apagado
+servidor responde 403 se o pedido chegar. Em "Gatilhos e eventos automáticos pausados" o motivo do "Retomar" apagado
 também vem escrito no próprio aviso, não só ao passar o mouse.
 
 **Automação é do Produtor.** Um gatilho ou uma regra de evento em "Automático" põe coisas no

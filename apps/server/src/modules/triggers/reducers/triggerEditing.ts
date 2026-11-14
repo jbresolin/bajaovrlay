@@ -14,6 +14,7 @@ import type {
   ReducerOutcome,
   SlicesChangedByCommands,
 } from '../../../core/store/reducers/reducerTypes.js';
+import { holdQueuedEventsForThePause } from '../../events/index.js';
 import { refuseUnknownTrigger } from '../triggerRefusals.js';
 
 /** Whether the macro a trigger would name exists. */
@@ -147,17 +148,25 @@ export function reduceDeleteTrigger(
 }
 
 /**
- * setTriggersPaused: "Pausar gatilhos" for a rehearsal. While paused nothing fires; the
- * firings already waiting stay, and can be run or dismissed. The same value again changes
+ * setTriggersPaused: "Pausar gatilhos", for a rehearsal, a podium or an interview: nothing
+ * goes on air by itself. While paused nothing fires; the firings already waiting stay, and
+ * can be run or dismissed. Since BAJAOVRLAY-73 it holds the automatic events too: the
+ * pause moves every queued event to pending (the inbox then lists new ones pending too),
+ * and resuming moves nothing back, so nothing is replayed. The same value again changes
  * nothing.
  */
 export function reduceSetTriggersPaused(
   slices: SlicesChangedByCommands,
   command: SetTriggersPausedCommand,
+  context: ReducerContext,
 ): ReducerOutcome {
   if (slices.triggerActivity.isPaused === command.isPaused) {
     return { status: 'applied', slices };
   }
   const triggerActivity = { ...slices.triggerActivity, isPaused: command.isPaused };
-  return { status: 'applied', slices: { ...slices, triggerActivity } };
+  if (!command.isPaused) {
+    return { status: 'applied', slices: { ...slices, triggerActivity } };
+  }
+  const events = holdQueuedEventsForThePause(slices.events, Date.parse(context.now));
+  return { status: 'applied', slices: { ...slices, triggerActivity, events } };
 }

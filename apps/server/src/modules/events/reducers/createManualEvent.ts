@@ -9,14 +9,15 @@ import type {
 import {
   appendInboxEvents,
   findRuleOfKind,
-  findStatusOfNewEvent,
+  listNewEvent,
   readMomentMs,
 } from './inboxEventChanges.js';
 
 /**
  * createManualEvent ("+ Evento"): lists an event the operator typed, a penalty or a
  * notice about one car, or a notice about no car (a general notice, BAJAOVRLAY-67), with
- * no source, dated now, pending (or queued when the manual rule says auto). Its id is
+ * no source, dated now, pending (or queued when the manual rule says auto, unless
+ * "Pausar gatilhos" holds it pending, BAJAOVRLAY-73). Its id is
  * `manual:<id the store made>`. The page fills team and school from Cadastros and sends
  * them as typed, so what goes on air is what the operator saw in the form. A team or school
  * the command leaves out (the command API, a car Cadastros does not know) is read from the
@@ -65,16 +66,17 @@ export function reduceCreateManualEvent(
     payload.penaltyText = command.penaltyText;
   }
 
-  const status = findStatusOfNewEvent(findRuleOfKind(slices.eventRules, 'manual'));
-  const manualEvent: InboxEvent = {
-    eventId: `manual:${context.newEventId}`,
-    kind: 'manual',
-    sourceId: null,
-    detectedAtMs: nowMs,
-    payload,
-    status,
-    statusChanges: [{ status, atMs: nowMs }],
-  };
+  const manualEvent: InboxEvent = listNewEvent(
+    {
+      eventId: `manual:${context.newEventId}`,
+      kind: 'manual',
+      sourceId: null,
+      detectedAtMs: nowMs,
+      payload,
+    },
+    findRuleOfKind(slices.eventRules, 'manual'),
+    slices.triggerActivity.isPaused,
+  );
   return {
     status: 'applied',
     slices: { ...slices, events: appendInboxEvents(slices.events, [manualEvent]) },

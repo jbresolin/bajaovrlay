@@ -41,17 +41,32 @@ export const InboxEventStatusChangeSchema = z.object({
 export type InboxEventStatusChange = z.infer<typeof InboxEventStatusChangeSchema>;
 
 /**
+ * Why an event whose rule says auto waits for the operator instead (BAJAOVRLAY-73):
+ * "Pausar gatilhos" holds what would go on air by itself.
+ * - `arrivedWhilePaused`: it was detected (or typed) while paused, and landed pending;
+ * - `queuedWhenPaused`: it was queued for the runner when the pause began, and was moved
+ *   to pending then.
+ */
+export const HeldByThePauseSchema = z.enum(['arrivedWhilePaused', 'queuedWhenPaused']);
+
+/** One reason an event was held by the pause. */
+export type HeldByThePause = z.infer<typeof HeldByThePauseSchema>;
+
+/**
  * One event of the inbox: the detected (or typed) event, its status now, every change of
  * status with its moment (the first one is its arrival), the instance showing it while
  * it is on air, and the moment of each restore ("Desfazer", "Restaurar", "Mostrar de novo";
  * BAJAOVRLAY-67), oldest first: the rule's maximum wait counts from the latest one.
  * `restoresAtMs` is left out until the first restore, as in every event saved before.
+ * `heldByThePause` is left out unless "Pausar gatilhos" made it wait (BAJAOVRLAY-73); it
+ * stays after, as the record of why an auto event waited for the operator.
  */
 export const InboxEventSchema = DetectedEventFieldsSchema.extend({
   status: InboxEventStatusSchema,
   statusChanges: z.array(InboxEventStatusChangeSchema).min(1),
   instanceId: z.string().min(1).optional(),
   restoresAtMs: z.array(z.number().int().min(0)).optional(),
+  heldByThePause: HeldByThePauseSchema.optional(),
 }).superRefine((event, context) => checkCarNumberForKind(event, context));
 
 /** One inbox event after validation. */

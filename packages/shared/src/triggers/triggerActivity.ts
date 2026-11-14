@@ -45,8 +45,9 @@ export const triggerFiringsKept = 50;
 /**
  * The `triggerActivity` slice: "Pausar gatilhos" (one global switch for rehearsals), when
  * each trigger last fired (for its minimum interval), and the newest firings. Kept in the
- * server's memory only: a boot starts unpaused, with no firing, as the brief asks, and a
- * firing waiting before a restart is not offered again afterwards.
+ * server's memory only, but for the pause, which the server saves (gate 2 of PR #70): a
+ * boot starts with no firing, so a firing waiting before a restart is not offered again
+ * afterwards, and paused when the server stopped paused.
  */
 export const TriggerActivitySchema = z.object({
   isPaused: z.boolean(),
@@ -57,7 +58,7 @@ export const TriggerActivitySchema = z.object({
 /** The `triggerActivity` slice after validation. */
 export type TriggerActivity = z.infer<typeof TriggerActivitySchema>;
 
-/** The slice every boot starts with: unpaused, nothing fired. */
+/** The slice a boot starts with before the saved pause is read: unpaused, nothing fired. */
 export const triggerActivityAtBoot: TriggerActivity = {
   isPaused: false,
   lastFiredAtMsByTriggerId: {},
