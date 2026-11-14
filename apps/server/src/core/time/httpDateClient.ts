@@ -1,15 +1,19 @@
 /**
  * Real time from the Date headers of web servers, the way htpdate does (BAJAOVRLAY-76),
  * for networks that block NTP (UDP 123) but let HTTPS through. No dependency: one HEAD
- * request at a time through Node's fetch (httpHeadRequest.ts).
+ * request at a time through node:http and node:https (httpHeadRequest.ts).
  *
  * The method. A Date header says the server's time to the whole second, read at some
  * moment while it handled the request; the client takes the request's midpoint (halfway
  * between sending and the answer) as that moment. One answer D at local midpoint m says
- * the offset (the server's time minus local time) lies in [D − m, D − m + 1 s). Each next
- * request is timed so its midpoint lands where the server's second would tick over if the
- * offset were the middle of that range; whether the answer's second is the new one or the
- * old one halves the range. Eight requests take a second down to under 10 ms.
+ * the offset (the server's time minus local time) lies in [D − m, D − m + 1 s). The first
+ * request to a server is a warm-up: it also opens the connection (DNS, TCP, TLS), so its
+ * way out is far longer than its way back and its midpoint would be early by half the
+ * setup; its answer only bounds the range, strictly (see measureTheOffsetOfOneServer).
+ * The second is sent at once and measured by its midpoint; each next one is timed so its
+ * midpoint lands where the server's second would tick over if the offset were the middle
+ * of the range; whether the answer's second is the new one or the old one halves it.
+ * Eight measuring requests take a second down to under 10 ms.
  * What could go wrong: a one-sided delay moves the midpoint off the moment the server
  * read its clock by half the difference, so the result is as good as the network is even
  * (tens of ms on the internet, against NTP's few ms); and one server's clock may simply be
@@ -43,8 +47,11 @@ export type HttpDatePollOutcome =
   | { isAnswered: true; answer: HttpDateAnswer; serverName: string }
   | { isAnswered: false; problems: string[] };
 
-/** The most requests one server is asked per poll: a second halved down to about 8 ms. */
-export const maximumRequestsPerServer = 8;
+/**
+ * The most requests one server is asked per poll: the warm-up, then eight that measure, a
+ * second halved down to about 8 ms.
+ */
+export const maximumRequestsPerServer = 9;
 
 /** Once the range left is this narrow, the server is asked no more. */
 const narrowEnoughMs = 10;
@@ -124,7 +131,7 @@ export async function pollHttpDateServers(options: {
 }
 
 /**
- * Asks one server up to eight times, narrowing the range of its offset each time, and
+ * Asks one server up to nine times, narrowing the range of its offset each time, and
  * gives the middle of what is left. A failed request ends this server's part of the poll.
  */
 async function measureTheOffsetOfOneServer(
@@ -136,16 +143,18 @@ async function measureTheOffsetOfOneServer(
   // first check, but an abort can come during any await.
   const hasThePollBeenStopped = (): boolean => tools.abortSignal.aborted;
   let range: RangeOfTheOffset | undefined;
-  let lastRoundTripMs = 0;
+  // Undefined until a request after the warm-up has answered: the warm-up's round trip
+  // includes the connection's setup, and aiming with it would send the next request early.
+  let lastMeasuredRoundTripMs: number | undefined;
   let lastArrivalMs = 0;
   for (let requestNumber = 1; requestNumber <= maximumRequestsPerServer; requestNumber += 1) {
-    if (range !== undefined) {
-      if (range.highestMs - range.lowestMs <= narrowEnoughMs) {
-        break;
-      }
+    if (range !== undefined && range.highestMs - range.lowestMs <= narrowEnoughMs) {
+      break;
+    }
+    if (range !== undefined && lastMeasuredRoundTripMs !== undefined) {
       const waitMs = findTheWaitBeforeTheNextRequestMs(
         range,
-        lastRoundTripMs,
+        lastMeasuredRoundTripMs,
         tools.readLocalTimeMs(),
       );
       await waitFor(waitMs, tools.abortSignal);
@@ -176,16 +185,27 @@ async function measureTheOffsetOfOneServer(
         problem: `${serverName}: unreadable Date header ("${outcome.dateHeader}")`,
       };
     }
+    lastArrivalMs = arrivedAtMs;
+    const isTheWarmUp = requestNumber === 1;
+    if (isTheWarmUp) {
+      // The server read its clock at some moment between sending and the answer, whatever
+      // the setup took on the way out: so the offset is above D − arrival and below
+      // D + 1 s − sending. Wider than a midpoint's range, but never wrong.
+      range = {
+        lowestMs: serverSecondMs - arrivedAtMs,
+        highestMs: serverSecondMs + oneSecondMs - sentAtMs,
+      };
+      continue;
+    }
     const midpointMs = (sentAtMs + arrivedAtMs) / 2;
     const rangeOfThisAnswer: RangeOfTheOffset = {
       lowestMs: serverSecondMs - midpointMs,
       highestMs: serverSecondMs - midpointMs + oneSecondMs,
     };
     range = range === undefined ? rangeOfThisAnswer : narrowTheRange(range, rangeOfThisAnswer);
-    lastRoundTripMs = arrivedAtMs - sentAtMs;
-    lastArrivalMs = arrivedAtMs;
+    lastMeasuredRoundTripMs = arrivedAtMs - sentAtMs;
   }
-  if (range === undefined) {
+  if (range === undefined || lastMeasuredRoundTripMs === undefined) {
     return { kind: 'stopped' };
   }
   return {
@@ -193,7 +213,7 @@ async function measureTheOffsetOfOneServer(
     serverName,
     answer: {
       offsetMs: (range.lowestMs + range.highestMs) / 2,
-      roundTripMs: lastRoundTripMs,
+      roundTripMs: lastMeasuredRoundTripMs,
       localTimeAtArrivalMs: lastArrivalMs,
     },
   };

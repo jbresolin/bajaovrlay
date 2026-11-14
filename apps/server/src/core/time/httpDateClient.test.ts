@@ -14,8 +14,11 @@
  *   - With delays of 10 to 20 ms each way, uneven, the offset found is within 10 ms of the
  *     truth: 5 ms for the worst one-sided delay, plus under 4 ms left by the last halving.
  *     One request alone would leave a whole second.
- *   - It takes eight requests per server at most; after the first, each is timed to reach
- *     the server as its second ticks over, and the last ones land within 10 ms of it.
+ *   - It takes nine requests per server at most; the first is a warm-up that opens the
+ *     connection and only bounds the range; after the second, each is timed to reach the
+ *     server as its second ticks over, and the last two land within 20 ms of it.
+ *   - A first request slowed by opening the connection (300 ms more on the way out) does
+ *     not move the result, whatever the moment in the second the poll starts at.
  *   - Two servers whose clocks are 400 ms apart give no answer; with a third that agrees
  *     with one of them, the answer is the first of the two that agree.
  *   - A server that never answers is a timeout, named in the problems; the others still
@@ -26,14 +29,15 @@
  *     left open and none is sent after it.
  *
  * What these tests deliberately do not cover:
- *   - The real HEAD request (fetch), its timeout and its abort on a socket;
- *     httpHeadRequest.test.ts, against a server on this machine.
+ *   - The real HEAD request (node:http/node:https), its DNS look-up, its timeout and its
+ *     abort on a socket; httpHeadRequest.test.ts, against a server on this machine.
  *   - When the server clock asks HTTPS instead of NTP; serverClockHttpFallback.test.ts.
  */
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import {
   createFakeHttpDateServers,
+  type DelaysOfOneRequest,
   type FakeHttpDateServerSettings,
 } from './fakeHttpDateServers.testSupport.js';
 import { maximumRequestsPerServer, pollHttpDateServers } from './httpDateClient.js';
@@ -59,6 +63,20 @@ const unevenDelaysOfAGoodUplink = [
   { outMs: 10, backMs: 20 },
 ];
 
+/**
+ * The delays of a poll's requests to one server: the first as given (it also opens the
+ * connection), then 15 ms each way for as many requests as a poll can send.
+ */
+function buildDelaysWithASlowFirstRequest(
+  delaysOfTheFirstRequest: DelaysOfOneRequest,
+): DelaysOfOneRequest[] {
+  const delaysOfEachRequest = [delaysOfTheFirstRequest];
+  for (let requestNumber = 2; requestNumber <= maximumRequestsPerServer; requestNumber += 1) {
+    delaysOfEachRequest.push({ outMs: 15, backMs: 15 });
+  }
+  return delaysOfEachRequest;
+}
+
 /** Fakes the machine's clock and timers; real time runs `trueOffsetMs` ahead of it. */
 function startTheFakeClockOfTheMachine(): {
   readLocalTimeMs: () => number;
@@ -72,10 +90,33 @@ function startTheFakeClockOfTheMachine(): {
   return { readLocalTimeMs, readRealTimeMs: () => readLocalTimeMs() + trueOffsetMs };
 }
 
-/** Starts one poll of the fake servers and lets fake time run until it ends. */
-async function pollTheFakeServers(serverSettings: readonly FakeHttpDateServerSettings[]) {
+/** Lets fake time run until real time is this many ms into its second (0 to 999). */
+async function waitUntilRealTimeIsThisFarIntoItsSecond(
+  readRealTimeMs: () => number,
+  msIntoTheSecond: number,
+): Promise<void> {
+  const msIntoTheSecondNow = readRealTimeMs() % 1000;
+  const waitMs = (msIntoTheSecond - msIntoTheSecondNow + 1000) % 1000;
+  await vi.advanceTimersByTimeAsync(waitMs);
+}
+
+/**
+ * Starts one poll of the fake servers and lets fake time run until it ends. With
+ * `msIntoTheSecondAtTheStart`, the poll starts that far into a second of real time;
+ * without it, 456.7 ms in.
+ */
+async function pollTheFakeServers(
+  serverSettings: readonly FakeHttpDateServerSettings[],
+  msIntoTheSecondAtTheStart?: number,
+) {
   const machine = startTheFakeClockOfTheMachine();
   const fakeServers = createFakeHttpDateServers(serverSettings, machine.readRealTimeMs);
+  if (msIntoTheSecondAtTheStart !== undefined) {
+    await waitUntilRealTimeIsThisFarIntoItsSecond(
+      machine.readRealTimeMs,
+      msIntoTheSecondAtTheStart,
+    );
+  }
   const pollEnded = pollHttpDateServers({
     serverAddresses: serverSettings.map((settings) => settings.address),
     readLocalTimeMs: machine.readLocalTimeMs,
@@ -98,7 +139,7 @@ describe('the HTTP Date client', () => {
     // Act: one poll.
     const { outcome, fakeServers } = await pollTheFakeServers(serverSettings);
 
-    // Assert: answered by the first server, within 10 ms, in eight requests or fewer each.
+    // Assert: answered by the first server, within 10 ms, in nine requests or fewer each.
     expect(outcome.isAnswered, 'two servers agree').toBe(true);
     if (!outcome.isAnswered) {
       return;
@@ -124,18 +165,65 @@ describe('the HTTP Date client', () => {
     // Act: one poll.
     const { fakeServers } = await pollTheFakeServers(serverSettings);
 
-    // Assert: the first request lands anywhere in the second; each later one is aimed
-    // closer to the tick, and the last three land within 20 ms of it: the way out takes
-    // 10 to 20 ms where the client counts on half the round trip (15), so 5 ms either way,
-    // plus the offset's own error, under 10 ms (the test above).
+    // Assert: the warm-up and the second request land anywhere in the second; each later
+    // one is aimed closer to the tick, and the last two land within 20 ms of it. Each is
+    // aimed at the middle of the range left (about 31 ms wide, then 16), so it can miss by
+    // half that, plus 5 ms either way: the way out takes 10 to 20 ms where the client
+    // counts on half the round trip (15). The one before them, aimed with 63 ms left, may
+    // miss by more.
     const msFromTheTick = fakeServers.readHowFarFromTheTickEachRequestArrived(
       'https://www.cloudflare.com',
     );
     expect(msFromTheTick.length, 'several requests, one per tick').toBeGreaterThan(4);
-    for (const lastRequestMsFromTheTick of msFromTheTick.slice(-3)) {
+    for (const lastRequestMsFromTheTick of msFromTheTick.slice(-2)) {
       expect(Math.abs(lastRequestMsFromTheTick), 'on the second boundary').toBeLessThan(20);
     }
   });
+
+  // Each row is the moment in real time's second at which the poll starts, with a first
+  // request slowed by opening the connection (DNS, TCP, TLS: 300 ms more on the way out)
+  // and 15 ms each way after it. Before the warm-up, the first answer's midpoint was early
+  // by half that setup, and when the server's second ticked inside the setup the search
+  // ended up to 150 ms off, both servers agreeing.
+  it.each([
+    // Early in the second: the setup ends before the server's second ticks.
+    { name: 'starting 100 ms into the second', msIntoTheSecondAtTheStart: 100 },
+    // Just before the window where the tick falls inside the setup.
+    { name: 'starting 650 ms into the second', msIntoTheSecondAtTheStart: 650 },
+    // The tick falls inside the setup: the probe that found the bias came out 15–140 ms off
+    // for starts from 700 to 825 ms.
+    { name: 'starting 700 ms into the second', msIntoTheSecondAtTheStart: 700 },
+    { name: 'starting 750 ms into the second', msIntoTheSecondAtTheStart: 750 },
+    { name: 'starting 800 ms into the second', msIntoTheSecondAtTheStart: 800 },
+    { name: 'starting 825 ms into the second', msIntoTheSecondAtTheStart: 825 },
+    // Late in the second: the tick falls near the end of the setup.
+    { name: 'starting 950 ms into the second', msIntoTheSecondAtTheStart: 950 },
+  ])(
+    'is not biased by a slow first request, $name',
+    async ({ msIntoTheSecondAtTheStart }) => {
+      // Arrange: two servers on real time; each first request takes 315 ms out and 15 ms
+      // back (the connection being opened), every later one 15 ms each way.
+      const serverSettings = ['https://www.cloudflare.com', 'https://www.ntp.br'].map(
+        (address) => ({
+          address,
+          delaysOfEachRequest: buildDelaysWithASlowFirstRequest({ outMs: 315, backMs: 15 }),
+        }),
+      );
+
+      // Act: one poll, started at the row's moment in the second.
+      const { outcome } = await pollTheFakeServers(serverSettings, msIntoTheSecondAtTheStart);
+
+      // Assert: answered, and within 10 ms of the truth whatever the moment.
+      expect(outcome.isAnswered, 'two servers agree').toBe(true);
+      if (!outcome.isAnswered) {
+        return;
+      }
+      expect(
+        Math.abs(outcome.answer.offsetMs - trueOffsetMs),
+        'the slow first request only bounds the range, so it cannot move the result',
+      ).toBeLessThan(10);
+    },
+  );
 
   // Each row is a set of servers and whether their clocks agree enough to be believed.
   it.each([
