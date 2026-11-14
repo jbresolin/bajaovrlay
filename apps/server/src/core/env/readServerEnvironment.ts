@@ -8,6 +8,7 @@ import { parsePublicOrigins } from '../../modules/media/index.js';
 import { parseApiTokens } from '../apiAccess/apiTokens.js';
 import { serverLogLevels } from '../logger/createLogger.js';
 import { parseOperatorPins } from '../operatorLogin/operatorPins.js';
+import { parseHttpTimeSettings } from '../time/httpTimeSettings.js';
 import { parseNtpSettings } from '../time/ntpSettings.js';
 
 // Defaults match .env.example, which documents every variable.
@@ -151,6 +152,32 @@ const ServerEnvironmentSchema = z.object({
         return z.NEVER;
       }
       return parsing.ntpSettings;
+    }),
+  // The HTTPS servers whose Date headers the server clock follows while NTP is quiet
+  // (BAJAOVRLAY-76), read here into `HttpTimeSettings`: unset or empty is Cloudflare,
+  // NTP.br's web server and Google, "off" turns the fallback off, and an entry that is not
+  // an http(s) address, or a list of one, stops the boot: two servers must agree.
+  BAJAOVRLAY_HTTP_TIME_SERVERS: z
+    .string()
+    .optional()
+    .transform((text, context) => {
+      const parsing = parseHttpTimeSettings(text);
+      if (!parsing.isValid && parsing.problem.kind === 'badEntry') {
+        context.addIssue({
+          code: 'custom',
+          message: `"${parsing.problem.badEntry}" is not a web address (write it as https://www.ntp.br, or "off")`,
+        });
+        return z.NEVER;
+      }
+      if (!parsing.isValid) {
+        context.addIssue({
+          code: 'custom',
+          message:
+            'name at least two servers: an answer is kept only when two of them agree (or write "off")',
+        });
+        return z.NEVER;
+      }
+      return parsing.httpTimeSettings;
     }),
   // The operator login's two PINs (BAJAOVRLAY-29), read together below: each alone means
   // nothing, so the pair is checked as one setting, `operatorPins`.

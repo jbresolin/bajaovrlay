@@ -135,10 +135,13 @@ The offsets are now a few milliseconds (`+00.0012345s`, `-00.0045678s`), not sec
 BajaOvrLay still runs: the server starts on the computer's own clock (it waits up to 3 s for
 NTP at boot) and keeps asking, so it takes real time as soon as NTP answers. The race
 clocks on every page and in OBS still agree with each other, since they all count on the
-server clock; only that clock may be some seconds off the official time of the timing tent. The header shows no clock warning in
-this case: it warns only once NTP has answered and found the server 2 s or more off. What
-says it is "Verificar servidor" in the header's menu: `O NTP ainda não respondeu.` What to
-do, in order:
+server clock. After two NTP polls without an answer (about a minute) the server takes its
+time from the Date headers of HTTPS servers instead (`BAJAOVRLAY_HTTP_TIME_SERVERS`), good to
+tens of ms, and the top of the header's menu says "Relógio: HTTPS (…)"; NTP takes over again
+as soon as it answers. "Verificar servidor" in the header's menu still says
+`O NTP ainda não respondeu.` Only when HTTPS is blocked too does the header show "Relógio
+sem sincronização": then that clock may be some seconds off the official time of the timing
+tent. What to do, in order:
 
 1. Fix the router (step a), or ask the venue to let outbound UDP 123 through.
 2. Or use a time source on the event LAN, such as the timing tent's NTP server: put it first
@@ -171,14 +174,20 @@ do, in order:
 3. The control page shows "Conectado".
 4. A test take: an item on the program output shows in OBS, then "Limpar" clears it.
 5. "Fontes de dados": each source the session needs is on and "Ok".
-6. The clock (step 5): "Verificar servidor", in the header's menu, shows the last NTP
-   answer with a difference under 100 ms, such as "Última resposta do NTP às 14:32:05
-   (a.st1.ntp.br:123), diferença de +3 ms.", and the header shows no "Relógio do servidor
-   … fora da hora certa". "O NTP ainda não respondeu." there means NTP is blocked (step
-   5c).
+6. The clock (step 5): the header shows no "Relógio sem sincronização" and no "Relógio do
+   servidor … fora da hora certa", and the top of the header's **Menu** says what the server
+   clock follows, such as "Relógio: NTP (a.st1.ntp.br), última resposta às 09:58:12,
+   diferença de +3 ms." "HTTPS (www.cloudflare.com)" there means the venue blocks NTP (UDP
+   123 out, step 5c) and the clock follows web servers' time instead, good to tens of ms:
+   fine for the show, but ask the venue to let UDP 123 out. "Verificar servidor", in the
+   same menu, shows the last NTP answer, such as "Última resposta do NTP às 14:32:05
+   (a.st1.ntp.br:123), diferença de +3 ms.", or "O NTP ainda não respondeu." while NTP is
+   blocked. "Relógio sem sincronização" in the header means neither NTP nor HTTPS answered
+   for a minute: every clock on air counts on the PC's own time; check the uplink.
 7. With the uplink cable out, steps 3 and 4 still work and nothing on air changes. The
    external sources turn "Atrasada", then "Erro", and are "Ok" again once it is back in.
-   The clocks keep running on the server clock meanwhile.
+   The clocks keep running on the server clock meanwhile. After a minute the header shows
+   "Relógio sem sincronização", and it goes once the cable is back in.
 
 ## 8. Update at the track
 

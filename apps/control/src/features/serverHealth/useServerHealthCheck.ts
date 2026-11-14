@@ -2,6 +2,7 @@ import type { ServerClockHealth } from '@bajaovrlay/shared';
 import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
 import { useState } from 'react';
 
+import { describeTheServerClockSource } from '@/features/serverClock/serverClockSourceSentence';
 import { ptBR } from '@/i18n/ptBR';
 import { formatTimeOfDay } from '@/i18n/timeOfDayText';
 import { useServerState } from '@/state/ControlPageStateProvider';
@@ -32,7 +33,8 @@ export type ServerHealthCheck = {
 /**
  * "Verificar servidor" (an entry of the header's menu since BAJAOVRLAY-62): asks
  * `GET /health` whether the server is up, which version it runs, and what its clock last
- * heard from NTP: the time of the answer, the server, and the difference it found. Then
+ * heard from NTP: since BAJAOVRLAY-76, what it follows (NTP, HTTPS or nothing) with the
+ * last answer's time and difference; from an older server, NTP's last answer. Then
  * the data sources that are on, late or in error by name (BAJAOVRLAY-32), as the page
  * knew them when the server answered: a late feed is the other usual "is it the server?".
  */
@@ -81,13 +83,20 @@ function describeServerCheckStatus(status: ServerCheckStatus): string {
   }
 }
 
-/** What "Verificar servidor" says of NTP; nothing for a server from before BAJAOVRLAY-62. */
+/**
+ * What "Verificar servidor" says of the clock: nothing for a server from before
+ * BAJAOVRLAY-62, the source it follows from one since BAJAOVRLAY-76, NTP's last answer
+ * from one in between.
+ */
 function describeTheServerClock(serverClock: ServerClockHealth | undefined): string {
   if (serverClock === undefined) {
     return '';
   }
   if (!serverClock.isNtpOn) {
     return ptBR.serverClock.ntpOff;
+  }
+  if (serverClock.source !== undefined) {
+    return describeTheServerClockSource(serverClock.source);
   }
   if (serverClock.lastNtpAnswer === null) {
     return ptBR.serverClock.ntpNotAnsweredYet;

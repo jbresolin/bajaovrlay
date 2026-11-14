@@ -17,6 +17,13 @@ export const pollIntervalWhileTheRateIsUnknownMs = 16_000;
 /** How many answers are taken at the quicker interval, the boot's included. */
 export const answersAtTheQuickerInterval = 4;
 
+/**
+ * The interval while NTP is quiet and HTTPS Date headers feed the clock (BAJAOVRLAY-76):
+ * NTP's own, so NTP is still asked as often as it would be, and the web servers see a few
+ * HEAD requests a minute, nowhere near anything they would refuse.
+ */
+export const httpsPollIntervalMs = ntpPollIntervalMs;
+
 /** The wait before a confirming poll: at least 15 s, so no server sees a burst. */
 export const intervalBeforeAConfirmationMs = 16_000;
 

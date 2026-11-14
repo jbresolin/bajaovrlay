@@ -22,7 +22,7 @@ import {
   keepSliceNamesSentWhole,
   serializeServerMessage,
 } from './serverMessageBuilding.js';
-import { startServerTimeBroadcast } from './serverTimeBroadcast.js';
+import { type ServerClockReportsForTime, startServerTimeBroadcast } from './serverTimeBroadcast.js';
 import { trackSessionsOfConnections } from './sessionsOfConnections.js';
 import {
   buildSlicesForAScreen,
@@ -50,8 +50,8 @@ export type WebSocketHubOptions = {
    * a moment the store stamped.
    */
   readCurrentTime?: (() => Date) | undefined;
-  /** How far the server clock is off real time by NTP (core/time), for each `time`. */
-  readOffFromRealTimeMs?: (() => number | undefined) | undefined;
+  /** What each `time` says of the server clock: off by how much, following what, in sync. */
+  serverClockReports?: ServerClockReportsForTime | undefined;
   /** The server clock's step count for `hello` and `time`; defaults to core/time's. */
   readServerClockStepCount?: (() => number) | undefined;
   /**
@@ -119,7 +119,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   const serverTimeBroadcast = startServerTimeBroadcast({
     webSocketServer,
     readCurrentTime,
-    readOffFromRealTimeMs: options.readOffFromRealTimeMs,
+    serverClockReports: options.serverClockReports,
     readServerClockStepCount,
     startRepeatingTimer: options.startRepeatingTimer,
     cancelRepeatingTimer: options.cancelRepeatingTimer,

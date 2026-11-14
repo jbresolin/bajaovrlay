@@ -1,18 +1,28 @@
+import type { ServerClockLastAnswer } from '@bajaovrlay/shared';
+
 import type { ServerLogger } from '../logger/createLogger.js';
-import { pollForRealTimeWithinTheBootWait } from './bootPollForRealTime.js';
-import { type NtpPollOutcome, type NtpPollRequest, questionsPerPoll } from './ntpPolls.js';
 import {
-  estimateRateOfRealTime,
-  findTheLongestRoundTripKeptMs,
-  keepTheAnswersOfTheRateWindow,
-  type RealTimeSample,
-} from './realTimeRate.js';
+  type AnsweredPoll,
+  type AnswerTaken,
+  readAnAnsweredPoll,
+} from './answeredPollOfRealTime.js';
+import { pollForRealTimeWithinTheBootWait } from './bootPollForRealTime.js';
+import type { HttpDatePollOutcome } from './httpDateClient.js';
+import { type NtpPollOutcome, type NtpPollRequest, questionsPerPoll } from './ntpPolls.js';
+import { createRealTimeRateWindow } from './realTimeRateWindow.js';
 import type { ServerClock } from './serverClock.js';
 import {
   findTheNextPollIntervalMs,
+  httpsPollIntervalMs,
   intervalBeforeAConfirmationMs,
   slowDownAfterARateKiss,
 } from './serverClockPollIntervals.js';
+import { createSourceFollowedRecord } from './serverClockSourceFollowed.js';
+import type {
+  LastNtpAnswer,
+  ServerClockStatus,
+  SetToRealTimeOutcome,
+} from './serverClockStatus.js';
 
 /** From this difference on, the offset is stepped (when nothing on air counts time). */
 export const bigDifferenceMs = 1_000;
@@ -22,38 +32,6 @@ export const bigDifferenceMs = 1_000;
  * off); at boot, a machine with a dead clock battery waits for "Acertar relógio agora" too.
  */
 export const largestDifferenceTakenOnItsOwnMs = 24 * 60 * 60 * 1000;
-
-/** A new rate is ramped to over this much monotonic time, not taken at once. */
-export const rampToANewRateMs = 60_000;
-
-/** The last NTP answer, as "Verificar servidor" shows it. */
-export type LastNtpAnswer = {
-  serverName: string;
-  /** Real time when the answer arrived, in whole ms since 1970. */
-  atMs: number;
-  /** Real time minus the server clock at that moment, in whole ms. */
-  differenceMs: number;
-  roundTripMs: number;
-};
-
-/** What the discipline reports: the last answer, what is left to cover, the rate in use. */
-export type ServerClockStatus = {
-  /** Undefined until NTP has answered once. */
-  lastNtpAnswer: LastNtpAnswer | undefined;
-  /**
-   * Real time minus the server clock now, as far as NTP said: the slew still to cover, or
-   * a difference over 24 h not taken, in whole ms; positive when the server clock is
-   * behind. Undefined until NTP answered. The header warns from 2 s on.
-   */
-  offFromRealTimeMs: number | undefined;
-  rate: number;
-};
-
-/** What "Acertar relógio agora" did: stepped by how much, or why it could not. */
-export type SetToRealTimeOutcome =
-  | { isSet: true; steppedByMs: number }
-  | { isSet: false; reason: 'noAnswer'; problems: string[] }
-  | { isSet: false; reason: 'ntpOff' };
 
 /** The running discipline of the server clock. */
 export type ServerClockDiscipline = {
@@ -75,6 +53,12 @@ export type ServerClockDisciplineOptions = {
   isAnythingCountingTimeOnAir: (stepByMs: number) => boolean;
   /** Called after each step, so every page lines up again at once. */
   afterEachStep?: (() => void) | undefined;
+  /**
+   * One poll of the HTTPS servers' Date headers (httpDateClient.ts), asked only once NTP
+   * has been quiet for a full poll interval; undefined when BAJAOVRLAY_HTTP_TIME_SERVERS
+   * is off.
+   */
+  pollHttpDateServers?: ((abortSignal: AbortSignal) => Promise<HttpDatePollOutcome>) | undefined;
   logger: ServerLogger;
 };
 
@@ -101,13 +85,20 @@ const quickPoll: NtpPollRequest = { questionsPerServer: 1, serverToAskLast: unde
  *   - over 24 h: not taken at all, only reported (largestDifferenceTakenOnItsOwnMs).
  * Without NTP the clock runs on at its last rate; the outage is warned once. A schedule
  * moment skipped by a forward step is dropped, not fired late (triggers' 5 s window).
+ *
+ * When NTP has given no answer for a full poll interval (64 s), each poll that NTP leaves
+ * unanswered asks the Date headers of HTTPS servers instead (BAJAOVRLAY-76), every 64 s,
+ * and their answer goes through the very same rules above. Why HTTPS comes second: its
+ * precision is tens of ms (a whole-second header, timed against the network's evenness),
+ * NTP's a few ms; but HTTPS gets through networks that block UDP 123. NTP is still asked
+ * first at every poll, and takes over as soon as it answers; the change of source starts
+ * the rate's window again, since two sources tens of ms apart would read as a rate.
  */
 export function startServerClockDiscipline(
   options: ServerClockDisciplineOptions,
 ): ServerClockDiscipline {
   const { serverClock, pollForRealTime, isAnythingCountingTimeOnAir, logger } = options;
-  let answersOfTheRateWindow: RealTimeSample[] = [];
-  let hasARateBeenMeasured = false;
+  const rateWindow = createRealTimeRateWindow({ serverClock, logger });
   let answersTaken = 0;
   let lastNtpAnswer: LastNtpAnswer | undefined;
   let bigDifference: BigDifferenceState = 'none';
@@ -115,66 +106,27 @@ export function startServerClockDiscipline(
   // A difference over 24 h not taken, reported for the header while NTP keeps telling it.
   let differenceNotTakenMs: number | undefined;
   let slowDownFactor = 1;
-  // True at the start, so that a boot without NTP is warned by the boot itself only.
-  let didNtpAnswerTheLastPoll = true;
+  const sourceFollowed = createSourceFollowedRecord({
+    readMonotonicTimeMs: serverClock.readMonotonicTimeMs,
+    isHttpsFallbackOn: options.pollHttpDateServers !== undefined,
+    logger,
+  });
   let nextPollTimer: ReturnType<typeof setTimeout> | undefined;
   let isStopped = false;
   // Aborted by stop(): a poll in flight closes its socket and sends nothing more.
   const stopController = new AbortController();
 
-  /** One answer, as the discipline weighs it. */
-  type AnswerTaken = { differenceMs: number; sample: RealTimeSample; serverName: string };
-
-  /** Reads an answer: the difference it finds, and the sample for the rate. Records it. */
-  function readTheAnswer(outcome: Extract<NtpPollOutcome, { isAnswered: true }>): AnswerTaken {
-    const { answer, serverName } = outcome;
-    const realTimeAtArrivalMs = answer.localTimeAtArrivalMs + answer.offsetMs;
-    const serverTimeAtArrivalMs = serverClock.readServerTimeAtMonotonicMs(
-      answer.localTimeAtArrivalMs,
-    );
-    const differenceMs = realTimeAtArrivalMs - serverTimeAtArrivalMs;
-    lastNtpAnswer = {
-      serverName,
-      atMs: Math.round(realTimeAtArrivalMs),
-      differenceMs: Math.round(differenceMs),
-      roundTripMs: Math.round(answer.roundTripMs),
-    };
-    const sample: RealTimeSample = {
-      localTimeMs: answer.localTimeAtArrivalMs,
-      realTimeMs: realTimeAtArrivalMs,
-      roundTripMs: answer.roundTripMs,
-    };
-    return { differenceMs, sample, serverName };
-  }
-
-  /** Adds an answer to the rate's window and ramps to the new estimate, if any. */
-  function correctTheRateWith(newestSample: RealTimeSample): void {
-    answersOfTheRateWindow = keepTheAnswersOfTheRateWindow(answersOfTheRateWindow, newestSample);
-    const estimate = estimateRateOfRealTime(answersOfTheRateWindow);
-    if (estimate.kind === 'implausible') {
-      // Real time jumped between two answers (the machine slept, or the NTP server was
-      // reset): no clock runs like that, so the window starts again from this answer and
-      // the rate in use stays. The offset rules deal with the jump itself.
-      logger.info(
-        { measured_rate: estimate.rate },
-        'server clock rate window restarted: real time jumped between two NTP answers',
-      );
-      answersOfTheRateWindow = [newestSample];
-      return;
+  /** Reads an answered poll of either source, and records it for the reports. */
+  function readTheAnswer(
+    outcome: AnsweredPoll,
+    source: ServerClockLastAnswer['source'],
+  ): AnswerTaken {
+    const answer = readAnAnsweredPoll(outcome, source, serverClock);
+    if (answer.lastNtpAnswer !== undefined) {
+      lastNtpAnswer = answer.lastNtpAnswer;
     }
-    if (estimate.kind === 'estimated') {
-      hasARateBeenMeasured = true;
-      serverClock.rampToRate(estimate.rate, rampToANewRateMs);
-    }
-  }
-
-  /** Whether an answer's round trip is an outlier among the window's (and its own). */
-  function isARoundTripOutlier(sample: RealTimeSample): boolean {
-    const longestRoundTripKeptMs = findTheLongestRoundTripKeptMs([
-      ...answersOfTheRateWindow,
-      sample,
-    ]);
-    return sample.roundTripMs > longestRoundTripKeptMs;
+    sourceFollowed.noteAnswerRead(answer.lastAnswer);
+    return answer;
   }
 
   function stepTheClockBy(differenceMs: number): void {
@@ -194,8 +146,8 @@ export function startServerClockDiscipline(
         );
       }
       bigDifference = 'none';
-      const isAnOutlier = isARoundTripOutlier(sample);
-      correctTheRateWith(sample);
+      const isAnOutlier = rateWindow.isARoundTripOutlier(sample);
+      rateWindow.correctTheRateWith(sample);
       if (!isAnOutlier) {
         serverClock.slewBy(differenceMs);
       }
@@ -209,17 +161,17 @@ export function startServerClockDiscipline(
       serverClock.slewBy(differenceMs);
       logger.warn(
         { difference_ms: roundedDifferenceMs },
-        'server clock is 1 s or more off real time; asking another NTP server in 16 s to confirm',
+        'server clock is 1 s or more off real time; polling again in 16 s (another NTP server first) to confirm',
       );
       return true;
     }
-    if (bigDifference === 'waitingForConfirmation' && hasARateBeenMeasured) {
+    if (bigDifference === 'waitingForConfirmation' && rateWindow.hasARateBeenMeasured()) {
       // Confirmed: real time jumped against monotonic time (a sleep, a server reset). The
       // answers before the jump would read it as a rate, so the window starts again here;
       // the rate in use stays. Before any rate, the difference is the machine's own rate.
-      answersOfTheRateWindow = [sample];
+      rateWindow.startAgainFrom(sample);
     } else {
-      correctTheRateWith(sample);
+      rateWindow.correctTheRateWith(sample);
     }
     if (!isAnythingCountingTimeOnAir(differenceMs)) {
       bigDifference = 'none';
@@ -247,25 +199,11 @@ export function startServerClockDiscipline(
     if (differenceNotTakenMs === undefined) {
       logger.warn(
         { difference_ms: Math.round(differenceMs) },
-        'NTP time more than 24 h from the server clock not taken; "Acertar relógio agora" takes it',
+        'a time (NTP or HTTPS) more than 24 h from the server clock not taken; "Acertar relógio agora" takes it',
       );
     }
     differenceNotTakenMs = differenceMs;
     return true;
-  }
-
-  /** Remembers whether NTP answered; warns when it stops, and says when it is back. */
-  function noteWhetherNtpAnswered(outcome: NtpPollOutcome): void {
-    if (!outcome.isAnswered && didNtpAnswerTheLastPoll) {
-      logger.warn(
-        { problems: outcome.problems },
-        'NTP gave no answer; the server clock runs on at its last rate',
-      );
-    }
-    if (outcome.isAnswered && !didNtpAnswerTheLastPoll) {
-      logger.info({ ntp_server: outcome.serverName }, 'NTP answers again');
-    }
-    didNtpAnswerTheLastPoll = outcome.isAnswered;
   }
 
   /** Polls less often after a RATE kiss of death; says so when the interval changes. */
@@ -288,18 +226,46 @@ export function startServerClockDiscipline(
     if (isStopped) {
       return;
     }
-    noteWhetherNtpAnswered(outcome);
+    sourceFollowed.noteNtpPoll(outcome);
     noteWhetherNtpAskedToSlowDown(outcome);
+    if (outcome.isAnswered) {
+      correctWithTheAnswerOfAPoll(readTheAnswer(outcome, 'ntp'));
+      return;
+    }
+    if (options.pollHttpDateServers !== undefined && sourceFollowed.isNtpQuiet()) {
+      await pollHttpsAndCorrect(options.pollHttpDateServers);
+      return;
+    }
+    scheduleARegularPoll();
+  }
+
+  /** NTP quiet for a full poll interval: the HTTPS servers' Date headers instead. */
+  async function pollHttpsAndCorrect(
+    pollHttpDateServers: (abortSignal: AbortSignal) => Promise<HttpDatePollOutcome>,
+  ): Promise<void> {
+    const outcome = await pollHttpDateServers(stopController.signal);
+    if (isStopped) {
+      return;
+    }
+    sourceFollowed.noteHttpsPoll(outcome);
     if (!outcome.isAnswered) {
       scheduleARegularPoll();
       return;
     }
-    const answer = readTheAnswer(outcome);
+    correctWithTheAnswerOfAPoll(readTheAnswer(outcome, 'https'));
+  }
+
+  /**
+   * Takes the answer of a regular or confirming poll, from either source, and schedules
+   * the next poll: a confirmation 16 s later after a new big difference, else a regular one.
+   */
+  function correctWithTheAnswerOfAPoll(answer: AnswerTaken): void {
     if (isNotToBeTakenOnItsOwn(answer.differenceMs)) {
       scheduleARegularPoll();
       return;
     }
     answersTaken += 1;
+    rateWindow.startAgainOnANewSource(answer.source);
     const isAConfirmationNeeded = correctWith(answer);
     if (isAConfirmationNeeded) {
       schedulePoll(intervalBeforeAConfirmationMs, {
@@ -312,7 +278,11 @@ export function startServerClockDiscipline(
   }
 
   function scheduleARegularPoll(): void {
-    const intervalMs = findTheNextPollIntervalMs({ answersTaken, slowDownFactor });
+    const isFollowingHttps =
+      options.pollHttpDateServers !== undefined && sourceFollowed.isNtpQuiet();
+    const intervalMs = isFollowingHttps
+      ? httpsPollIntervalMs
+      : findTheNextPollIntervalMs({ answersTaken, slowDownFactor });
     schedulePoll(intervalMs, { questionsPerServer: questionsPerPoll, serverToAskLast: undefined });
   }
 
@@ -334,19 +304,21 @@ export function startServerClockDiscipline(
       return;
     }
     if (outcome === undefined || !outcome.isAnswered) {
-      didNtpAnswerTheLastPoll = false;
+      sourceFollowed.noteNoNtpAnswerAtBoot();
       logger.warn(
         { problems: outcome?.problems ?? ['no answer within 3 s'] },
         "server clock starts on the machine's wall clock: NTP gave no answer at boot",
       );
       return;
     }
-    const answer = readTheAnswer(outcome);
+    sourceFollowed.noteNtpPoll(outcome);
+    const answer = readTheAnswer(outcome, 'ntp');
     if (isNotToBeTakenOnItsOwn(answer.differenceMs)) {
       return;
     }
     answersTaken += 1;
-    correctTheRateWith(answer.sample);
+    rateWindow.startAgainOnANewSource('ntp');
+    rateWindow.correctTheRateWith(answer.sample);
     stepTheClockBy(answer.differenceMs);
     logger.info(
       { difference_ms: Math.round(answer.differenceMs), ntp_server: outcome.serverName },
@@ -354,19 +326,42 @@ export function startServerClockDiscipline(
     );
   }
 
+  /**
+   * "Acertar relógio agora"'s poll: NTP's quick poll, then, when NTP gives no answer and
+   * the fallback is on, the HTTPS servers' (a venue that blocks NTP still lets the
+   * producer set the clock). The answer read, or every problem.
+   */
+  async function pollForTheProducer(): Promise<
+    { isAnswered: true; answer: AnswerTaken } | { isAnswered: false; problems: string[] }
+  > {
+    const ntpOutcome = await pollForRealTime(quickPoll, stopController.signal);
+    if (ntpOutcome.isAnswered) {
+      return { isAnswered: true, answer: readTheAnswer(ntpOutcome, 'ntp') };
+    }
+    if (options.pollHttpDateServers === undefined) {
+      return { isAnswered: false, problems: ntpOutcome.problems };
+    }
+    const httpsOutcome = await options.pollHttpDateServers(stopController.signal);
+    if (httpsOutcome.isAnswered) {
+      return { isAnswered: true, answer: readTheAnswer(httpsOutcome, 'https') };
+    }
+    return { isAnswered: false, problems: [...ntpOutcome.problems, ...httpsOutcome.problems] };
+  }
+
   async function setToRealTimeNow(actor: string): Promise<SetToRealTimeOutcome> {
-    const outcome = await pollForRealTime(quickPoll, stopController.signal);
+    const outcome = await pollForTheProducer();
     if (!outcome.isAnswered) {
       logger.warn(
         { problems: outcome.problems, actor },
-        'server clock not set: NTP gave no answer',
+        'server clock not set: no time server gave an answer',
       );
       return { isSet: false, reason: 'noAnswer', problems: outcome.problems };
     }
-    const answer = readTheAnswer(outcome);
+    const { answer } = outcome;
     // The producer decided: taken however large, and the rate's window starts again,
     // since the answers before may read the jump as a rate.
-    answersOfTheRateWindow = [answer.sample];
+    rateWindow.startAgainOnANewSource(answer.source);
+    rateWindow.startAgainFrom(answer.sample);
     differenceNotTakenMs = undefined;
     bigDifference = 'none';
     stepTheClockBy(answer.differenceMs);
@@ -385,10 +380,12 @@ export function startServerClockDiscipline(
     readStatus: () => ({
       lastNtpAnswer,
       offFromRealTimeMs:
-        lastNtpAnswer === undefined
+        sourceFollowed.readLastAnswer() === undefined
           ? undefined
           : Math.round(differenceNotTakenMs ?? serverClock.readSlewLeftMs()),
       rate: serverClock.readRate(),
+      source: sourceFollowed.readSourceFollowed(),
+      isWithoutSync: sourceFollowed.isWithoutSync(),
     }),
     stop: () => {
       isStopped = true;

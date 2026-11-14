@@ -4,6 +4,7 @@ import {
   type CommandResultMessage,
   type DataSnapshotMessage,
   type LayerNotTaken,
+  type ServerClockSource,
   type ServerMessage,
   ServerMessageSchema,
   type SliceMessage,
@@ -287,19 +288,29 @@ export function buildDataSnapshotMessage(
 /**
  * The `time` message every client gets every ten seconds, and at once after a step of
  * the server clock: `serverNowMs`, what the server clock shows now, in milliseconds; how
- * far it is still from real time by NTP when that is known (left out otherwise); and how
- * many steps it has made.
+ * far it is still from real time by NTP when that is known (left out otherwise); how
+ * many steps it has made; and what it follows and whether it is without sync
+ * (BAJAOVRLAY-76), when given.
  */
 export function buildTimeMessage(parts: {
   serverNowMs: number;
   offFromRealTimeMs: number | undefined;
   serverClockStepCount: number;
+  serverClockSource?: ServerClockSource | undefined;
+  isServerClockWithoutSync?: boolean | undefined;
 }): TimeMessage {
-  const { serverNowMs, offFromRealTimeMs, serverClockStepCount } = parts;
-  if (offFromRealTimeMs === undefined) {
-    return { type: 'time', serverNowMs, serverClockStepCount };
+  const { serverNowMs, offFromRealTimeMs, serverClockStepCount, serverClockSource } = parts;
+  const timeMessage: TimeMessage = { type: 'time', serverNowMs, serverClockStepCount };
+  if (offFromRealTimeMs !== undefined) {
+    timeMessage.offFromRealTimeMs = offFromRealTimeMs;
   }
-  return { type: 'time', serverNowMs, offFromRealTimeMs, serverClockStepCount };
+  if (serverClockSource !== undefined) {
+    timeMessage.serverClockSource = serverClockSource;
+  }
+  if (parts.isServerClockWithoutSync !== undefined) {
+    timeMessage.isServerClockWithoutSync = parts.isServerClockWithoutSync;
+  }
+  return timeMessage;
 }
 
 /**

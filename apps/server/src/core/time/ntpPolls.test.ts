@@ -36,7 +36,8 @@ import {
   createLocalClockReadingInTurn,
   startFakeNtpServer,
 } from './fakeNtpServer.testSupport.js';
-import { type LookUpIpv4Addresses, pollNtpServers } from './ntpPolls.js';
+import type { LookUpIpv4Addresses } from './ipv4LookUpThroughCAres.js';
+import { pollNtpServers } from './ntpPolls.js';
 
 /** 10 October 2026, 13:00 UTC: the enduro is an hour in. */
 const oneOClockOfTheEnduroMs = Date.parse('2026-10-10T13:00:00.000Z');

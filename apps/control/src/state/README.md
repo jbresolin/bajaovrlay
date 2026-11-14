@@ -11,6 +11,8 @@ sending a command. Start reading at `serverConnection.ts`, then `serverStateStor
   a hello this page's schema refuses; only when that storage cannot keep the build is it
   once a minute, a skipped reload tried again when the minute is over
   (`startServerBuildWatch`, `packages/shared/src/build`).
+- `serverClockMessages.ts` — what the server's `time` message and the clock probes' answers
+  change: the page's alignment on the server clock and the header's clock state.
 - `serverStateStore.ts` — Zustand store: every slice, connection status, last error; a
   `dataSnapshot` message is merged into `dataSnapshots` by `sourceId` (null removes).
 - `commandFailure.ts` — the codes and the error a failed command carries, with the part of

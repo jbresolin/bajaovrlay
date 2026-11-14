@@ -4,6 +4,7 @@ import {
   type DataSnapshotMessage,
   mergeChangedSlicesIntoSlices,
   obsSliceWithoutObs,
+  type ServerClockSource,
   type SliceMessage,
   type Slices,
   triggerActivityAtBoot,
@@ -20,8 +21,8 @@ export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting';
 
 /**
  * Everything the control page knows: every slice of the server, mirrored as received,
- * plus three facts about the page itself (connection status, last failed command, how far
- * the server clock is off real time). The
+ * plus facts about the page itself (connection status, last failed command, how far the
+ * server clock is off real time, what it follows and whether it is without sync). The
  * functions are the only ways to change it, and only serverConnection.ts calls them.
  */
 export type ServerState = Slices & {
@@ -33,6 +34,16 @@ export type ServerState = Slices & {
    * when not known. The header warns while it is set (BAJAOVRLAY-62).
    */
   serverClockSecondsOffRealTime: number | null;
+  /**
+   * What the server clock follows (NTP, HTTPS or none) and its last answer, from the last
+   * `time` message; null until one carries it. The header's menu says it (BAJAOVRLAY-76).
+   */
+  serverClockSource: ServerClockSource | null;
+  /**
+   * Neither NTP nor HTTPS has answered the server for a full poll interval, by the last
+   * `time` message: the header shows "Relógio sem sincronização".
+   */
+  isServerClockWithoutSync: boolean;
   /** A hello arrived: every slice becomes what the server sent. */
   replaceEverySlice: (slices: Slices) => void;
   /** A slice message arrived: that one slice becomes what the server sent. */
@@ -50,6 +61,11 @@ export type ServerState = Slices & {
   changeConnectionStatus: (connectionStatus: ConnectionStatus) => void;
   /** A `time` message arrived: how far the server clock is from real time, in ms or unknown. */
   noteServerClockOffRealTime: (offFromRealTimeMs: number | undefined) => void;
+  /** A `time` message arrived: what the server clock follows, and whether it is without sync. */
+  noteServerClockSource: (
+    serverClockSource: ServerClockSource | undefined,
+    isServerClockWithoutSync: boolean | undefined,
+  ) => void;
   rememberCommandError: (commandError: LastCommandError) => void;
   forgetCommandError: () => void;
 };
@@ -97,6 +113,8 @@ export function createServerStateStore(): ServerStateStore {
     connectionStatus: 'connecting',
     lastCommandError: null,
     serverClockSecondsOffRealTime: null,
+    serverClockSource: null,
+    isServerClockWithoutSync: false,
 
     replaceEverySlice: (slices) => {
       set({
@@ -263,6 +281,17 @@ export function createServerStateStore(): ServerStateStore {
           : { serverClockSecondsOffRealTime: secondsOff },
       );
     },
+    noteServerClockSource: (serverClockSource, isServerClockWithoutSync) => {
+      const sourceNow = serverClockSource ?? null;
+      const isWithoutSyncNow = isServerClockWithoutSync === true;
+      // Only a change is set, as above: the menu must not redraw every ten seconds.
+      set((state) =>
+        isTheSameServerClockSource(state.serverClockSource, sourceNow) &&
+        state.isServerClockWithoutSync === isWithoutSyncNow
+          ? state
+          : { serverClockSource: sourceNow, isServerClockWithoutSync: isWithoutSyncNow },
+      );
+    },
     rememberCommandError: (commandError) => {
       set({ lastCommandError: commandError });
     },
@@ -274,6 +303,28 @@ export function createServerStateStore(): ServerStateStore {
 
 /** From this far off real time on, the header warns about the server clock. */
 const serverClockOffWorthAWarningMs = 2_000;
+
+/** Whether two reports of the server clock's source say the same, field by field. */
+function isTheSameServerClockSource(
+  source: ServerClockSource | null,
+  otherSource: ServerClockSource | null,
+): boolean {
+  if (source === null || otherSource === null) {
+    return source === otherSource;
+  }
+  const answer = source.lastAnswer;
+  const otherAnswer = otherSource.lastAnswer;
+  if (answer === null || otherAnswer === null) {
+    return source.following === otherSource.following && answer === otherAnswer;
+  }
+  return (
+    source.following === otherSource.following &&
+    answer.source === otherAnswer.source &&
+    answer.serverName === otherAnswer.serverName &&
+    answer.atMs === otherAnswer.atMs &&
+    answer.differenceMs === otherAnswer.differenceMs
+  );
+}
 
 /** Whole seconds off real time, when 2 s or more; null otherwise, or when unknown. */
 function countSecondsWorthAWarning(offFromRealTimeMs: number | undefined): number | null {

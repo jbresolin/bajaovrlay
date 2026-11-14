@@ -79,10 +79,10 @@ const moduleStateThatCannotLeak = [
   'apps/server/src/modules/backup/backupReadMe.ts: momentAsTheOperatorWritesIt',
   'packages/shared/src/backup/backupSizeText.ts: withNoDecimal',
   'packages/shared/src/backup/backupSizeText.ts: withOneDecimal',
-  // The DNS resolver of the NTP servers (BAJAOVRLAY-62): its options (timeout, tries) are
-  // fixed where it is made, and Node's resolver keeps no cache, so each look-up stands
-  // alone. Tests hand in their own look-up and never reach it.
-  'apps/server/src/core/time/ntpPolls.ts: resolverOfTheNtpServers',
+  // The DNS resolver of the NTP and HTTPS time servers (BAJAOVRLAY-62, -76): its options
+  // (timeout, tries) are fixed where it is made, and Node's resolver keeps no cache, so
+  // each look-up stands alone. Tests hand in their own look-up and never reach it.
+  'apps/server/src/core/time/ipv4LookUpThroughCAres.ts: resolverOfTheTimeServers',
   // The São Paulo wall-clock formatter of the schedule triggers (BAJAOVRLAY-64): its options
   // are fixed where it is made, and each formatToParts() call stands alone.
   'apps/server/src/modules/triggers/scheduleMoments.ts: saoPauloWallClockFormatter',

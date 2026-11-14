@@ -25,6 +25,7 @@ import { operatorLoginTurnedOff, type OperatorPins } from '../operatorLogin/oper
 import { startAutoOutScheduler } from '../store/autoOut.js';
 import { createStateStore, type StateStore } from '../store/createStateStore.js';
 import { startMacroRunner } from '../store/macroRunner.js';
+import type { HttpTimeSettings } from '../time/httpTimeSettings.js';
 import type { NtpSettings } from '../time/ntpSettings.js';
 import { readServerTime, serverClockOfTheProcess } from '../time/serverClock.js';
 import {
@@ -113,6 +114,11 @@ export type StartServerOptions = {
    */
   ntpSettings?: NtpSettings | undefined;
   /**
+   * BAJAOVRLAY_HTTP_TIME_SERVERS as read at boot (BAJAOVRLAY-76): the HTTPS servers whose
+   * Date headers the server clock follows while NTP is quiet, or off. Left out: off.
+   */
+  httpTimeSettings?: HttpTimeSettings | undefined;
+  /**
    * Where a backup copies the database before zipping it; the system's temporary folder
    * when left out. Tests give a folder of their own, so the sweep of copies left behind
    * at boot never meets another server's.
@@ -183,6 +189,7 @@ async function startServingFromDatabase(
     options.readCurrentTime === undefined && options.ntpSettings !== undefined
       ? startTheServerClockOnNtp({
           ntpSettings: options.ntpSettings,
+          httpTimeSettings: options.httpTimeSettings ?? { isHttpTimeOn: false },
           serverClock: serverClockOfTheProcess,
           isAnythingCountingTimeOnAir: (stepByMs) =>
             whatTheServerClockReadsLater.readAllSlices === undefined ||
@@ -311,7 +318,11 @@ async function startServingFromDatabase(
       heartbeatIntervalInMilliseconds:
         options.heartbeatIntervalInMilliseconds ?? defaultHeartbeatIntervalInMilliseconds,
       readCurrentTime,
-      readOffFromRealTimeMs: serverClockControl.readOffFromRealTimeMs,
+      serverClockReports: {
+        readOffFromRealTimeMs: serverClockControl.readOffFromRealTimeMs,
+        readServerClockSource: serverClockControl.readServerClockSource,
+        readIsServerClockWithoutSync: serverClockControl.readIsServerClockWithoutSync,
+      },
       buildId,
       operatorLogin,
       publicOrigins: options.publicOrigins,

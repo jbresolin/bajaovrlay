@@ -14,7 +14,11 @@
  * What these tests prove (a fake server on the WebSocket, `fetch` answered by hand):
  *   - The button is named "Menu" for a screen reader, and lists the four entries.
  *   - "Verificar servidor" asks /health and says the version beside the menu, with the
- *     last NTP answer's time, server and difference; a server that is off is said in pt-BR.
+ *     last NTP answer's time, server and difference (a server from before BAJAOVRLAY-76,
+ *     which names no source); a server that is off is said in pt-BR.
+ *   - The top of the open menu says what the server clock follows, NTP, HTTPS or nothing,
+ *     with the last answer's time and difference, from the server's `time` message
+ *     (BAJAOVRLAY-76); before a `time` message carries it, nothing is said.
  *   - "Cópia de segurança" opens the backup dialog.
  *   - "Pausar gatilhos" pauses every trigger; paused, the entry reads "Retomar gatilhos"
  *     and lets them run again.
@@ -26,6 +30,7 @@
  * What these tests deliberately do not cover:
  *   - The backup dialog's contents; features/backup/BackupDialog.test.tsx.
  *   - "Acertar relógio agora" past its entry; features/serverClock/SetServerClockDialog.test.tsx.
+ *   - The same source sentence in "Verificar servidor"; serverCheckNamesTheClockSource.test.tsx.
  *   - What a pause does on the server; apps/server's triggerFiring.test.ts.
  *   - Where the menu sits in the header: App.test.tsx, and the screenshots in the PR.
  */
@@ -33,6 +38,7 @@ import type { SessionAnswer } from '@bajaovrlay/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
+import { buildTheThreeServerClockSources } from '@/features/serverClock/serverClockSourceFixtures.testSupport';
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildSlicesWithTheTriggers } from '@/state/triggersLikeTheServerSends.testSupport';
 
@@ -267,5 +273,44 @@ describe('the header menu', () => {
       await screen.findByRole('dialog', { name: 'Cópia de segurança' }),
       'Enter on an entry must do what a click does',
     ).toBeInTheDocument();
+  });
+
+  // Each row is one source the server clock may follow (see the support file).
+  it.each(buildTheThreeServerClockSources())(
+    'says at its top that the clock follows $name',
+    ({ source, expectedSentence }) => {
+      // Arrange: the menu on a page whose server says, in its time message, the row's source.
+      const { fakeServer } = renderTheHeaderMenu();
+      fakeServer.sendMessage({
+        type: 'time',
+        serverNowMs: momentOfTheLastNtpAnswerMs,
+        serverClockStepCount: 0,
+        serverClockSource: source,
+      });
+
+      // Act: open the menu.
+      openTheMenu();
+
+      // Assert: the sentence at the top, and the four entries still the only actions.
+      expect(
+        screen.getByText(expectedSentence),
+        'what the clock follows, in sight',
+      ).toBeInTheDocument();
+      expect(listEntriesOfTheMenu(), 'the sentence is not an action').toHaveLength(4);
+    },
+  );
+
+  it('says nothing of the source before a time message carries it', () => {
+    // Arrange: the menu on a page that has had no time message yet.
+    renderTheHeaderMenu();
+
+    // Act: open the menu.
+    openTheMenu();
+
+    // Assert: no clock sentence.
+    expect(
+      screen.queryByText(/^Relógio:/),
+      'nothing known yet, nothing said',
+    ).not.toBeInTheDocument();
   });
 });
