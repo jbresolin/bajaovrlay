@@ -15,7 +15,8 @@
  *   world):
  *   - While NTP answers, HTTPS is never asked, and the clock follows NTP (a.st1.ntp.br).
  *   - With NTP quiet from the boot, HTTPS is first asked once 64 s have passed without an
- *     NTP answer, then every 64 s; the clock follows HTTPS (www.cloudflare.com).
+ *     NTP answer (the boot's failure and the polls since are well over two lost in a row;
+ *     one lost poll alone is serverClockLostNtpPolls.test.ts's), then every 64 s; the clock follows HTTPS (www.cloudflare.com).
  *   - A machine 4% fast on HTTPS alone: within 50 ms of real time from minute 5, and no
  *     second on air shorter than 0.995 s or longer than 1.005 s once the rate is known.
  *   - A difference of 5 s found by HTTPS is confirmed and stepped, and told to the pages;

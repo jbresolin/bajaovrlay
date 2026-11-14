@@ -8,6 +8,14 @@ import { ntpPollIntervalMs } from './serverClockPollIntervals.js';
 /** How long NTP may give no answer before HTTPS feeds the discipline: one poll interval. */
 export const ntpQuietBeforeHttpsMs = ntpPollIntervalMs;
 
+/**
+ * How many NTP polls in a row must get no answer before HTTPS feeds the discipline (the
+ * boot's counts). One is not enough: on a lossy uplink a lost UDP packet loses a poll now
+ * and then, and the clock would flap between the sources, each change emptying the rate's
+ * window, so the rate would never settle.
+ */
+export const unansweredNtpPollsInARowBeforeHttps = 2;
+
 /** NTP's default port, left out of a server's name for the operator. */
 const ntpPortSuffix = ':123';
 
@@ -21,7 +29,10 @@ export type SourceFollowedRecord = {
   noteHttpsPoll: (outcome: HttpDatePollOutcome) => void;
   /** An answer the discipline read, from either source. */
   noteAnswerRead: (lastAnswer: ServerClockLastAnswer) => void;
-  /** Whether NTP has given no answer for a full poll interval (64 s) or more. */
+  /**
+   * Whether NTP has given no answer for a full poll interval (64 s) or more, over two
+   * polls in a row at least.
+   */
   isNtpQuiet: () => boolean;
   readLastAnswer: () => ServerClockLastAnswer | undefined;
   /** What "Verificar servidor" and the header's menu say the clock follows. */
@@ -36,8 +47,8 @@ export type SourceFollowedRecord = {
 
 /**
  * Keeps which source the server clock follows (BAJAOVRLAY-76): NTP while it answers (or
- * has been quiet for less than 64 s), HTTPS once NTP has been quiet for 64 s and while the
- * HTTPS servers answer, otherwise none (the computer's own clock, at its last rate). Each
+ * has been quiet for less than 64 s), HTTPS once NTP has been quiet for 64 s over two
+ * lost polls in a row and while the HTTPS servers answer, otherwise none (the computer's own clock, at its last rate). Each
  * change is logged, a warning only once per outage. `isHttpsFallbackOn` is false when
  * BAJAOVRLAY_HTTP_TIME_SERVERS is off.
  */
@@ -51,6 +62,7 @@ export function createSourceFollowedRecord(options: {
   let monotonicOfTheLastNtpAnswerMs = readMonotonicTimeMs();
   // True at the start, so that a boot without NTP is warned by the boot itself only.
   let didNtpAnswerTheLastPoll = true;
+  let unansweredNtpPollsInARow = 0;
   let isNtpQuietForAFullInterval = false;
   let didHttpsAnswerTheLastPoll = false;
   // Not the same as "did not answer": while the first HTTPS poll is under way it has
@@ -68,6 +80,7 @@ export function createSourceFollowedRecord(options: {
       }
       monotonicOfTheLastNtpAnswerMs = readMonotonicTimeMs();
       didNtpAnswerTheLastPoll = true;
+      unansweredNtpPollsInARow = 0;
       isNtpQuietForAFullInterval = false;
       didHttpsFailItsLastPoll = false;
       return;
@@ -79,8 +92,14 @@ export function createSourceFollowedRecord(options: {
       );
     }
     didNtpAnswerTheLastPoll = false;
+    unansweredNtpPollsInARow += 1;
     const quietForMs = readMonotonicTimeMs() - monotonicOfTheLastNtpAnswerMs;
-    if (quietForMs >= ntpQuietBeforeHttpsMs && !isNtpQuietForAFullInterval) {
+    // Both: 64 s with no answer, and two lost polls in a row (see
+    // unansweredNtpPollsInARowBeforeHttps for why one lost poll is not enough).
+    const isQuietForLongEnough =
+      quietForMs >= ntpQuietBeforeHttpsMs &&
+      unansweredNtpPollsInARow >= unansweredNtpPollsInARowBeforeHttps;
+    if (isQuietForLongEnough && !isNtpQuietForAFullInterval) {
       isNtpQuietForAFullInterval = true;
       if (isHttpsFallbackOn) {
         logger.warn(
@@ -126,6 +145,7 @@ export function createSourceFollowedRecord(options: {
     noteNtpPoll,
     noteNoNtpAnswerAtBoot: () => {
       didNtpAnswerTheLastPoll = false;
+      unansweredNtpPollsInARow = 1;
     },
     noteHttpsPoll,
     noteAnswerRead: (answer) => {
