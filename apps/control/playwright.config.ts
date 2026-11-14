@@ -60,6 +60,15 @@ export default defineConfig({
       // The operator's desktop browser, at a common laptop size.
       use: { ...devices['Desktop Chrome'], viewport: { width: 1600, height: 900 } },
     },
+    {
+      // The operator guide prints on one A4 sheet (BAJAOVRLAY-31): the check lives beside
+      // the guide, and runs here too so a guide grown past two pages fails CI. It needs no
+      // server and writes no file; playwright.operatorGuide.config.ts writes the PDF.
+      name: 'guia-do-operador',
+      testDir: '../../docs/operador',
+      testMatch: 'guidePrintsOnTwoPages.e2e.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
   webServer: [
     {
