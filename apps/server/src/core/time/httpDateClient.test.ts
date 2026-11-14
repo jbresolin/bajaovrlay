@@ -198,32 +198,27 @@ describe('the HTTP Date client', () => {
     { name: 'starting 825 ms into the second', msIntoTheSecondAtTheStart: 825 },
     // Late in the second: the tick falls near the end of the setup.
     { name: 'starting 950 ms into the second', msIntoTheSecondAtTheStart: 950 },
-  ])(
-    'is not biased by a slow first request, $name',
-    async ({ msIntoTheSecondAtTheStart }) => {
-      // Arrange: two servers on real time; each first request takes 315 ms out and 15 ms
-      // back (the connection being opened), every later one 15 ms each way.
-      const serverSettings = ['https://www.cloudflare.com', 'https://www.ntp.br'].map(
-        (address) => ({
-          address,
-          delaysOfEachRequest: buildDelaysWithASlowFirstRequest({ outMs: 315, backMs: 15 }),
-        }),
-      );
+  ])('is not biased by a slow first request, $name', async ({ msIntoTheSecondAtTheStart }) => {
+    // Arrange: two servers on real time; each first request takes 315 ms out and 15 ms
+    // back (the connection being opened), every later one 15 ms each way.
+    const serverSettings = ['https://www.cloudflare.com', 'https://www.ntp.br'].map((address) => ({
+      address,
+      delaysOfEachRequest: buildDelaysWithASlowFirstRequest({ outMs: 315, backMs: 15 }),
+    }));
 
-      // Act: one poll, started at the row's moment in the second.
-      const { outcome } = await pollTheFakeServers(serverSettings, msIntoTheSecondAtTheStart);
+    // Act: one poll, started at the row's moment in the second.
+    const { outcome } = await pollTheFakeServers(serverSettings, msIntoTheSecondAtTheStart);
 
-      // Assert: answered, and within 10 ms of the truth whatever the moment.
-      expect(outcome.isAnswered, 'two servers agree').toBe(true);
-      if (!outcome.isAnswered) {
-        return;
-      }
-      expect(
-        Math.abs(outcome.answer.offsetMs - trueOffsetMs),
-        'the slow first request only bounds the range, so it cannot move the result',
-      ).toBeLessThan(10);
-    },
-  );
+    // Assert: answered, and within 10 ms of the truth whatever the moment.
+    expect(outcome.isAnswered, 'two servers agree').toBe(true);
+    if (!outcome.isAnswered) {
+      return;
+    }
+    expect(
+      Math.abs(outcome.answer.offsetMs - trueOffsetMs),
+      'the slow first request only bounds the range, so it cannot move the result',
+    ).toBeLessThan(10);
+  });
 
   // Each row is a set of servers and whether their clocks agree enough to be believed.
   it.each([

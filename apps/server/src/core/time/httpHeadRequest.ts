@@ -1,7 +1,13 @@
 import { Agent as HttpAgent, request as requestOverHttp } from 'node:http';
 import { Agent as HttpsAgent, request as requestOverHttps } from 'node:https';
+import type { LookupFunction } from 'node:net';
 
 import type { HeadRequestOutcome, SendHeadRequest } from './httpDateClient.js';
+import {
+  buildLookupOptionForNodeRequests,
+  type LookUpIpv4Addresses,
+  lookUpIpv4AddressesThroughDns,
+} from './ipv4LookUpThroughCAres.js';
 
 /** The connections of one poll: a request function, and the close of every connection. */
 export type ConnectionsForHeadRequests = {
@@ -19,13 +25,23 @@ export type ConnectionsForHeadRequests = {
  * (httpHeadRequest.test.ts showed it); here a timeout or an abort destroys the request's
  * socket at once, and `closeEveryConnection` destroys the rest, as the NTP client closes
  * its socket.
+ * A server's name is looked up through c-ares (ipv4LookUpThroughCAres.ts, as for NTP),
+ * never the system's getaddrinfo: when DNS never answers, getaddrinfo holds a thread of
+ * Node's pool for 10–30 s and cannot be cancelled, while a c-ares look-up gives up after
+ * its own tries and a request destroyed meanwhile ignores its late answer.
+ * `lookUpIpv4Addresses` is for tests; the default is c-ares.
  */
-export function openConnectionsForHeadRequests(): ConnectionsForHeadRequests {
+export function openConnectionsForHeadRequests(
+  options: { lookUpIpv4Addresses?: LookUpIpv4Addresses | undefined } = {},
+): ConnectionsForHeadRequests {
   const agentOverHttp = new HttpAgent({ keepAlive: true, maxSockets: 1 });
   const agentOverHttps = new HttpsAgent({ keepAlive: true, maxSockets: 1 });
+  const lookup = buildLookupOptionForNodeRequests(
+    options.lookUpIpv4Addresses ?? lookUpIpv4AddressesThroughDns,
+  );
   return {
-    sendHeadRequest: (address, options) =>
-      sendOneHeadRequest(address, { ...options, agentOverHttp, agentOverHttps }),
+    sendHeadRequest: (address, requestOptions) =>
+      sendOneHeadRequest(address, { ...requestOptions, agentOverHttp, agentOverHttps, lookup }),
     closeEveryConnection: () => {
       agentOverHttp.destroy();
       agentOverHttps.destroy();
@@ -45,6 +61,7 @@ function sendOneHeadRequest(
     abortSignal: AbortSignal;
     agentOverHttp: HttpAgent;
     agentOverHttps: HttpsAgent;
+    lookup: LookupFunction;
   },
 ): Promise<HeadRequestOutcome> {
   const { abortSignal } = options;
@@ -55,10 +72,11 @@ function sendOneHeadRequest(
     const url = new URL(address);
     // A cache on the way would hand back an old Date.
     const headers = { 'cache-control': 'no-cache' };
+    const { lookup } = options;
     const request =
       url.protocol === 'https:'
-        ? requestOverHttps(url, { method: 'HEAD', agent: options.agentOverHttps, headers })
-        : requestOverHttp(url, { method: 'HEAD', agent: options.agentOverHttp, headers });
+        ? requestOverHttps(url, { method: 'HEAD', agent: options.agentOverHttps, headers, lookup })
+        : requestOverHttp(url, { method: 'HEAD', agent: options.agentOverHttp, headers, lookup });
     let isFinished = false;
     function finish(outcome: HeadRequestOutcome, isTheConnectionToBeClosed: boolean): void {
       if (isFinished) {

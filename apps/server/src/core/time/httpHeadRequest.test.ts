@@ -15,10 +15,17 @@
  *   - An abort mid-request (the discipline's stop) ends it at once, as "aborted", and its
  *     connection is closed: nothing stays open after the server stops.
  *   - A port with nothing listening is "unreachable".
+ *   - A server's name is looked up through the look-up handed in (by default c-ares, with
+ *     a timeout and a fixed number of tries, never the system's getaddrinfo, which holds a
+ *     thread of Node's pool for 10–30 s when DNS never answers and cannot be cancelled);
+ *     a look-up that never answers ends at the request's timeout, and when its answer
+ *     comes later no connection is opened; a name not found is "unreachable".
  *
  * What these tests deliberately do not cover:
  *   - What the client does with the header; httpDateClient.test.ts.
  *   - HTTPS itself (TLS is node:https's): the local server speaks plain HTTP.
+ *   - The default look-up against a real DNS server: no test touches the network. Its
+ *     settings are ntpPolls.ts's, shared through ipv4LookUpThroughCAres.ts.
  */
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo, Socket } from 'node:net';
@@ -29,6 +36,7 @@ import {
   type ConnectionsForHeadRequests,
   openConnectionsForHeadRequests,
 } from './httpHeadRequest.js';
+import type { LookUpIpv4Addresses } from './ipv4LookUpThroughCAres.js';
 
 /** The Date header the local server writes: 10 October 2026, 13:00:04 UTC. */
 const dateHeaderOfTheLocalServer = 'Sat, 10 Oct 2026 13:00:04 GMT';
@@ -90,9 +98,11 @@ async function startALocalWebServer(behaviour: 'answers' | 'neverAnswers'): Prom
   };
 }
 
-/** The connections of one poll, closed when the test ends. */
-function openTheConnectionsOfAPoll(): ConnectionsForHeadRequests {
-  const connections = openConnectionsForHeadRequests();
+/** The connections of one poll, closed when the test ends; DNS as given, if given. */
+function openTheConnectionsOfAPoll(
+  lookUpIpv4Addresses?: LookUpIpv4Addresses,
+): ConnectionsForHeadRequests {
+  const connections = openConnectionsForHeadRequests({ lookUpIpv4Addresses });
   onTestFinished(() => {
     connections.closeEveryConnection();
   });
@@ -211,6 +221,84 @@ describe('the HEAD requests of one poll', () => {
       isAnswered: false,
       reason: 'unreachable',
       detail: 'ECONNREFUSED',
+    });
+  });
+});
+
+describe('the DNS look-up of a server name', () => {
+  it('reaches the server at the address the look-up hands back', async () => {
+    // Arrange: a local server, and a look-up that says "www.ntp.br" is 127.0.0.1.
+    const localServer = await startALocalWebServer('answers');
+    const { port } = new URL(localServer.address);
+    const namesLookedUp: string[] = [];
+    const lookUpOnThisMachine: LookUpIpv4Addresses = (hostName) => {
+      namesLookedUp.push(hostName);
+      return Promise.resolve(['127.0.0.1']);
+    };
+
+    // Act: one request to http://www.ntp.br at the local server's port.
+    const outcome = await openTheConnectionsOfAPoll(lookUpOnThisMachine).sendHeadRequest(
+      `http://www.ntp.br:${port}`,
+      { timeoutMs: 2_000, abortSignal: new AbortController().signal },
+    );
+
+    // Assert: the name went through the look-up handed in, and the answer came back.
+    expect(namesLookedUp, 'the name was looked up through the look-up handed in').toEqual([
+      'www.ntp.br',
+    ]);
+    expect(outcome, "the local server's Date header").toEqual({
+      isAnswered: true,
+      dateHeader: dateHeaderOfTheLocalServer,
+    });
+  });
+
+  it('ends at the timeout when the look-up never answers, and opens nothing when it does later', async () => {
+    // Arrange: a local server, and a look-up that answers only when the test says so, as
+    // a DNS server that never answers would never.
+    const localServer = await startALocalWebServer('answers');
+    const { port } = new URL(localServer.address);
+    let answerTheLookUp: (addresses: string[]) => void = () => {};
+    const lookUpThatHangs: LookUpIpv4Addresses = () =>
+      new Promise((resolve) => {
+        answerTheLookUp = resolve;
+      });
+
+    // Act: one request with a 200 ms timeout; then the look-up answers, too late.
+    const momentOfSendingMs = performance.now();
+    const outcome = await openTheConnectionsOfAPoll(lookUpThatHangs).sendHeadRequest(
+      `http://www.ntp.br:${port}`,
+      { timeoutMs: 200, abortSignal: new AbortController().signal },
+    );
+    const msToEnd = performance.now() - momentOfSendingMs;
+    answerTheLookUp(['127.0.0.1']);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // Assert: a timeout, at the request's timeout and not 10–30 s later; and the late
+    // answer of the look-up opened no connection: the request holds nothing afterwards.
+    expect(outcome, 'a timeout').toEqual({ isAnswered: false, reason: 'timeout' });
+    expect(msToEnd, "ended by the request's own 200 ms timeout").toBeLessThan(1_000);
+    expect(
+      localServer.saw.countConnectionsEverOpened(),
+      'no connection opened after the request ended',
+    ).toBe(0);
+  });
+
+  it('calls a name the look-up cannot find unreachable, naming the DNS code', async () => {
+    // Arrange: a look-up that fails as c-ares does for a name that does not exist.
+    const lookUpThatFindsNothing: LookUpIpv4Addresses = () =>
+      Promise.reject(Object.assign(new Error('queryA ENOTFOUND'), { code: 'ENOTFOUND' }));
+
+    // Act: one request to a name nobody has.
+    const outcome = await openTheConnectionsOfAPoll(lookUpThatFindsNothing).sendHeadRequest(
+      'https://hora.baja-inexistente.com.br',
+      { timeoutMs: 2_000, abortSignal: new AbortController().signal },
+    );
+
+    // Assert: unreachable, the DNS code given for the log.
+    expect(outcome, 'the name was not found').toMatchObject({
+      isAnswered: false,
+      reason: 'unreachable',
+      detail: 'ENOTFOUND',
     });
   });
 });

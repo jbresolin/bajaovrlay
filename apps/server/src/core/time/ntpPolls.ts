@@ -1,6 +1,9 @@
-import { Resolver } from 'node:dns/promises';
 import { isIPv4 } from 'node:net';
 
+import {
+  type LookUpIpv4Addresses,
+  lookUpIpv4AddressesThroughDns,
+} from './ipv4LookUpThroughCAres.js';
 import {
   type NtpAnswer,
   type NtpQueryOutcome,
@@ -20,9 +23,6 @@ export const defaultTimeoutPerQuestionMs = 1_000;
  */
 export const pauseBetweenQuestionsMs = 2_000;
 
-/** Looks up a host name's IPv4 addresses; rejects when it cannot. */
-export type LookUpIpv4Addresses = (hostName: string) => Promise<string[]>;
-
 /** A poll's outcome: the best answer and the server it came from, or each server's problem. */
 export type NtpPollOutcome = (
   | { isAnswered: true; answer: NtpAnswer; serverName: string }
@@ -38,20 +38,6 @@ export type NtpPollRequest = {
   /** A server name (`host:port`) to ask after the others: a confirmation's second opinion. */
   serverToAskLast: string | undefined;
 };
-
-/**
- * DNS through c-ares, not the system's getaddrinfo: with the uplink down at the track,
- * getaddrinfo holds one of Node's four thread-pool threads for 5 to 20 s per name, and
- * the server's file reads wait behind it. One second and two tries, then the next server.
- * What could go wrong: c-ares does not read /etc/hosts, so a name only that file knows
- * is not found; give the track-local server's IPv4 address instead.
- */
-const resolverOfTheNtpServers = new Resolver({ timeout: 1_000, tries: 2 });
-
-/** The default look-up: an IPv4 address as it is, a name through DNS. */
-function lookUpIpv4AddressesThroughDns(hostName: string): Promise<string[]> {
-  return resolverOfTheNtpServers.resolve4(hostName);
-}
 
 /** A wait between two questions, which an abort ends early. */
 export type WaitBetweenQuestions = (waitMs: number, abortSignal?: AbortSignal) => Promise<void>;
