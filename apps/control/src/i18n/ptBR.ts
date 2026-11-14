@@ -99,6 +99,9 @@ export const ptBR = {
     notConnected: 'Sem conexão com o servidor. O comando não foi enviado.',
     timedOut:
       'O servidor não respondeu em 5 segundos. Confira nas camadas se o comando foi aplicado.',
+    // "Tomar tudo" took some layers and left others another console had just changed
+    // (BAJAOVRLAY-69); the server's sentence for each layer follows, one per line.
+    someLayersNotTaken: 'Tomar tudo foi feito, menos nestas camadas:',
   },
   // The layer panel, "Camadas" (features/layers), in ptBRLayers.ts.
   layers: ptBRLayers,

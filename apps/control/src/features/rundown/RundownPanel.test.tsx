@@ -228,12 +228,17 @@ describe('the cursor of the rundown', () => {
 
 describe('the buttons of a rundown row', () => {
   const rowButtonScenarios = [
-    // The row at the cursor: the everyday take.
+    // The row at the cursor: the everyday take. Nothing is on air, so it says the page
+    // showed the clock layer empty (BAJAOVRLAY-69).
     {
       name: '"Disparar" on the first row sends takeItem for that item',
       itemLabel: 'Largada do enduro',
       buttonName: 'Disparar',
-      expectedCommand: { type: 'takeItem', itemId: 'item-largada-do-enduro' },
+      expectedCommand: {
+        type: 'takeItem',
+        itemId: 'item-largada-do-enduro',
+        instanceIdSeenOnAir: null,
+      },
     },
     // A row that is NOT at the cursor: any item can be fired out of order, and the
     // button must carry the id of its own row, not the cursor's.
@@ -241,7 +246,11 @@ describe('the buttons of a rundown row', () => {
       name: '"Disparar" on the last row sends takeItem for that item',
       itemLabel: 'Chegada do enduro',
       buttonName: 'Disparar',
-      expectedCommand: { type: 'takeItem', itemId: 'item-chegada-do-enduro' },
+      expectedCommand: {
+        type: 'takeItem',
+        itemId: 'item-chegada-do-enduro',
+        instanceIdSeenOnAir: null,
+      },
     },
   ];
 

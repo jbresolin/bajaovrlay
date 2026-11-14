@@ -138,11 +138,13 @@ describe('the hello of a connection', () => {
       listHiddenSlicesTheServerHoldsNothingIn(slicesOnTheServer),
       'every slice a screen is not sent must hold something on the server, so its emptiness on a screen is proven',
     ).toEqual([]);
+    // The operator's hello also names its console (BAJAOVRLAY-69); a screen's names none.
     expect(helloOfTheOperator, 'the operator hello must carry every slice').toEqual({
       type: 'hello',
       slices: slicesOnTheServer,
       serverNowMs: expect.any(Number),
       serverClockStepCount: expect.any(Number),
+      consoleId: expect.any(String),
     });
     expect(helloOfTheRenderer, 'the renderer hello must carry only what a screen draws').toEqual({
       type: 'hello',

@@ -11,9 +11,15 @@ sending a command. Start reading at `serverConnection.ts`, then `serverStateStor
   a hello this page's schema refuses; only when that storage cannot keep the build is it
   once a minute, a skipped reload tried again when the minute is over
   (`startServerBuildWatch`, `packages/shared/src/build`).
+- `serverClockMessages.ts` — what the server's `time` message and the clock probes' answers
+  change: the page's alignment on the server clock and the header's clock state.
 - `serverStateStore.ts` — Zustand store: every slice, connection status, last error; a
   `dataSnapshot` message is merged into `dataSnapshots` by `sourceId` (null removes).
-- `commandFailure.ts` — the codes and the error a failed command carries.
+- `commandFailure.ts` — the codes and the error a failed command carries, with the part of
+  the page that sent it when two parts send the same type.
+- `whatThisPageSawOnAir.ts` — added by `sendCommand` to every take: what the page showed on
+  air on the layer it takes on (BAJAOVRLAY-69). `consoleIdOfThisTab.ts` — the tab's console
+  id, kept in sessionStorage from its first hello and named in every later connection.
 - `browserWebSocket.ts` — the few lines that touch the browser's WebSocket API.
 - `browserPageReloadForNewBuild.ts` — the page's build id (embedded by `vite build`) and
   the browser's clock, `location.reload` and `sessionStorage`, handed in by `main.tsx`.

@@ -13,6 +13,11 @@ snapshot changed, just before that `slice`/`slices`, which never carry `dataSnap
   nor in BAJAOVRLAY_PUBLIC_ORIGINS (`../http/originOfAnotherSite.ts`, the uploads' rule too;
   gate 2 of PR #51), then, with the PINs set (BAJAOVRLAY-29), a control page's upgrade without
   a session (401); it closes a page whose session ended ("Sair", 18 hours) with code 4401.
+- `consoleOfConnection.ts` — the console a control page connection is (BAJAOVRLAY-69): the id
+  its address names (`/ws?console=<id>`, kept by the tab from its first hello) or a new one; the
+  `hello` names it, and every command of that connection reaches the store with it.
+  `connectionIdentity.ts` reads an upgrade for the hub: its path, and who the connection is
+  (actor, screen or not, console) in one call.
 - `slicesSentToScreens.ts` — renderers and monitors get only `layers`, `graphics`, `instances` and
   `previewClearedLayerIds` (the rest `[]` in hello, left out of changes, no `dataSnapshot`); GET /api/v1/state?role= too.
   A screen is sent a changed slice only when its copy differs from the text it was last sent.

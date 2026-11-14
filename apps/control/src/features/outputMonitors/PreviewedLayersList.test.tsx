@@ -216,19 +216,20 @@ describe('the lines under the "Prévia" monitor', () => {
   });
 
   const buttonScenarios = [
-    // "Tomar" on the lower line: the band goes on air, the clock preview stays.
+    // "Tomar" on the lower line: the band goes on air, the clock preview stays. It says the
+    // page showed nothing on air on that layer (BAJAOVRLAY-69).
     {
       name: '"Tomar" sends takePreview for the layer of its own line',
       layerName: 'Tarja',
       buttonName: 'Tomar',
-      expectedCommand: { type: 'takePreview', layerId: 'lower-third' },
+      expectedCommand: { type: 'takePreview', layerId: 'lower-third', instanceIdSeenOnAir: null },
     },
     // The same button on the other line, to prove each carries its own layer.
     {
       name: '"Tomar" on the clock line sends takePreview for the clock layer',
       layerName: 'Relógio',
       buttonName: 'Tomar',
-      expectedCommand: { type: 'takePreview', layerId: 'clock' },
+      expectedCommand: { type: 'takePreview', layerId: 'clock', instanceIdSeenOnAir: null },
     },
     // "Descartar" names its layer too: it must never be the "every layer" form (null),
     // or one press would throw the other preview away as well.

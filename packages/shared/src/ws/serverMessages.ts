@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { InstanceBindingsSchema } from '../bindings/instanceBindings.js';
 import { BracketMatchFocusesSchema } from '../bracketMatchFocus/bracketMatchFocus.js';
 import { CommandErrorSchema } from '../commands/commandError.js';
+import { ConsoleIdSchema } from '../consoles/consoleId.js';
 import { DataSnapshotSchema } from '../dataSources/dataSnapshot.js';
 import { DataSourceSchema } from '../dataSources/dataSource.js';
 import { RecordingSchema } from '../dataSources/recording.js';
@@ -20,6 +21,7 @@ import { MediaSchema } from '../media/mediaRecord.js';
 import { ObsSliceSchema } from '../obs/obsSlice.js';
 import { OutputsSchema } from '../outputs/output.js';
 import { OverridesSchema } from '../overrides/override.js';
+import { LayerNotTakenSchema } from '../preview/takeAllPreviews.js';
 import { ProgramHistorySchema } from '../programHistory/programHistory.js';
 import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
 import { ItemSchema } from '../rundown/item.js';
@@ -67,6 +69,12 @@ export const HelloMessageSchema = z.object({
   serverNowMs: ServerNowMsSchema,
   serverClockStepCount: ServerClockStepCountSchema,
   buildId: z.string().min(1).optional(),
+  /**
+   * Only to a control page (BAJAOVRLAY-69): the id of the console this connection is, the
+   * one the page named in its address (`?console=`) or a new one when it named none. The
+   * page keeps it for its next connections (../consoles/consoleId.ts). Screens get none.
+   */
+  consoleId: ConsoleIdSchema.optional(),
 });
 
 /**
@@ -312,6 +320,12 @@ export const CommandResultMessageSchema = z.discriminatedUnion('ok', [
      * that very item next (BAJAOVRLAY-37). Left out of every other answer.
      */
     createdItemId: z.string().min(1).optional(),
+    /**
+     * Only in the answer to a "Tomar tudo" that took some layers and left others because
+     * another console had just changed them (BAJAOVRLAY-69): each layer left, with why. The
+     * page lists them where it shows that command's refusals. Left out of every other answer.
+     */
+    layersNotTaken: z.array(LayerNotTakenSchema).min(1).optional(),
   }),
   z.object({
     type: z.literal('commandResult'),

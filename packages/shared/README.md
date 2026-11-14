@@ -15,8 +15,9 @@ like `clock/`), `build/` (a page reloading itself when the server's build change
 fields read from a source, and reading them), `overrides/` (an operator's corrections of a
 source's values), `programHistory/` (what each layer showed before its last changes, and the
 two undo commands), `eventLogReading/` (each event-log row as a pt-BR sentence, and the
-history's filters, for the server and the page alike) and `operatorLogin/` (the two roles,
-the login body and session answer, and the sentence for a command Dados may not send).
+history's filters, for the server and the page alike), `operatorLogin/` (the two roles,
+the login body and session answer, and the sentence for a command Dados may not send) and
+`consoles/` (a console's id, and what it saw on air at a take, for two consoles on one layer).
 
 **How other packages import it.** `package.json` exports the source file under the
 custom condition `@bajaovrlay/source` and the built `dist/` otherwise. Typecheck, Vitest,

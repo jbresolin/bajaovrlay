@@ -1,6 +1,12 @@
-import type { CommandError, Slices } from '@bajaovrlay/shared';
+import type {
+  CommandError,
+  LayerNotTaken,
+  Slices,
+  TakeRefusedForAnotherConsole,
+} from '@bajaovrlay/shared';
 
 import type { SourceHostAllowlist } from '../../../modules/dataSources/index.js';
+import type { LastProgramChangeOfEachLayer } from '../consoles/lastProgramChangeOfEachLayer.js';
 import type { StepBroughtBack } from './instanceStepsWithinTheirCount.js';
 
 /**
@@ -78,6 +84,22 @@ export type ReducerContext = {
    * refuse a flex request to a host off it.
    */
   sourceHostAllowlist: SourceHostAllowlist;
+  /**
+   * The console (control page tab) that sent the command (BAJAOVRLAY-69); left out for
+   * anything that is not a console: the command API, a macro's runner, the server itself.
+   */
+  consoleId?: string;
+  /**
+   * Each layer's last program change, as the store remembers it (../consoles/): what a take
+   * reads to tell whether another console just changed its layer. Left out (most tests),
+   * no change is known and no take is refused for one.
+   */
+  lastProgramChangeOfEachLayer?: LastProgramChangeOfEachLayer;
+  /**
+   * How many steps the server clock has made at this command (core/time): a layer's change
+   * signed with another count is on another clock and counts as old. Left out, none (0).
+   */
+  serverClockStepCount?: number;
 };
 
 /**
@@ -118,5 +140,20 @@ export type ReducerOutcome =
        * the boot does for a manifest naming a layer that does not exist.
        */
       graphicsPlacedOnTheFallbackLayer?: string[];
+      /**
+       * Set by takeAllPreviews only (BAJAOVRLAY-69): the layers it left as they were because
+       * another console had just changed them, unseen. The store answers them to the page
+       * and writes `takesRefusedForAnotherConsole` in the event-log row.
+       */
+      layersNotTaken?: LayerNotTaken[];
+      takesRefusedForAnotherConsole?: TakeRefusedForAnotherConsole[];
     }
-  | { status: 'refused'; error: CommandError };
+  | {
+      status: 'refused';
+      error: CommandError;
+      /**
+       * Set on a take refused because another console had just changed its layer
+       * (BAJAOVRLAY-69): what the store writes in the failed row's details, with both roles.
+       */
+      takesRefusedForAnotherConsole?: TakeRefusedForAnotherConsole[];
+    };

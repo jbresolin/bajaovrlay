@@ -66,13 +66,14 @@ describe('the digits 1 to 9', () => {
     fakeServer.acceptLastCommand();
     pressKeyOnThePage('3');
 
-    // Assert: the first and the third buttons, by button order.
+    // Assert: the first and the third buttons, by button order, each saying the page showed
+    // nothing on air on its layer (BAJAOVRLAY-69).
     expect(
       fakeServer.listCommandsReceived(),
       '1 and 3 must take the first and third buttons of the panel shown',
     ).toEqual([
-      { type: 'takeItem', itemId: bajaLogoItemId },
-      { type: 'takeItem', itemId: redFlagItemId },
+      { type: 'takeItem', itemId: bajaLogoItemId, instanceIdSeenOnAir: null },
+      { type: 'takeItem', itemId: redFlagItemId, instanceIdSeenOnAir: null },
     ]);
   });
 

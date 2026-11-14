@@ -98,7 +98,11 @@ export function ItemEditorButtons(props: ItemEditorButtonsProps) {
         </p>
       )}
       {hasSentACommandInThisOpening && (
-        <CommandErrorMessage commandTypes={props.commandTypesSentInThisOpening} />
+        // The editor's own take and preview say they came from it, so they show here only.
+        <CommandErrorMessage
+          areaOfThePage="itemEditor"
+          commandTypes={props.commandTypesSentInThisOpening}
+        />
       )}
     </>
   );

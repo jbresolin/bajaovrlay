@@ -38,10 +38,12 @@ const texts = ptBR.quickFire;
  * as Space and "Disparar"; since a panel item never moves the rundown's cursor (the
  * server's rule), no automatic preview ever follows it.
  *
- * Refusals of the commands sent from here are shown at the bottom of the strip. A
- * refused `takeItem` or `previewItem` also shows in the rundown column, which lists the
- * same two types: the page keeps one last refusal per type and cannot tell which button
- * sent it, so it is shown where either kind of button lives.
+ * Refusals of the commands sent from here are shown at the bottom of the strip. A take
+ * from a button or a number key says it came from the strip, so its refusal shows here only
+ * and not in the rundown column too (BAJAOVRLAY-69: a take refused because another console
+ * had just taken on the layer is read once, where the operator pressed). A refused
+ * `previewItem` still shows in both, which list the same type: the page cannot tell which
+ * button sent it.
  */
 export function QuickFireStrip() {
   const panels = useServerState((state) => state.quickFirePanels);
@@ -57,7 +59,7 @@ export function QuickFireStrip() {
     isEventSoundOn,
   );
   const sendCommand = useSendCommand();
-  const sendTakeByThisOperator = useTakeThenPreviewNextItem();
+  const sendTakeByThisOperator = useTakeThenPreviewNextItem('quickFire');
   const { chosenTab, chooseTab: setChosenTab } = useQuickFireTabChoice();
   const [isCreatingPanel, setIsCreatingPanel] = useState(false);
 
@@ -124,6 +126,7 @@ export function QuickFireStrip() {
       </div>
 
       <CommandErrorMessage
+        areaOfThePage="quickFire"
         commandTypes={[
           'takeItem',
           'previewItem',
