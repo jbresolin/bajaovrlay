@@ -7,6 +7,8 @@ export { type EventInboxCommand, reduceEventInboxCommand } from './reducers/redu
 // Moves events on and off the air with the program instances carrying them; core's
 // reduceCommand calls it after every command that changed the instances.
 export { followEventsOfProgramInstances } from './reducers/eventsOfInstancesBookkeeping.js';
+// "Pausar gatilhos" (BAJAOVRLAY-73): the events queued for the runner moved to pending.
+export { holdQueuedEventsForThePause } from './reducers/inboxEventChanges.js';
 // What fills an item's event fields in Prévia: an event's payload, a sample, or nothing.
 export { chooseEventFillOfPreview, type EventFillOfPreviewChoice } from './eventFillOfPreview.js';
 // Whether a preview of an event may be taken: its event must still wait, within its age.

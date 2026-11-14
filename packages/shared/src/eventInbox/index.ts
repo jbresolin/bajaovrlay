@@ -17,6 +17,8 @@ export {
 } from './inboxEvent.js';
 // The events slice: an event with its status and the history of its statuses.
 export {
+  type HeldByThePause,
+  HeldByThePauseSchema,
   type InboxEvent,
   InboxEventSchema,
   InboxEventsSchema,

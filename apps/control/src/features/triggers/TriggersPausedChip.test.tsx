@@ -1,15 +1,19 @@
 /**
- * "Gatilhos pausados" in the console's header (apps/control)
+ * "Gatilhos e eventos automáticos pausados" in the console's header (apps/control)
  *
  * What this module is for:
  *   A pause of every trigger (BAJAOVRLAY-48) is started from the header's menu since
  *   BAJAOVRLAY-62. A pause hidden in a menu is a show risk, so while the triggers are
- *   paused the header shows a small chip, "Gatilhos pausados", with "Retomar" on it. It
- *   follows the server's `triggerActivity` slice, so every open page agrees.
+ *   paused the header shows a small chip with "Retomar" on it. Since BAJAOVRLAY-73 the
+ *   pause holds the automatic events too (a fastest lap waits for "No ar"), so the chip
+ *   says both, "Gatilhos e eventos automáticos pausados", and its tooltip says what that
+ *   means. It follows the server's `triggerActivity` slice, so every open page agrees.
  *
  * What these tests prove:
  *   - While the triggers run there is no chip.
  *   - Paused, the chip is there; "Retomar" asks the server to let them run again.
+ *   - Its tooltip says what the pause holds: no trigger fires, and the automatic events
+ *     wait in "Eventos".
  *   - The chip goes away when the server says they run again, from any page.
  *   - For Dados, "Retomar" is greyed out with the role's reason written in the chip, and
  *     sends nothing.
@@ -32,7 +36,7 @@ const dataRoleAtMesa2: SessionAnswer = {
   session: { role: 'dados', station: 'Mesa 2', expiresAt: '2026-10-11T07:00:00.000Z' },
 };
 
-describe('the "Gatilhos pausados" chip', () => {
+describe('the "Gatilhos e eventos automáticos pausados" chip', () => {
   it('is not there while the triggers run', () => {
     // Arrange: nothing beyond a page whose triggers run.
 
@@ -40,7 +44,10 @@ describe('the "Gatilhos pausados" chip', () => {
     renderOnControlPageConnectedToFakeServer(<TriggersPausedChip />, buildSlicesWithTheTriggers());
 
     // Assert: nothing warns.
-    expect(screen.queryByText('Gatilhos pausados'), 'nothing warns while they run').toBe(null);
+    expect(
+      screen.queryByText('Gatilhos e eventos automáticos pausados'),
+      'nothing warns while they run',
+    ).toBe(null);
   });
 
   it('is there while paused, and "Retomar" lets the triggers run again', () => {
@@ -49,7 +56,7 @@ describe('the "Gatilhos pausados" chip', () => {
       <TriggersPausedChip />,
       buildSlicesWithTheTriggers([], true),
     );
-    const chipText = screen.queryByText('Gatilhos pausados');
+    const chipText = screen.queryByText('Gatilhos e eventos automáticos pausados');
 
     // Act: press "Retomar".
     fireEvent.click(screen.getByRole('button', { name: 'Retomar' }));
@@ -61,13 +68,35 @@ describe('the "Gatilhos pausados" chip', () => {
     ]);
   });
 
+  it('says in its tooltip what the pause holds', async () => {
+    // Arrange: the triggers paused for the podium.
+    renderOnControlPageConnectedToFakeServer(
+      <TriggersPausedChip />,
+      buildSlicesWithTheTriggers([], true),
+    );
+
+    // Act: reach the chip's words with the keyboard, which opens its tooltip.
+    fireEvent.focus(screen.getByText('Gatilhos e eventos automáticos pausados'));
+
+    // Assert: the tooltip says nothing goes on air by itself, and where the events wait.
+    await waitFor(() => {
+      expect(
+        screen.getByRole('tooltip').textContent,
+        'the tooltip must say what the pause holds',
+      ).toContain(
+        'Nada entra no ar sozinho: os gatilhos não disparam e os eventos automáticos esperam o "No ar" na aba Eventos.',
+      );
+    });
+  });
+
   it('goes away when the server says the triggers run again', () => {
     // Arrange: the triggers paused, the chip on screen.
     const { fakeServer } = renderOnControlPageConnectedToFakeServer(
       <TriggersPausedChip />,
       buildSlicesWithTheTriggers([], true),
     );
-    const isTheChipThereBefore = screen.queryByText('Gatilhos pausados') !== null;
+    const isTheChipThereBefore =
+      screen.queryByText('Gatilhos e eventos automáticos pausados') !== null;
 
     // Act: another page resumed them; the server sends the new triggerActivity.
     fakeServer.sendMessage({
@@ -78,7 +107,10 @@ describe('the "Gatilhos pausados" chip', () => {
 
     // Assert: there before, gone after.
     expect(isTheChipThereBefore, 'the chip is there while paused').toBe(true);
-    expect(screen.queryByText('Gatilhos pausados'), 'resumed, the chip must go').toBe(null);
+    expect(
+      screen.queryByText('Gatilhos e eventos automáticos pausados'),
+      'resumed, the chip must go',
+    ).toBe(null);
   });
 
   it('greys out "Retomar" for Dados, with the reason, and sends nothing', async () => {

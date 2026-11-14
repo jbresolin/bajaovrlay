@@ -18,7 +18,8 @@ const texts = ptBR.events;
  * One waiting event, on the console's "Eventos" tab and on the "Eventos" page: what it
  * is, the car's chip, the team, the reason, the penalty or the lap time, the time of day
  * it arrived (on the operator's clock) beside how long ago ("14:05:00 há 5 min"), "na
- * fila" when the runner will show it, then "Prévia" (the rule's item filled from this
+ * fila" when the runner will show it, or why "Pausar gatilhos" made it wait for the
+ * operator when it held it (BAJAOVRLAY-73), then "Prévia" (the rule's item filled from this
  * event), "No ar" and "Descartar". "Prévia" and "No ar" are off, saying why, when the rule has no item;
  * "No ar" and "Descartar" are off while one of their commands waits, so a second press
  * cannot send it twice (gate 2 of PR #22). "Descartar" is off for Dados, who may dismiss
@@ -63,6 +64,11 @@ export function InboxEventRow(props: {
         {event.status === 'queued' ? (
           <Badge variant="secondary">{texts.statusWords.queued}</Badge>
         ) : null}
+        {/* The reason stays on an event after it leaves the list; on a waiting row it says
+            why a fastest lap waits for "No ar" when it usually goes on by itself. */}
+        {event.heldByThePause === undefined ? null : (
+          <Badge variant="outline">{texts.heldByThePause[event.heldByThePause]}</Badge>
+        )}
         <span className="ml-auto flex gap-1.5 text-xs text-muted-foreground">
           <time className="tabular-nums" dateTime={new Date(event.detectedAtMs).toISOString()}>
             {formatTimeOfDay(event.detectedAtMs)}

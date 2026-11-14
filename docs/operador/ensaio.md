@@ -72,7 +72,7 @@ João, na página "Fontes": "Editar" no "Simulador — Enduro", liga "Falha simu
 | -------- | -------------------------------------------------------------------------- | -------------------------------------------------------- |
 | Produtor | O João pede para limpar tudo: "Limpar tudo" e confirma. Depois **Ctrl+Z**. | Tudo sai; com o **Ctrl+Z**, tudo o que estava volta.     |
 | Produtor | Por volta do minuto 30, o gatilho pergunta na aba "Eventos": "Rodar".      | O rodízio de patrocinadores passa uma vez e sai sozinho. |
-| Produtor | "Menu" → "Pausar gatilhos"; depois "Retomar".                              | "Gatilhos pausados" no cabeçalho enquanto pausado.       |
+| Produtor | "Menu" → "Pausar gatilhos"; depois "Retomar".                              | "Gatilhos e eventos automáticos pausados" no cabeçalho.  |
 
 ### 7. A página recarrega no meio da prova (minutos 32–35) — guia §8
 

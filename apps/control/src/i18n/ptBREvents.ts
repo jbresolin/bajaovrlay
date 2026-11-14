@@ -1,6 +1,7 @@
 import type {
   EventNoticeKind,
   EventRuleMode,
+  HeldByThePause,
   InboxEventKind,
   InboxEventStatus,
 } from '@bajaovrlay/shared';
@@ -30,6 +31,14 @@ export const ptBREvents = {
    * with the relative time from the latest restore: "trazido de volta há 3 min".
    */
   broughtBackAgo: (relativeTime: string) => `trazido de volta ${relativeTime}`,
+  /**
+   * Why an event whose rule says auto waits for the operator: "Pausar gatilhos" held it
+   * (BAJAOVRLAY-73), on its waiting row.
+   */
+  heldByThePause: {
+    arrivedWhilePaused: 'chegou com a automação pausada',
+    queuedWhenPaused: 'estava na fila quando a automação foi pausada',
+  } satisfies Record<HeldByThePause, string>,
   /** The console tab's way to the review page, which opens in a new tab. */
   openReviewPageLink: 'Abrir a página de eventos',
   addEventButton: '+ Evento',

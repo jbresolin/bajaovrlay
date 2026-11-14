@@ -6,7 +6,8 @@
  *   (BAJAOVRLAY-62): "Verificar servidor", "Cópia de segurança", "Pausar gatilhos" (or
  *   "Retomar gatilhos" while paused) and "Acertar relógio agora". The first three were
  *   header buttons before and do what those did. A pause is never hidden in the menu
- *   alone: the header's "Gatilhos pausados" chip shows it (TriggersPausedChip.test.tsx).
+ *   alone: the header's "Gatilhos e eventos automáticos pausados" chip shows it
+ *   (TriggersPausedChip.test.tsx).
  *   "Acertar relógio agora" steps the server clock to NTP's real time at once, after a
  *   confirm saying what on air would jump; Produtor alone may.
  *

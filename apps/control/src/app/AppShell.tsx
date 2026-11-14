@@ -32,8 +32,8 @@ const pageLinkTexts = ptBR.app.pageLinks;
  * "Histórico" (features/history, BAJAOVRLAY-30), which "Histórico" opens in a new tab; each
  * of those five in a PageErrorBoundary, so a bug shows a pt-BR message, not a blank tab.
  * The header holds the product name, the links to the six pages, the data sources
- * chip ("Fontes: 2 ok · 1 atrasada"), the OBS tally, "Gatilhos pausados" while every
- * trigger is paused (BAJAOVRLAY-48), the "Menu" with "Verificar servidor", "Cópia de
+ * chip ("Fontes: 2 ok · 1 atrasada"), the OBS tally, "Gatilhos e eventos automáticos
+ * pausados" while every trigger is paused (BAJAOVRLAY-48), the "Menu" with "Verificar servidor", "Cópia de
  * segurança" and "Pausar gatilhos" (features/headerMenu, BAJAOVRLAY-62), the connection
  * badge, who operates the page ("Produtor · Mesa 1" and "Sair", or "Sem login";
  * BAJAOVRLAY-29) and the "?" button, which lists every keyboard shortcut

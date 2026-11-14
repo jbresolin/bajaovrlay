@@ -44,7 +44,7 @@ Uma folha para quem opera os gráficos da transmissão. Duas pessoas, duas mesas
 ![A aba Eventos com um evento esperando](imagens/eventos.png)
 
 - O número vermelho na aba "Eventos" conta o que espera. Cada evento tem "Prévia", "No ar" e "Descartar". Descartou sem querer? "Desfazer" aparece por 30 segundos.
-- A volta mais rápida entra no ar sozinha, por 8 segundos: não precisa fazer nada.
+- A volta mais rápida entra no ar sozinha por 8 segundos, menos na pausa (seção 7).
 - Eventos já exibidos, expirados ou descartados ficam na página de eventos ("Abrir a página de eventos"): no histórico, "Mostrar de novo" (Produtor) traz um evento exibido de volta para a aba, e "Restaurar" traz um descartado.
 - **Aviso digitado** (Produtor): na página de eventos, "+ Evento". Escolha a equipe pelo número ou nome, ou "Sem equipe (aviso geral)" para um recado a todos; escreva o "Motivo" e clique em "Criar evento". Ele entra na aba "Eventos" como os outros.
 
@@ -64,7 +64,7 @@ Uma folha para quem opera os gráficos da transmissão. Duas pessoas, duas mesas
 ## 7. Gatilhos
 
 - O rodízio de patrocinadores ("Patrocinadores a cada 30 min", ligado pelo responsável técnico em "Gatilhos") pergunta antes de rodar: aparece na aba "Eventos" com "Rodar" e "Descartar".
-- Em momentos que não podem ter nada novo na tela (pódio, entrevista), "Menu" → "Pausar gatilhos". O cabeçalho mostra "Gatilhos pausados" até você clicar em "Retomar". A pausa não segura a volta mais rápida, que entra sozinha por 8 segundos: se ela atrapalhar, "Limpar" na linha "Aviso".
+- Em momentos que não podem ter nada novo na tela (pódio, entrevista), "Menu" → "Pausar gatilhos": nada entra no ar sozinho; a volta mais rápida espera na aba "Eventos". O cabeçalho mostra "Gatilhos e eventos automáticos pausados" até você clicar em "Retomar".
 
 ## 8. Quando algo dá errado
 

@@ -4,7 +4,7 @@
  * (BAJAOVRLAY-67) and João's default rules naming them, and three teams of Cadastros.
  * Every function builds fresh objects, so a test can change one thing.
  */
-import type { EventRule, InboxEvent, Item, Slices, Team } from '@bajaovrlay/shared';
+import type { EventRule, HeldByThePause, InboxEvent, Item, Slices, Team } from '@bajaovrlay/shared';
 
 import { buildSlicesWithShortcutsAndMacros } from './quickFireLikeTheServerSends.testSupport';
 
@@ -128,6 +128,28 @@ export function buildQueuedFastestLapOfCar31(minutesAgo: number): InboxEvent {
     status: 'queued',
     statusChanges: [{ status: 'queued', atMs: detectedAtMs }],
   };
+}
+
+/**
+ * Car 31's fastest lap held by "Pausar gatilhos" (BAJAOVRLAY-73): its rule says auto, but
+ * it waits for the operator, pending since `minutesAgo` minutes, with the reason given:
+ * it arrived while paused, or it was queued when the pause began (a minute after it came).
+ */
+export function buildFastestLapOfCar31HeldByThePause(
+  minutesAgo: number,
+  heldByThePause: HeldByThePause,
+): InboxEvent {
+  const queuedFastestLap = buildQueuedFastestLapOfCar31(minutesAgo);
+  const detectedAtMs = queuedFastestLap.detectedAtMs;
+  if (heldByThePause === 'arrivedWhilePaused') {
+    const statusChanges: InboxEvent['statusChanges'] = [{ status: 'pending', atMs: detectedAtMs }];
+    return { ...queuedFastestLap, status: 'pending', statusChanges, heldByThePause };
+  }
+  const statusChanges: InboxEvent['statusChanges'] = [
+    { status: 'queued', atMs: detectedAtMs },
+    { status: 'pending', atMs: detectedAtMs + 60_000 },
+  ];
+  return { ...queuedFastestLap, status: 'pending', statusChanges, heldByThePause };
 }
 
 /**

@@ -10,7 +10,7 @@ eventos registra uma penalidade, ou chega um horário da programação. Cada gat
 
 Os gatilhos ficam em **Eventos** (`#/eventos`), aba **Gatilhos**, ao lado de **Regras**. **Pausar gatilhos**
 fica no **Menu** (☰) no topo do console; enquanto os gatilhos estão pausados, o topo mostra
-**Gatilhos pausados** com **Retomar**.
+**Gatilhos e eventos automáticos pausados** com **Retomar**.
 
 ## Os quatro tipos e os dados de cada um
 
@@ -93,8 +93,12 @@ nova. O que o operador excluir não volta.
 
 - Cada gatilho tem um **intervalo mínimo** entre dois disparos (10 s, se não mudar). Um segundo
   disparo antes disso é ignorado, sem linha no log.
-- **Pausar gatilhos** para todos de uma vez, para ensaio. Os disparos que já esperam ficam e
-  podem ser rodados ou descartados.
+- **Pausar gatilhos** para todos de uma vez, para ensaio, pódio ou entrevista. Os disparos que
+  já esperam ficam e podem ser rodados ou descartados. Desde o BAJAOVRLAY-73 a pausa segura
+  também os eventos automáticos (a volta mais rápida): o que chega na pausa, e o que estava na
+  fila quando ela começou, espera na aba **Eventos** com **No ar** e **Descartar**, dizendo por
+  quê. **Retomar** não põe nada disso no ar: cada um espera o operador, ou expira no tempo
+  máximo da regra.
 - Cada disparo grava uma linha no log de eventos como `sistema:gatilhos`, com o nome do gatilho
   e os dados.
 

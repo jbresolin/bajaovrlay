@@ -1,6 +1,7 @@
 // The small steps every inbox reducer is made of: finding an event, changing its status
 // with the moment of the change, and keeping the slice to its newest events.
 import {
+  type DetectedEvent,
   type EventRule,
   type InboxEvent,
   type InboxEventKind,
@@ -92,6 +93,56 @@ export function appendInboxEvents(events: InboxEvent[], newEvents: InboxEvent[])
 export function findStatusOfNewEvent(rule: EventRule | undefined): InboxEventStatus {
   const canTheRunnerShowIt = rule?.mode === 'auto' && rule.itemId !== null;
   return canTheRunnerShowIt ? 'queued' : 'pending';
+}
+
+/**
+ * A new event, as the inbox lists it: with the status its rule gives it, unless
+ * "Pausar gatilhos" is on and that status is queued (BAJAOVRLAY-73). Then it lands pending
+ * instead, marked `heldByThePause: 'arrivedWhilePaused'`, and waits for the operator like
+ * an event whose rule asks: nothing goes on air by itself during a podium or an interview.
+ */
+export function listNewEvent(
+  detectedEvent: DetectedEvent,
+  rule: EventRule | undefined,
+  isAutomationPaused: boolean,
+): InboxEvent {
+  const statusOfItsRule = findStatusOfNewEvent(rule);
+  const isHeldByThePause = isAutomationPaused && statusOfItsRule === 'queued';
+  if (isHeldByThePause) {
+    return {
+      ...detectedEvent,
+      status: 'pending',
+      statusChanges: [{ status: 'pending', atMs: detectedEvent.detectedAtMs }],
+      heldByThePause: 'arrivedWhilePaused',
+    };
+  }
+  return {
+    ...detectedEvent,
+    status: statusOfItsRule,
+    statusChanges: [{ status: statusOfItsRule, atMs: detectedEvent.detectedAtMs }],
+  };
+}
+
+/**
+ * The slice at the start of "Pausar gatilhos" (BAJAOVRLAY-73): every queued event moved
+ * to pending at `atMs`, marked `heldByThePause: 'queuedWhenPaused'`, so the runner, which
+ * shows queued events only, shows none of them. Resuming moves nothing back: the operator
+ * decides on each, or it expires at its rule's maximum wait. The slice comes back as the
+ * very same array when nothing was queued, so the store sees no change of events.
+ */
+export function holdQueuedEventsForThePause(events: InboxEvent[], atMs: number): InboxEvent[] {
+  const isAnyEventQueued = events.some((event) => event.status === 'queued');
+  if (!isAnyEventQueued) {
+    return events;
+  }
+  return events.map((event) => {
+    if (event.status !== 'queued') {
+      return event;
+    }
+    const heldEvent: InboxEvent = changeStatusOfEvent(event, 'pending', atMs);
+    heldEvent.heldByThePause = 'queuedWhenPaused';
+    return heldEvent;
+  });
 }
 
 /**

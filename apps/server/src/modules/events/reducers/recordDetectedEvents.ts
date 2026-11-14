@@ -9,7 +9,7 @@ import {
   changeStatusOfEvent,
   findInboxEvent,
   findRuleOfKind,
-  findStatusOfNewEvent,
+  listNewEvent,
 } from './inboxEventChanges.js';
 
 /**
@@ -23,6 +23,8 @@ import {
  * still queued: they expire at its detection, so an outdated "Volta mais rápida" never airs
  * after a better one (gate 2 of PR #22). Sessions are not compared: an older session's
  * queued event is outdated too.
+ * While "Pausar gatilhos" is on, an event its rule would queue lands pending instead,
+ * marked held by the pause (BAJAOVRLAY-73; listNewEvent).
  * When every event is skipped the slices come back unchanged, so the store writes no row.
  */
 export function reduceRecordDetectedEvents(
@@ -38,12 +40,7 @@ export function reduceRecordDetectedEvents(
     if (isAlreadyListed || rule?.mode === 'ignore') {
       continue;
     }
-    const status = findStatusOfNewEvent(rule);
-    newEvents.push({
-      ...detectedEvent,
-      status,
-      statusChanges: [{ status, atMs: detectedEvent.detectedAtMs }],
-    });
+    newEvents.push(listNewEvent(detectedEvent, rule, slices.triggerActivity.isPaused));
   }
 
   if (newEvents.length === 0) {

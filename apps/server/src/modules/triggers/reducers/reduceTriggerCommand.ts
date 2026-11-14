@@ -48,7 +48,7 @@ export function reduceTriggerCommand(
     case 'deleteTrigger':
       return reduceDeleteTrigger(slices, command);
     case 'setTriggersPaused':
-      return reduceSetTriggersPaused(slices, command);
+      return reduceSetTriggersPaused(slices, command, context);
     case 'fireTrigger':
       return reduceFireTrigger(slices, command, context);
     case 'runTriggerFiring':
