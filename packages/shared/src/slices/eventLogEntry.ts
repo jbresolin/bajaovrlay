@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { CommandErrorSchema } from '../commands/commandError.js';
 import { InboxEventStatusSchema } from '../eventInbox/inboxEventsSlice.js';
+import { OperatorRoleSchema } from '../operatorLogin/operatorRole.js';
 
 /** How a command ended: ok, or failed with the error the operator was shown. */
 export const EventLogResultSchema = z.discriminatedUnion('status', [
@@ -10,15 +11,35 @@ export const EventLogResultSchema = z.discriminatedUnion('status', [
 ]);
 
 /**
+ * One layer a console's take was refused on because another console had just changed it
+ * (BAJAOVRLAY-69), as the event log keeps it: the layer, the role of the console whose take
+ * was refused and of the console that changed the layer, and when that change was. A role
+ * is left out when that console had no login (the PINs unset); no name is ever kept.
+ */
+export const TakeRefusedForAnotherConsoleSchema = z.object({
+  layerId: z.string().min(1),
+  refusedConsoleRole: OperatorRoleSchema.optional(),
+  otherConsoleRole: OperatorRoleSchema.optional(),
+  otherConsoleChangedAt: z.iso.datetime(),
+});
+
+/** One TakeRefusedForAnotherConsoleSchema value. */
+export type TakeRefusedForAnotherConsole = z.infer<typeof TakeRefusedForAnotherConsoleSchema>;
+
+/**
  * What the server knew when it applied a command and the payload does not say (gate 2 of
  * PR #44). `placedOn` is the layer a take or a preview put its item on, and that layer's
  * output, as they were then: the history names them, not the item's layer now, which
  * may have moved since. `restoredFrom` is the status a restoreEvent brought its event
  * back from (BAJAOVRLAY-67), so the history tells "Mostrar de novo" from an undone discard.
+ * `takesRefusedForAnotherConsole` (BAJAOVRLAY-69) is on a take refused because another
+ * console had just changed its layer, and on a "Tomar tudo" that left such layers: one entry
+ * per layer, with both consoles' roles.
  */
 export const EventLogDetailsSchema = z.object({
   placedOn: z.object({ layerId: z.string().min(1), outputId: z.string().min(1) }).optional(),
   restoredFrom: InboxEventStatusSchema.optional(),
+  takesRefusedForAnotherConsole: z.array(TakeRefusedForAnotherConsoleSchema).min(1).optional(),
 });
 
 /** The details of an event-log row, after validation. */

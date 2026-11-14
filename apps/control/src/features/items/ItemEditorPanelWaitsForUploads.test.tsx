@@ -203,7 +203,12 @@ describe('the item editor while an image uploads', () => {
           sponsorLogoUrl: { kind: 'literal', value: `/media/${marcopoloLogoMediaId}` },
         },
       },
-      { type: 'takeItem', itemId: item.id },
+      // The take says the page showed the Bosch bug on air there (BAJAOVRLAY-69).
+      {
+        type: 'takeItem',
+        itemId: item.id,
+        instanceIdSeenOnAir: '2c6e8a0b-4d1f-4a37-9b5c-7e1a3c5d9f20',
+      },
     ]);
   });
 

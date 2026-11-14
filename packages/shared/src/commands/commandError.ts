@@ -45,6 +45,11 @@ export const CommandErrorCodeSchema = z.enum([
   /** takeNext was sent while the rundown's cursor is on nothing. */
   'RUNDOWN_CURSOR_EMPTY',
   /**
+   * takeNext named the cursor item its page saw, and the server's cursor is on another item
+   * now: another press moved it first (gate 2 of PR #64). The message names the new one.
+   */
+  'RUNDOWN_CURSOR_MOVED',
+  /**
    * An item has a field value of a kind the server cannot resolve: a guard kept for a
    * kind added to the schema before the resolver has its case (entity references had
    * it until BAJAOVRLAY-19).
@@ -60,6 +65,12 @@ export const CommandErrorCodeSchema = z.enum([
   'NO_NEXT_STEP',
   /** nextOnLayer's fromStep is not the step the graphic is on: another press moved it first. */
   'STEP_ALREADY_MOVED',
+  /**
+   * A console's take on a layer another console changed less than 2 s before, which this
+   * console had not seen yet (BAJAOVRLAY-69). The message names what the other console did
+   * and says this take was not applied.
+   */
+  'LAYER_CHANGED_BY_ANOTHER_CONSOLE',
   /**
    * undoOnLayer named a layer with no change to undo, or undoLastChangeOnProgram found no
    * layer with one (BAJAOVRLAY-30).

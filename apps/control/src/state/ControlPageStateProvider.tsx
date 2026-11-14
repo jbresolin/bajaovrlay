@@ -2,7 +2,7 @@ import type { CommandInput } from '@bajaovrlay/shared';
 import { createContext, type ReactNode, useContext } from 'react';
 import { useStore } from 'zustand';
 
-import { CommandFailedError } from './commandFailure';
+import { type AreaOfThePage, CommandFailedError } from './commandFailure';
 import type { CommandResult, SendCommand } from './serverConnection';
 import type { ServerState, ServerStateStore } from './serverStateStore';
 
@@ -107,12 +107,17 @@ export function useSendCommandAndReadItsAnswer(): (
  * Returns the function buttons use to send a command. It resolves to whether the server
  * accepted it and never rejects: a failure is already in the store's
  * `lastCommandError`, where the page shows it, so a button has nothing left to handle.
+ * `areaOfThePage` names the part of the page the button is in, when another part sends
+ * the same type, so the refusal shows there only (CommandErrorMessage).
  */
-export function useSendCommand(): (command: CommandInput) => Promise<boolean> {
+export function useSendCommand(): (
+  command: CommandInput,
+  areaOfThePage?: AreaOfThePage,
+) => Promise<boolean> {
   const { sendCommand } = useControlPageState();
-  return async (command) => {
+  return async (command, areaOfThePage) => {
     try {
-      await sendCommand(command);
+      await sendCommand(command, areaOfThePage);
       return true;
     } catch {
       return false;

@@ -131,17 +131,18 @@ export function useItemEditorSaves(options: ItemEditorSavesOptions): ItemEditorS
   // "Salvar e disparar" takes the item, "Salvar e prévia" previews it, asked for by hand.
   // Answers whether the server accepted. Deliberate: the take is sent as it is, without
   // the automatic preview of the next cursor item that "Disparar" on a rundown row
-  // brings, because the editor needs the answer to decide whether to close.
+  // brings, because the editor needs the answer to decide whether to close. Both are sent
+  // as the editor's, so a refusal shows in the editor only, beside its buttons.
   async function takeOrPreviewTheSavedItem(
     itemId: string,
     whatThePressAsksFor: 'saveItemAndTake' | 'saveItemAndPreview',
   ): Promise<boolean> {
     if (whatThePressAsksFor === 'saveItemAndTake') {
       rememberCommandTypeWasSent('takeItem');
-      return sendCommand({ type: 'takeItem', itemId });
+      return sendCommand({ type: 'takeItem', itemId }, 'itemEditor');
     }
     rememberCommandTypeWasSent('previewItem');
-    return sendCommand({ type: 'previewItem', itemId, origin: 'manual' });
+    return sendCommand({ type: 'previewItem', itemId, origin: 'manual' }, 'itemEditor');
   }
 
   // A new item, start to finish. After a refused take of an item just created, the item

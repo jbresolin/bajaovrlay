@@ -62,6 +62,23 @@ const sliceNamesKeptInMemoryOnly: ReadonlyArray<keyof SlicesChangedByCommands> =
 ];
 
 /**
+ * Names the slices a reducer changed, from the slices before and after. A reducer hands back
+ * an unchanged slice as the very same array, so comparing the two arrays themselves is enough.
+ * What could go wrong: a reducer that builds a new array with equal contents counts as
+ * a change here, so it would be saved, logged and broadcast although nothing on screen
+ * moves. Each reducer therefore compares by content where a command can repeat what is
+ * already there (updateInstanceData, updateItemFields) and hands back the same slices.
+ */
+export function findNamesOfChangedSlices(
+  slicesBefore: SlicesChangedByCommands,
+  nextSlices: SlicesChangedByCommands,
+): Array<keyof SlicesChangedByCommands> {
+  return sliceNamesChangedByCommands.filter(
+    (sliceName) => nextSlices[sliceName] !== slicesBefore[sliceName],
+  );
+}
+
+/**
  * The slices-table rows of the changed slices, leaving out the slices kept in memory only
  * and the snapshots, which are saved one row per source (buildRowChangesOfDataSnapshots).
  */
