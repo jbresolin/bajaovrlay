@@ -64,14 +64,14 @@ Uma folha para quem opera os gráficos da transmissão. Duas pessoas, duas mesas
 ## 7. Gatilhos
 
 - O rodízio de patrocinadores ("Patrocinadores a cada 30 min", ligado pelo responsável técnico em "Gatilhos") pergunta antes de rodar: aparece na aba "Eventos" com "Rodar" e "Descartar".
-- Em momentos que não podem ter nada novo na tela (pódio, entrevista), "Menu" → "Pausar gatilhos": nada entra no ar sozinho; a volta mais rápida espera na aba "Eventos". O cabeçalho mostra "Gatilhos e eventos automáticos pausados" até você clicar em "Retomar".
+- Em momentos que não podem ter nada novo na tela (pódio, entrevista), "Menu" → "Pausar gatilhos": nada entra no ar sozinho; a volta mais rápida espera na aba "Eventos". O cabeçalho mostra "Gatilhos e eventos automáticos pausados" até você clicar em "Retomar". Ao retomar, nada do que esperou entra sozinho: "No ar" ou "Descartar"; a volta mais rápida some sozinha em 2 min.
 
 ## 8. Quando algo dá errado
 
 - **Fonte atrasada** (selo "Fontes" amarelo, linha de Camadas com "fonte atrasada"; depois de 1 minuto, vermelho e "fonte com erro"): é o mesmo caso. O ar continua com o último dado bom; nada some da tela. Não limpe nada por causa disso. Avise o responsável técnico; quando a fonte voltar, os dados seguem sozinhos.
 - **Aviso de relógio** no cabeçalho (Relógio do servidor fora da hora certa): o servidor não se acerta sozinho porque há um relógio no ar. Num momento em que um pulo do relógio não atrapalhe (intervalo, ou com o relógio fora do ar), o Produtor abre "Menu" → "Acertar relógio agora" e confirma em "Acertar agora". O relógio de prova pula de uma vez.
 - **Tomada recusada:** se a outra mesa tomou a mesma camada antes, a sua é recusada com uma mensagem. Olhe o Programa e Camadas antes de tentar de novo.
-- **"Reconectando…"** no lugar de "Conectado": a página perdeu o servidor e volta sozinha. Os botões ficam cinza até voltar. O ar não depende da sua página.
+- **"Reconectando…"** no lugar de "Conectado": a página perdeu o servidor e volta sozinha. Os botões ficam cinza até voltar. O ar não depende da sua página. Se os gatilhos estavam pausados, confira que o cabeçalho ainda mostra "Gatilhos e eventos automáticos pausados".
 - **Cópia de segurança:** no fim do dia (ou quando o responsável técnico pedir), "Menu" → "Cópia de segurança" → "Baixar" e salve no pendrive.
 
 ## 9. Quem faz o quê

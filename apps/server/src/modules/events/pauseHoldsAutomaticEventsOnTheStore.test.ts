@@ -17,12 +17,12 @@
  *   - An event already queued when the pause begins is moved to pending at that moment,
  *     with its own reason, and is not shown when its layer empties.
  *   - Resuming replays nothing: what arrived while paused stays pending; a new fastest lap
- *     after the resume goes on air by itself again.
- *   - A held event keeps its rule's maximum wait (2 minutes for a fastest lap) and expires.
- *   - "No ar" puts a held fastest lap on air for its rule's 8 s.
+ *     after the resume goes on air by itself again, and makes the held one expire.
  *   - The event log: the pause and the arrival are written, and no showEvent ever is.
  *
  * What these tests deliberately do not cover:
+ *   - A held fastest lap over time (its maximum wait, "No ar", a newer lap during the pause,
+ *     a restart while paused); pauseHeldFastestLapOverTime.test.ts.
  *   - The triggers' own pause (no firing while paused); triggerFiring.test.ts and
  *     intervalTriggers.test.ts.
  *   - The page's list of held events; apps/control's HeldByThePauseRow.test.tsx.
@@ -38,6 +38,7 @@ import {
   applyOrThrow,
   createPlainClockItem,
   type EventInboxOnTheStore,
+  operatorActor,
   pollTheSimulator,
   readEvent,
   typedEventId,
@@ -144,12 +145,14 @@ describe('a new event and "Pausar gatilhos"', () => {
 
       // Assert: it started where its rule and the pause say, with the reason or without.
       const event = readEvent(inbox.stateStore, eventId);
-      expect(event?.statusChanges[0]?.status, 'the status the event arrived with').toBe(
-        expectedFirstStatus,
-      );
-      expect(event?.heldByThePause, 'the reason the event waits, when the pause held it').toBe(
-        expectedHeldByThePause,
-      );
+      expect(
+        event?.statusChanges[0]?.status,
+        'the event must arrive queued only when its rule is auto and the pause is off',
+      ).toBe(expectedFirstStatus);
+      expect(
+        event?.heldByThePause,
+        'only an event the pause held may carry the pause as its reason',
+      ).toBe(expectedHeldByThePause);
     },
   );
 
@@ -163,8 +166,13 @@ describe('a new event and "Pausar gatilhos"', () => {
     inbox.clock.letTimePass(60_000);
 
     // Assert: still pending, and nothing went on air.
-    expect(readEvent(inbox.stateStore, firstFastestLapEventId)?.status, 'it waits').toBe('pending');
-    expect(readClockLayerOnAir(inbox), 'nothing may go on air by itself').toBe(undefined);
+    expect(
+      readEvent(inbox.stateStore, firstFastestLapEventId)?.status,
+      "car 47's lap must still wait in Eventos a minute later",
+    ).toBe('pending');
+    expect(readClockLayerOnAir(inbox), 'the clock layer must stay empty while paused').toBe(
+      undefined,
+    );
   });
 });
 
@@ -185,12 +193,18 @@ describe('an event already queued when the pause begins', () => {
 
     // Assert: queued before, pending from the pause's moment with its reason, never on air.
     const event = readEvent(inbox.stateStore, firstFastestLapEventId);
-    expect(statusBeforeThePause, 'before the pause it waited for the runner').toBe('queued');
-    expect(event?.statusChanges, 'moved to pending at the moment of the pause').toEqual([
-      { status: 'queued', atMs: startMs },
-      { status: 'pending', atMs: startMs + 5_000 },
-    ]);
-    expect(event?.heldByThePause, 'the reason: it was queued when paused').toBe('queuedWhenPaused');
+    expect(statusBeforeThePause, 'before the pause the lap must wait for the runner').toBe(
+      'queued',
+    );
+    expect(event?.statusChanges, 'the lap must move to pending at the moment of the pause').toEqual(
+      [
+        { status: 'queued', atMs: startMs },
+        { status: 'pending', atMs: startMs + 5_000 },
+      ],
+    );
+    expect(event?.heldByThePause, 'the lap must say it was queued when the pause began').toBe(
+      'queuedWhenPaused',
+    );
     expect(readClockLayerOnAir(inbox), 'the empty layer must stay empty').toBe(undefined);
   });
 });
@@ -208,13 +222,14 @@ describe('"Retomar" after a pause', () => {
     inbox.clock.letTimePass(30_000);
 
     // Assert: still pending, nothing on air.
-    expect(readEvent(inbox.stateStore, firstFastestLapEventId)?.status, 'still waits').toBe(
-      'pending',
-    );
+    expect(
+      readEvent(inbox.stateStore, firstFastestLapEventId)?.status,
+      'car 47\'s lap must still wait in Eventos after "Retomar"',
+    ).toBe('pending');
     expect(readClockLayerOnAir(inbox), 'resuming must put nothing on air').toBe(undefined);
   });
 
-  it('lets a fastest lap that arrives after it go on air by itself again', () => {
+  it('lets a fastest lap that arrives after it go on air by itself, and the held one expire', () => {
     // Arrange: paused, car 47's fastest lap held, then resumed.
     const inbox = openInboxWithTheRunner();
     setThePause(inbox, true);
@@ -225,56 +240,17 @@ describe('"Retomar" after a pause', () => {
     inbox.clock.letTimePass(10_000);
     pollTheSimulator(inbox, { positions: buildPositionsWithCar31FastestOnLap36() });
 
-    // Assert: car 31's lap is on air by itself; car 47's still waits for the operator.
-    expect(readEvent(inbox.stateStore, secondFastestLapEventId)?.status, 'the new one').toBe(
-      'onAir',
-    );
-    expect(readEvent(inbox.stateStore, firstFastestLapEventId)?.status, 'the held one').toBe(
-      'pending',
-    );
-  });
-});
-
-describe('a held fastest lap and its rule', () => {
-  it('expires after the rule’s 2 minutes, as a pending event with a maximum wait does', () => {
-    // Arrange: paused, a fastest lap held.
-    const inbox = openInboxWithTheRunner();
-    setThePause(inbox, true);
-    pollTheSimulator(inbox, { positions: buildPositionsWithCar47FastestOnLap34() });
-
-    // Act: exactly 2 minutes pass, then 1 ms more.
-    inbox.clock.letTimePass(120_000);
-    const statusAtTwoMinutes = readEvent(inbox.stateStore, firstFastestLapEventId)?.status;
-    inbox.clock.letTimePass(1);
-
-    // Assert: still waiting at its maximum wait, expired just past it.
-    expect(statusAtTwoMinutes, 'at exactly 2 minutes it may still be shown').toBe('pending');
-    expect(readEvent(inbox.stateStore, firstFastestLapEventId)?.statusChanges, 'its life').toEqual([
+    // Assert: car 31's lap is on air by itself; car 47's, now old news, expired with it.
+    expect(
+      readEvent(inbox.stateStore, secondFastestLapEventId)?.status,
+      "car 31's lap, detected after the resume, must go on air by itself",
+    ).toBe('onAir');
+    expect(
+      readEvent(inbox.stateStore, firstFastestLapEventId)?.statusChanges,
+      "car 47's held lap must expire the moment car 31's better lap is detected",
+    ).toEqual([
       { status: 'pending', atMs: startMs },
-      { status: 'expired', atMs: startMs + 120_001 },
-    ]);
-  });
-
-  it('goes on air with "No ar" and leaves after the rule’s 8 s', () => {
-    // Arrange: paused, a fastest lap held.
-    const inbox = openInboxWithTheRunner();
-    setThePause(inbox, true);
-    pollTheSimulator(inbox, { positions: buildPositionsWithCar47FastestOnLap34() });
-
-    // Act: the operator presses "No ar" 20 s later; 8 s pass.
-    inbox.clock.letTimePass(20_000);
-    applyOrThrow(inbox.stateStore, { type: 'showEvent', eventId: firstFastestLapEventId });
-    const instanceAfterThePress = readClockLayerOnAir(inbox);
-    inbox.clock.letTimePass(8_000);
-
-    // Assert: on air carrying the event, then off after 8 s, shown.
-    expect(instanceAfterThePress?.eventId, '"No ar" must put it on air').toBe(
-      firstFastestLapEventId,
-    );
-    expect(readEvent(inbox.stateStore, firstFastestLapEventId)?.statusChanges, 'its life').toEqual([
-      { status: 'pending', atMs: startMs },
-      { status: 'onAir', atMs: startMs + 20_000 },
-      { status: 'shown', atMs: startMs + 28_000 },
+      { status: 'expired', atMs: startMs + 10_000 },
     ]);
   });
 });
@@ -290,9 +266,9 @@ describe('the event log while paused', () => {
     inbox.clock.letTimePass(60_000);
 
     // Assert: the operator's pause, then the detection's arrival, and nothing after.
-    expect(readLogRowsFrom(inbox.stateStore, 'setTriggersPaused'), 'the rows').toEqual([
-      'operador:3f2a9c1e-8b47-4d06-9e15-7c0d2b6a4f81 setTriggersPaused',
-      'sistema:eventos recordDetectedEvents',
-    ]);
+    expect(
+      readLogRowsFrom(inbox.stateStore, 'setTriggersPaused'),
+      'the log must hold the pause and the arrival, and no showEvent after them',
+    ).toEqual([`${operatorActor} setTriggersPaused`, 'sistema:eventos recordDetectedEvents']);
   });
 });

@@ -1,9 +1,4 @@
-import {
-  obsSliceWithoutObs,
-  type Slices,
-  SlicesSchema,
-  triggerActivityAtBoot,
-} from '@bajaovrlay/shared';
+import { obsSliceWithoutObs, type Slices, SlicesSchema } from '@bajaovrlay/shared';
 
 import {
   loadOrSeedDataSourceSlices,
@@ -17,6 +12,7 @@ import {
 } from '../../modules/events/index.js';
 import { loadMediaSlice } from '../../modules/media/index.js';
 import { loadOrSeedOutputAndLayerSlices } from '../../modules/outputs/index.js';
+import { readTriggerActivityAtBoot } from '../../modules/triggers/index.js';
 import { writeBootRows } from '../db/bootRowStorage.js';
 import { readAllDataSnapshotRows } from '../db/dataSnapshotRowStorage.js';
 import { readNewestEventLogRows } from '../db/eventLogRowStorage.js';
@@ -299,10 +295,11 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     obs: obsSliceWithoutObs,
     // The triggers are saved (BAJAOVRLAY-48); a database written before them has no row
     // and starts with none, and a row that fails its schema stops the boot, as the items
-    // row does (read above, for the plain roll's seed). Their activity is memory only:
-    // every boot starts unpaused, nothing fired.
+    // row does (read above, for the plain roll's seed). Their activity is memory only, but
+    // for the pause (gate 2 of PR #70): every boot starts with nothing fired, and paused
+    // when the server stopped paused.
     triggers: plainSponsorRollSeed.triggers,
-    triggerActivity: triggerActivityAtBoot,
+    triggerActivity: readTriggerActivityAtBoot(storedRows),
     dataSources: dataSourceSlices.dataSources,
     dataSnapshots: dataSourceSlices.dataSnapshots,
     // The operator's corrections are saved (BAJAOVRLAY-20): a restart keeps every one in

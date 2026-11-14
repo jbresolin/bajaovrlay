@@ -11,4 +11,5 @@ BAJAOVRLAY-64, counted from the switch-on `reducers/triggerEditing.ts` stamps) t
 happened into a firing's data. `httpTriggerCalls.ts` handles `POST /api/v1/triggers/:triggerId`
 (route in api/v1/triggerRoute.ts); `reducers/triggerFiringAnswers.ts` holds "Rodar",
 "Descartar" and "Desfazer"; `index.ts` lists what core may use. The activity keeps the newest
-50 firings (`reducers/triggerActivityChanges.ts`), never dropping one that waits.
+50 firings (`reducers/triggerActivityChanges.ts`), never dropping one that waits; only its
+pause is saved (`triggerPauseRow.ts`), so a restart while paused comes back paused.

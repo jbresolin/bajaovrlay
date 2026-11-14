@@ -20,9 +20,10 @@ import {
  *   sending an old incident again, a poll after a restart) is never listed twice;
  * - an event whose rule says ignore: nothing listed, nothing logged.
  * A new fastest lap or leader change supersedes the older ones of the same kind and source
- * still queued: they expire at its detection, so an outdated "Volta mais rápida" never airs
- * after a better one (gate 2 of PR #22). Sessions are not compared: an older session's
- * queued event is outdated too.
+ * still queued, or pending because the pause held them: they expire at its detection, so an
+ * outdated "Volta mais rápida" never airs after a better one (gate 2 of PR #22), and only
+ * the newest waits in Eventos after a pause (gate 2 of PR #70). Sessions are not compared:
+ * an older session's waiting event is outdated too.
  * While "Pausar gatilhos" is on, an event its rule would queue lands pending instead,
  * marked held by the pause (BAJAOVRLAY-73; listNewEvent).
  * When every event is skipped the slices come back unchanged, so the store writes no row.
@@ -48,7 +49,7 @@ export function reduceRecordDetectedEvents(
   }
   let eventsKept = slices.events;
   for (const newEvent of newEvents) {
-    eventsKept = expireQueuedEventsSupersededBy(eventsKept, newEvent);
+    eventsKept = expireWaitingEventsSupersededBy(eventsKept, newEvent);
   }
   return {
     status: 'applied',
@@ -59,8 +60,12 @@ export function reduceRecordDetectedEvents(
 // The kinds whose newer event makes an older one of its source old news.
 const kindsSupersededByANewerEvent = new Set(['fastestLap', 'leaderChanged']);
 
-/** The events with every queued one of the new event's kind and source expired. */
-function expireQueuedEventsSupersededBy(
+/**
+ * The events with every one of the new event's kind and source that waits for the runner
+ * (queued) or was held by the pause (pending with heldByThePause) expired. A pending event
+ * whose rule asks is left alone: the operator was asked about it and decides on it.
+ */
+function expireWaitingEventsSupersededBy(
   events: InboxEvent[],
   newEvent: DetectedEvent,
 ): InboxEvent[] {
@@ -68,10 +73,19 @@ function expireQueuedEventsSupersededBy(
     return events;
   }
   return events.map((event) => {
-    const isSuperseded =
-      event.status === 'queued' &&
-      event.kind === newEvent.kind &&
-      event.sourceId === newEvent.sourceId;
+    const isOfTheSameKindAndSource =
+      event.kind === newEvent.kind && event.sourceId === newEvent.sourceId;
+    const isSuperseded = isOfTheSameKindAndSource && isAnAutomaticEventStillWaiting(event);
     return isSuperseded ? changeStatusOfEvent(event, 'expired', newEvent.detectedAtMs) : event;
   });
+}
+
+/**
+ * True for an event that would go on air by itself, or would have but for the pause:
+ * queued, or pending with the pause's reason on it (BAJAOVRLAY-73).
+ */
+function isAnAutomaticEventStillWaiting(event: InboxEvent): boolean {
+  const isQueued = event.status === 'queued';
+  const isHeldByThePause = event.status === 'pending' && event.heldByThePause !== undefined;
+  return isQueued || isHeldByThePause;
 }

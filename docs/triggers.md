@@ -96,9 +96,10 @@ nova. O que o operador excluir não volta.
 - **Pausar gatilhos** para todos de uma vez, para ensaio, pódio ou entrevista. Os disparos que
   já esperam ficam e podem ser rodados ou descartados. Desde o BAJAOVRLAY-73 a pausa segura
   também os eventos automáticos (a volta mais rápida): o que chega na pausa, e o que estava na
-  fila quando ela começou, espera na aba **Eventos** com **No ar** e **Descartar**, dizendo por
-  quê. **Retomar** não põe nada disso no ar: cada um espera o operador, ou expira no tempo
-  máximo da regra.
+  fila quando ela começou, espera na aba **Eventos** com **No ar**, **Prévia** e **Descartar**,
+  dizendo por quê. Uma volta mais rápida nova expira a que esperava. **Retomar** não põe nada
+  disso no ar: cada um espera o operador, ou expira no tempo máximo da regra. A pausa continua
+  depois de reiniciar o servidor.
 - Cada disparo grava uma linha no log de eventos como `sistema:gatilhos`, com o nome do gatilho
   e os dados.
 

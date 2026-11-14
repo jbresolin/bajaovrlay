@@ -9,7 +9,8 @@
  *
  * What these tests prove:
  *   - A trigger is created with the defaults and saved, so a restart keeps it; the pause is
- *     not saved: a restart starts unpaused.
+ *     saved too (BAJAOVRLAY-73, gate 2), so a restart while paused comes back paused, but a
+ *     firing that waited before the restart is not offered after it (BAJAOVRLAY-48).
  *   - A trigger naming a macro that does not exist is refused, created or changed.
  *   - updateTrigger changes only what it names; deleteTrigger removes the trigger.
  *   - Deleting a macro two triggers name is refused, naming both; once they are gone it works.
@@ -20,15 +21,13 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { openDatabaseForTests } from '../../core/db/temporaryDatabase.testSupport.js';
-import { createLogger } from '../../core/logger/createLogger.js';
-import { createGraphicsFolderWithBuiltRaceClock } from '../../core/store/builtGraphicsFolder.testSupport.js';
-import { createStateStore } from '../../core/store/createStateStore.js';
 import {
   applyAsTheOperatorOrThrow,
   createTrigger,
   interviewInTheBoxMacroId,
   operatorActor,
+  readFirings,
+  reportObsShowing,
   startTriggersOnTheStore,
   trackReplayMacroId,
 } from './triggersOnTheStore.testSupport.js';
@@ -206,27 +205,54 @@ describe('who may fire a trigger', () => {
 });
 
 describe('across a restart', () => {
-  it('keeps the triggers and forgets the pause', () => {
-    // Arrange: a store with a trigger, paused, on a database file.
-    const { databasePath, store } = startTriggersOnTheStore();
+  it('keeps the triggers and the pause, and forgets the firing that waited', () => {
+    // Arrange: a trigger that asks, one of its firings waiting for the operator, then the
+    // operator presses "Pausar gatilhos" (a podium: nothing may go on air by itself).
+    const { store, passTime, restartTheServer } = startTriggersOnTheStore();
     createTrigger(store, boxEnteredTrigger);
+    reportObsShowing(store, 'Pista');
+    reportObsShowing(store, 'Box');
+    passTime(100);
+    const firingStatusesBeforeTheRestart = readFirings(store).map((firing) => firing.status);
     applyAsTheOperatorOrThrow(store, { type: 'setTriggersPaused', isPaused: true });
 
     // Act: the server restarts on the same file.
-    const storeAfterTheRestart = createStateStore({
-      database: openDatabaseForTests(databasePath),
-      logger: createLogger({ level: 'silent' }),
-      graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
-    });
+    const storeAfterTheRestart = restartTheServer();
 
-    // Assert: the trigger is back; the pause is not.
+    // Assert: one firing waited before; after the restart the trigger and the pause are
+    // back (BAJAOVRLAY-73, gate 2), and the firing that waited is not offered again.
     const slicesAfter = storeAfterTheRestart.readAllSlices();
+    expect(firingStatusesBeforeTheRestart, 'a firing must wait before the restart').toEqual([
+      'pending',
+    ]);
     expect(
-      {
-        triggerNames: slicesAfter.triggers.map((trigger) => trigger.name),
-        isPaused: slicesAfter.triggerActivity.isPaused,
-      },
-      'triggers are saved; "Pausar gatilhos" starts off at every boot',
-    ).toEqual({ triggerNames: ['Entrou no box'], isPaused: false });
+      slicesAfter.triggers.map((trigger) => trigger.name),
+      'the triggers are saved, so the restart must bring "Entrou no box" back',
+    ).toEqual(['Entrou no box']);
+    expect(
+      slicesAfter.triggerActivity.isPaused,
+      'a server restarted while paused must come back paused',
+    ).toBe(true);
+    expect(
+      readFirings(storeAfterTheRestart),
+      'a firing that waited before the restart must not be offered after it',
+    ).toEqual([]);
+  });
+
+  it('comes back unpaused when the pause was off at the restart', () => {
+    // Arrange: a trigger, paused and then resumed by the operator.
+    const { store, restartTheServer } = startTriggersOnTheStore();
+    createTrigger(store, boxEnteredTrigger);
+    applyAsTheOperatorOrThrow(store, { type: 'setTriggersPaused', isPaused: true });
+    applyAsTheOperatorOrThrow(store, { type: 'setTriggersPaused', isPaused: false });
+
+    // Act: the server restarts on the same file.
+    const storeAfterTheRestart = restartTheServer();
+
+    // Assert: the last word was "Retomar", so the triggers run after the restart.
+    expect(
+      storeAfterTheRestart.readAllSlices().triggerActivity.isPaused,
+      'the restart must keep the pause off, as the operator left it',
+    ).toBe(false);
   });
 });

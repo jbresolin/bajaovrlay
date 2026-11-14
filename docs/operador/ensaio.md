@@ -68,11 +68,11 @@ João, na página "Fontes": "Editar" no "Simulador — Enduro", liga "Falha simu
 
 ### 6. Erro, desfazer e gatilho (minutos 25–32) — guia §3 e §7
 
-| Quem     | Faz                                                                        | Deve ver                                                 |
-| -------- | -------------------------------------------------------------------------- | -------------------------------------------------------- |
-| Produtor | O João pede para limpar tudo: "Limpar tudo" e confirma. Depois **Ctrl+Z**. | Tudo sai; com o **Ctrl+Z**, tudo o que estava volta.     |
-| Produtor | Por volta do minuto 30, o gatilho pergunta na aba "Eventos": "Rodar".      | O rodízio de patrocinadores passa uma vez e sai sozinho. |
-| Produtor | "Menu" → "Pausar gatilhos"; depois "Retomar".                              | "Gatilhos e eventos automáticos pausados" no cabeçalho.  |
+| Quem     | Faz                                                                                | Deve ver                                                                                                                                                |
+| -------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Produtor | O João pede para limpar tudo: "Limpar tudo" e confirma. Depois **Ctrl+Z**.         | Tudo sai; com o **Ctrl+Z**, tudo o que estava volta.                                                                                                    |
+| Produtor | Por volta do minuto 30, o gatilho pergunta na aba "Eventos": "Rodar".              | O rodízio de patrocinadores passa uma vez e sai sozinho.                                                                                                |
+| Produtor | "Menu" → "Pausar gatilhos"; espere chegar uma volta mais rápida; depois "Retomar". | "Gatilhos e eventos automáticos pausados" no cabeçalho. A volta espera em "Eventos" com "chegou durante a pausa" e não entra no ar depois de "Retomar". |
 
 ### 7. A página recarrega no meio da prova (minutos 32–35) — guia §8
 

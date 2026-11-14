@@ -8,3 +8,5 @@ export { reduceTriggerCommand, type TriggerCommand } from './reducers/reduceTrig
 export { fireTriggerFromAnHttpCall, type HttpTriggerCallOutcome } from './httpTriggerCalls.js';
 // Starts the service that watches OBS, the inbox and the schedule; stop() when it closes.
 export { startTriggerService, type TriggerService, type TriggerServiceOptions } from './service.js';
+// Saves and reads back "Pausar gatilhos", the one part of the activity a restart keeps.
+export { buildRowOfTheTriggerPause, readTriggerActivityAtBoot } from './triggerPauseRow.js';

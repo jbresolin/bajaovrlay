@@ -4,6 +4,7 @@
 // the single command path.
 import type { Slices } from '@bajaovrlay/shared';
 
+import { buildRowOfTheTriggerPause } from '../../modules/triggers/index.js';
 import type { SliceRow } from '../db/tables.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 
@@ -50,8 +51,8 @@ const sliceNameSavedOneRowPerSource: keyof SlicesChangedByCommands = 'dataSnapsh
 // files on disk, and their list is rebuilt from the recordings folder at boot; where a
 // run stopped short belongs to that run; and OBS's slice is what OBS says now, refilled
 // from OBS at every connection (BAJAOVRLAY-27). The triggers' activity (BAJAOVRLAY-48):
-// the brief starts every boot unpaused, and a firing that waited before a restart is not
-// offered again after it.
+// a firing that waited before a restart is not offered again after it. Its pause alone is
+// saved, in a row of its own (gate 2 of PR #70; buildRowsOfChangedSlicesToSave).
 const sliceNamesKeptInMemoryOnly: ReadonlyArray<keyof SlicesChangedByCommands> = [
   'previewClearedLayerIds',
   'macroRuns',
@@ -81,6 +82,10 @@ export function findNamesOfChangedSlices(
 /**
  * The slices-table rows of the changed slices, leaving out the slices kept in memory only
  * and the snapshots, which are saved one row per source (buildRowChangesOfDataSnapshots).
+ * A change of the triggers' activity writes the pause's own row (triggerPauseRow.ts), so
+ * a restart while paused comes back paused. It is written at every change of the activity,
+ * a firing too: the pause before is not known here, and the row is a few bytes in a
+ * transaction that writes the firing's event-log row anyway.
  */
 export function buildRowsOfChangedSlicesToSave(
   nextSlices: SlicesChangedByCommands,
@@ -92,11 +97,15 @@ export function buildRowsOfChangedSlicesToSave(
     const isSavedOneRowPerSource = sliceName === sliceNameSavedOneRowPerSource;
     return !isKeptInMemoryOnly && !isSavedOneRowPerSource;
   });
-  return changedSliceNamesToSave.map((sliceName) => ({
+  const rowsToSave: SliceRow[] = changedSliceNamesToSave.map((sliceName) => ({
     name: sliceName,
     json: nextSlices[sliceName],
     updatedAt,
   }));
+  if (changedSliceNames.includes('triggerActivity')) {
+    rowsToSave.push(buildRowOfTheTriggerPause(nextSlices.triggerActivity, updatedAt));
+  }
+  return rowsToSave;
 }
 
 /**

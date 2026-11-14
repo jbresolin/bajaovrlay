@@ -11,7 +11,7 @@
  * What these tests prove:
  *   - Paused from the console's menu, the header says "Gatilhos e eventos automáticos
  *     pausados"; the simulator's race gives a fastest lap, which waits in "Eventos" with
- *     "chegou com a automação pausada", and the output's notice layer shows nothing, not
+ *     "chegou durante a pausa", and the output's notice layer shows nothing, not
  *     even for a frame.
  *   - "No ar" on its row puts it on the notice layer, with one entrance.
  *
@@ -93,7 +93,7 @@ test.describe('a fastest lap arrives while "Pausar gatilhos" is on', () => {
     // Assert: it says why it waits, the server holds it pending, and the notice layer of
     // the output showed nothing at any frame.
     await expect(heldFastestLapRow, 'its row must say why it waits').toContainText(
-      'chegou com a automação pausada',
+      'chegou durante a pausa',
     );
     const stateWhilePaused = await readStateOfTheChaosServer(server.port);
     const heldFastestLaps = stateWhilePaused.events.filter((event) => event.kind === 'fastestLap');

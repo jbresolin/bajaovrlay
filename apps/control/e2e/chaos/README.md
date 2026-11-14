@@ -50,7 +50,7 @@ Clock (`faults/fakeNtpForTheServer.ts`):
 
 The pause:
 
-- `pauseHoldsTheFastestLap.chaos.ts` — a fastest lap arrives with "Pausar gatilhos" on (BAJAOVRLAY-73): it waits in "Eventos" saying "chegou com a automação pausada", the notice layer shows nothing at any frame; "No ar" puts it on, one entrance.
+- `pauseHoldsTheFastestLap.chaos.ts` — a fastest lap arrives with "Pausar gatilhos" on (BAJAOVRLAY-73): it waits in "Eventos" saying "chegou durante a pausa", the notice layer shows nothing at any frame; "No ar" puts it on, one entrance.
 
 External services:
 

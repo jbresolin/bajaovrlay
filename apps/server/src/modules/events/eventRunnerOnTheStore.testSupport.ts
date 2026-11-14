@@ -62,6 +62,31 @@ export function openInboxWithTheRunner(): InboxWithTheRunner {
   const itemId = createClockItemForEvents(inbox.stateStore, 'Relógio — volta mais rápida');
   applyOrThrow(inbox.stateStore, { type: 'updateEventRule', kind: 'fastestLap', itemId });
   applyOrThrow(inbox.stateStore, { type: 'updateEventRule', kind: 'newIncident', itemId });
+  const inboxWithTheRunner = startTheRunnerAndTheAutoOut(inbox, itemId);
+  pollTheSimulator(inboxWithTheRunner, { positions: buildPositionsWithCar31Leading() });
+  return inboxWithTheRunner;
+}
+
+/**
+ * A server restart: shuts the inbox, its runner and its auto-out down, opens the store
+ * again on the same database file and clock, and starts the runner and the auto-out again.
+ * The item and the rules come back from the database, as they do in production.
+ */
+export function restartTheServerWithTheRunner(inbox: InboxWithTheRunner): InboxWithTheRunner {
+  inbox.shutDown();
+  const inboxAfterTheRestart = openEventInboxOnTheStore(inbox);
+  return startTheRunnerAndTheAutoOut(inboxAfterTheRestart, inbox.itemId);
+}
+
+/**
+ * Starts the auto-out and the runner on the inbox's clock. Its shutDown stops them before
+ * closing the database, so that no timer of theirs can reach a closed store; it runs once,
+ * whether the test calls it (a restart) or the test's end does.
+ */
+function startTheRunnerAndTheAutoOut(
+  inbox: EventInboxOnTheStore,
+  itemId: string,
+): InboxWithTheRunner {
   const logger = createLogger({ level: 'silent' });
   const autoOut = startAutoOutScheduler({
     stateStore: inbox.stateStore,
@@ -76,13 +101,18 @@ export function openInboxWithTheRunner(): InboxWithTheRunner {
     startTimer: inbox.clock.startTimer,
     cancelTimer: inbox.clock.cancelTimer,
   });
-  onTestFinished(() => {
+  let isShutDown = false;
+  const shutDownEverything = () => {
+    if (isShutDown) {
+      return;
+    }
+    isShutDown = true;
     runner.stop();
     autoOut.stop();
     inbox.shutDown();
-  });
-  pollTheSimulator(inbox, { positions: buildPositionsWithCar31Leading() });
-  return { ...inbox, itemId };
+  };
+  onTestFinished(shutDownEverything);
+  return { ...inbox, itemId, shutDown: shutDownEverything };
 }
 
 /** The program instance on the clock layer, if any. */

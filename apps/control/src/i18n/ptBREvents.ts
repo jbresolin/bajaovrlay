@@ -33,11 +33,11 @@ export const ptBREvents = {
   broughtBackAgo: (relativeTime: string) => `trazido de volta ${relativeTime}`,
   /**
    * Why an event whose rule says auto waits for the operator: "Pausar gatilhos" held it
-   * (BAJAOVRLAY-73), on its waiting row.
+   * (BAJAOVRLAY-73), on its waiting row. Short on purpose: it sits in a narrow badge.
    */
   heldByThePause: {
-    arrivedWhilePaused: 'chegou com a automação pausada',
-    queuedWhenPaused: 'estava na fila quando a automação foi pausada',
+    arrivedWhilePaused: 'chegou durante a pausa',
+    queuedWhenPaused: 'na fila ao pausar',
   } satisfies Record<HeldByThePause, string>,
   /** The console tab's way to the review page, which opens in a new tab. */
   openReviewPageLink: 'Abrir a página de eventos',

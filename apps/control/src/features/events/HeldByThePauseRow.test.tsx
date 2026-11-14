@@ -58,8 +58,8 @@ function readTheOnlyWaitingRow(): HTMLElement {
   return onlyRow;
 }
 
-const arrivedWhilePausedText = 'chegou com a automação pausada';
-const queuedWhenPausedText = 'estava na fila quando a automação foi pausada';
+const arrivedWhilePausedText = 'chegou durante a pausa';
+const queuedWhenPausedText = 'na fila ao pausar';
 
 const heldRowScenarios = [
   // The common case: the fastest lap came during the podium, with the pause on.
@@ -83,7 +83,7 @@ const heldRowScenarios = [
     name: 'says nothing of a pause on a fastest lap queued as usual',
     event: buildQueuedFastestLapOfCar31(1),
     expectedText: 'há 1 min',
-    unexpectedText: 'automação pausada',
+    unexpectedText: 'pausa',
     isTheQueueBadgeExpected: true,
   },
 ];
