@@ -16,9 +16,17 @@
  *   - Fields that read two teams, or one field reading another attribute (the school's
  *     full name in the school field), or one field typed among references, do not agree,
  *     and the group opens with "Campos separados" on, as -66 does for a car.
+ *   - An older card saved field by field with no car photo (seven references and the
+ *     photo left out) does not agree either: grouping it would put the team's photo on
+ *     air, so it opens separate until the operator picks the team once.
+ *   - The plate switch alone decides nothing: text typed with the switch off opens as
+ *     typed by hand, and the switch turned on with nothing else typed opens as typed by
+ *     hand too, never as an untouched card.
  *   - A new team card opens on "Equipe dos Cadastros" straight away, its plate switch off
  *     counting as nothing typed: a record is the only pick that fills it. A new notice,
  *     which can also follow a car in the positions, still asks how to fill it.
+ *   - Turning "Campos separados" off on a new team card goes back to its team picker; on a
+ *     new notice, which a car pick can fill too, it goes back to typing by hand as before.
  *   - A team pick writes, for each field, a reference to that team's attribute of the
  *     field's own meaning; the team shown is read back from the first field.
  *
@@ -30,7 +38,11 @@
 import type { ItemFields } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
-import { chooseCarGroupWayAtOpening, readAgreementOfCarGroupFields } from './carGroupChoice';
+import {
+  chooseCarGroupWayAfterSeparateFields,
+  chooseCarGroupWayAtOpening,
+  readAgreementOfCarGroupFields,
+} from './carGroupChoice';
 import {
   buildTeamCardFieldsReadingTeam,
   buildTeamReference,
@@ -44,6 +56,13 @@ import {
   buildEntityReferenceValuesOfTeamRecord,
   readTeamRecordShownInGroup,
 } from './carGroupTeamRecord';
+
+/** Seven fields reading team N, the car photo left out, as cards saved before it were. */
+function buildTeamCardFieldsReadingTeamWithoutThePhoto(carNumber: number): ItemFields {
+  const fields = buildTeamCardFieldsReadingTeam(carNumber);
+  delete fields.carPhotoUrl;
+  return fields;
+}
 
 describe('a team card whose fields read Cadastros', () => {
   // Each row is one way the team card's eight fields may have been stored.
@@ -79,6 +98,14 @@ describe('a team card whose fields read Cadastros', () => {
         ...buildTeamCardFieldsReadingTeam(42),
         city: { kind: 'literal', value: 'São José dos Pinhais' },
       } satisfies ItemFields,
+      expectedAgreement: { status: 'notOnePick' },
+      expectedWay: 'separate',
+    },
+    {
+      // An older card saved field by field before the photo existed (the first e2e walk
+      // referenced seven fields): grouping it would silently put team 7's photo on air.
+      name: 'opens separate when the car photo was left out of seven references to team 7',
+      fields: buildTeamCardFieldsReadingTeamWithoutThePhoto(7),
       expectedAgreement: { status: 'notOnePick' },
       expectedWay: 'separate',
     },
@@ -143,6 +170,63 @@ describe('how a new item opens', () => {
 
     // Assert: grouped on the team, so the operator sees one pick.
     expect(way, 'the notice must open on team 7').toBe('teamRecord');
+  });
+});
+
+describe('the plate switch when a typed card opens', () => {
+  // Each row is a card typed by hand; the switch alone must never decide how it opens.
+  const typedCardScenarios: Array<{ name: string; fields: ItemFields }> = [
+    {
+      // A card typed for a team not in Cadastros yet, its logo not on the plate.
+      name: 'opens typed by hand when text is typed and the switch is off',
+      fields: {
+        carNumber: { kind: 'literal', value: 99 },
+        teamName: { kind: 'literal', value: 'Carcará Baja' },
+        schoolName: { kind: 'literal', value: 'UFRN' },
+        logoOnLightPlate: { kind: 'literal', value: false },
+      },
+    },
+    {
+      // Only the switch was touched: that is a choice the operator made, so the card
+      // opens with its fields typed (the switch on) rather than as an untouched card.
+      name: 'opens typed by hand when only the switch is on and nothing else is typed',
+      fields: { logoOnLightPlate: { kind: 'literal', value: true } },
+    },
+  ];
+
+  it.each(typedCardScenarios)('$name', ({ fields }) => {
+    // Arrange: the team card's form filled from the typed fields of the row.
+    const formValues = fillTeamCardFormFrom(fields);
+
+    // Act: decide how its group opens.
+    const way = chooseCarGroupWayAtOpening(readTeamCardGroup(), formValues);
+
+    // Assert: typed by hand, never the team picker of an untouched card.
+    expect(way, 'a card with something typed opens as typed by hand').toBe('typed');
+  });
+});
+
+describe('turning "Campos separados" off with nothing typed', () => {
+  it('goes back to the team picker on a new team card', () => {
+    // Arrange: a new team card's form, nothing typed, the switch off.
+    const formValues = fillTeamCardFormForANewItem();
+
+    // Act: decide the way once "Campos separados" is turned off again.
+    const way = chooseCarGroupWayAfterSeparateFields(readTeamCardGroup(), formValues);
+
+    // Assert: the team picker, the only pick that fills the card, as it opened.
+    expect(way, 'the team card goes back to asking for the team').toBe('teamRecord');
+  });
+
+  it('goes back to typing by hand on a new notice, as before BAJAOVRLAY-80', () => {
+    // Arrange: a new notice's form, nothing typed.
+    const formValues = fillNoticeFormForANewItem();
+
+    // Act: decide the way once "Campos separados" is turned off again.
+    const way = chooseCarGroupWayAfterSeparateFields(readNoticeCarGroup(), formValues);
+
+    // Assert: typed by hand, -66's behaviour for a group a car pick can fill.
+    expect(way, 'the notice goes back to typing by hand').toBe('typed');
   });
 });
 

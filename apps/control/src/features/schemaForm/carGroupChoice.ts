@@ -42,8 +42,8 @@ export type CarPickInForm =
  *   (BAJAOVRLAY-80), its car number as the form holds it;
  * - `differentCars`: every field reads the positions, but not of one car;
  * - `notOnePick`: anything else (one field typed among bound ones, another team or another
- *   attribute of the library, another field of an event, another path, a transform, one field frozen and the
- *   others live).
+ *   attribute of the library, another field of an event, another path, a transform, one
+ *   field frozen and the others live).
  */
 export type CarGroupFieldsAgreement =
   | { status: 'oneCarPick'; pick: CarPickInForm }
@@ -191,6 +191,16 @@ function chooseWayFromAgreement(
 }
 
 /**
+ * True when a team record is the only pick that fills the group (the team card, whose city
+ * and logo are in no car of the positions): with nothing typed, it shows its team picker.
+ */
+function isCarGroupFilledByATeamRecordOnly(carGroup: CarGroup): boolean {
+  return (
+    canCarGroupBeFilledFromATeamRecord(carGroup) && !canCarGroupBeFilledFromThePositions(carGroup)
+  );
+}
+
+/**
  * How a group opens in the editor: grouped when its fields agree, and with "Campos
  * separados" on when they do not, so an item saved before the picker is shown as it is and
  * never silently changed. A new item, with nothing typed, asks how to choose; a group only a
@@ -201,11 +211,9 @@ export function chooseCarGroupWayAtOpening(
   carGroup: CarGroup,
   formValues: SchemaFormValues,
 ): CarGroupWay {
-  const isFilledByATeamRecordOnly =
-    canCarGroupBeFilledFromATeamRecord(carGroup) && !canCarGroupBeFilledFromThePositions(carGroup);
   return chooseWayFromAgreement(
     readAgreementOfCarGroupFields(carGroup, formValues),
-    isFilledByATeamRecordOnly ? 'teamRecord' : 'notChosen',
+    isCarGroupFilledByATeamRecordOnly(carGroup) ? 'teamRecord' : 'notChosen',
     'separate',
   );
 }
@@ -214,7 +222,9 @@ export function chooseCarGroupWayAtOpening(
  * How a group shows once "Campos separados" is turned off: grouped when its fields agree,
  * otherwise still separate. Hiding fields that disagree would leave on screen a picker
  * saying nothing while a save stores the mixed bindings; only a pick (or "Digitado à
- * mão") changes the fields, so only that ends "Campos separados" for them.
+ * mão") changes the fields, so only that ends "Campos separados" for them. With nothing
+ * typed it goes back to typing by hand, or to the team picker on a group only a team
+ * record fills (the team card, as it opened).
  */
 export function chooseCarGroupWayAfterSeparateFields(
   carGroup: CarGroup,
@@ -222,7 +232,7 @@ export function chooseCarGroupWayAfterSeparateFields(
 ): CarGroupWay {
   return chooseWayFromAgreement(
     readAgreementOfCarGroupFields(carGroup, formValues),
-    'typed',
+    isCarGroupFilledByATeamRecordOnly(carGroup) ? 'teamRecord' : 'typed',
     'separate',
   );
 }

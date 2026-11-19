@@ -1,8 +1,8 @@
 /**
  * The pt-BR texts of a car group in the item editor (BAJAOVRLAY-66), reached as
  * `ptBR.carGroups`: one picker per car in place of the car's fields ("Carro da frente"),
- * by number, by place, from one team of Cadastros (BAJAOVRLAY-80) or typed by hand, the battle card's "Disputa pela Nª posição" and
- * "Campos separados". Each control's name ends with the group's label, so two cars of one
+ * by number, by place, from one team of Cadastros (BAJAOVRLAY-80) or typed by hand, the
+ * battle card's "Disputa pela Nª posição" and "Campos separados". Each control's name ends with the group's label, so two cars of one
  * graphic never share a name.
  */
 export const ptBRCarGroups = {

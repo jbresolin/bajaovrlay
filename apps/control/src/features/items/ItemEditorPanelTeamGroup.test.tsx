@@ -14,11 +14,17 @@
  *     and picking it saves the eight fields as references to team 42's own attributes.
  *   - Picking team 7 after team 42 moves every field to team 7.
  *   - The picker says what each field reads now (the team's name, its city).
- *   - A card saved field by field on team 42 opens grouped, showing team 42; one whose
- *     logo reads team 7 opens with "Campos separados" on and every field in its own row.
+ *   - A card whose eight fields all read their own attribute of team 42 (one pick, or
+ *     eight picks made field by field) opens grouped, showing team 42. One whose logo
+ *     reads team 7 opens with "Campos separados" on and every field in its own row. An
+ *     older card saved with seven references and no car photo opens separate too, with
+ *     the line saying why: grouping it would put the team's photo on air unasked.
+ *   - Turning "Campos separados" on and off again on a new card goes back to the team
+ *     picker.
  *   - A field can still be detached and typed by hand: "Campos separados", then the
  *     city typed, saves the typed city beside the other seven references.
- *   - Saving with no team chosen is refused with a message tied to the team picker.
+ *   - Saving with no team chosen is refused with a message tied to the team picker, still
+ *     on screen (turned off) when the search finds no team.
  *
  * What these tests deliberately do not cover:
  *   - Which fields agree on one team, rule by rule; carGroupTeamRecord.test.ts.
@@ -200,7 +206,7 @@ describe('the team picker of a new team card', () => {
 });
 
 describe('a team card saved before', () => {
-  it('opens grouped on team 42 when every field reads team 42', () => {
+  it('opens grouped on team 42 when every one of the eight fields reads team 42', () => {
     // Arrange: a card saved field by field, every field on team 42.
     const savedItem = buildSavedTeamCardItem(buildFieldsReadingTeam(42));
 
@@ -237,6 +243,75 @@ describe('a team card saved before', () => {
       screen.getByRole('combobox', { name: 'Como preencher Logo da equipe' }),
       'the logo is edited in its own row',
     ).toBeVisible();
+  });
+});
+
+describe('an older team card with no car photo', () => {
+  it('opens separate with the line saying why, so the photo never goes on air unasked', () => {
+    // Arrange: a card saved field by field before the photo existed: seven fields read
+    // team 42, the car photo left out.
+    const olderFields = buildFieldsReadingTeam(42);
+    delete olderFields.carPhotoUrl;
+    const olderItem = buildSavedTeamCardItem(olderFields);
+
+    // Act: open it in the editor.
+    renderEditorOnSavedTeamCard(olderItem);
+
+    // Assert: split, saying why; one pick of the team would group it (and add the photo).
+    expect(
+      screen.getByRole('switch', { name: 'Campos separados — Equipe' }),
+      'the older card opens with its fields separate',
+    ).toBeChecked();
+    expect(
+      screen.getByText('Os campos de Equipe não vêm de uma escolha só, por isso estão separados.'),
+      'a line says why the fields are separate',
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', { name: 'Como preencher Foto do carro' }),
+      'the photo field stays empty in its own row',
+    ).toBeVisible();
+  });
+});
+
+describe('"Campos separados" on a new team card', () => {
+  it('goes back to the team picker when turned on and off again', () => {
+    // Arrange: a new team card, open on its team picker.
+    renderNewTeamCardItemEditor();
+
+    // Act: turn "Campos separados" on, then off.
+    flipSwitch('Campos separados — Equipe');
+    flipSwitch('Campos separados — Equipe');
+
+    // Assert: the team picker is back, not the fields typed by hand.
+    expect(
+      screen.getByRole('combobox', { name: 'Equipe dos Cadastros — Equipe' }),
+      'the card asks for the team again',
+    ).toBeVisible();
+    expect(screen.queryByLabelText('Cidade'), 'no field is shown to type').toBeNull();
+  });
+});
+
+describe('a refused save while the search finds no team', () => {
+  it('shows the message, tied to the team picker that is still on screen', async () => {
+    // Arrange: a new team card whose search matches no team.
+    const { fakeServer } = renderNewTeamCardItemEditor();
+    typeIntoField('Buscar equipe — Equipe', 'Equipe que não existe');
+
+    // Act: try to save.
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
+    const message = await screen.findByRole('alert');
+
+    // Assert: the message is shown and describes the team picker, which stays drawn.
+    const teamPicker = screen.getByRole('combobox', { name: 'Equipe dos Cadastros — Equipe' });
+    expect(message, 'the message is on screen').toBeVisible();
+    expect(teamPicker, 'the picker is described by the message').toHaveAccessibleDescription(
+      'Escolha a equipe de Equipe nos Cadastros.',
+    );
+    expect(
+      screen.getByText('Nenhum cadastro encontrado.'),
+      'the search found nothing',
+    ).toBeVisible();
+    expect(fakeServer.listCommandsReceived(), 'nothing is saved').toEqual([]);
   });
 });
 

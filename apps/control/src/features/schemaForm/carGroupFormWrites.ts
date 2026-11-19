@@ -3,8 +3,9 @@
  * field of the group alike (its kind "Fonte" and its own binding), typing by hand turns
  * every field back to typed (the values typed stay underneath), and the group's way is
  * kept beside the fields; a team of Cadastros (BAJAOVRLAY-80) writes each field's
- * "Cadastro" reference the same way. Both the group's picker and the battle card's "Disputa pela Nª
- * posição" (which writes two groups) go through here, so they cannot write differently.
+ * "Cadastro" reference the same way. Both the group's picker and the battle card's
+ * "Disputa pela Nª posição" (which writes two groups) go through here, so they cannot
+ * write differently.
  */
 import type { CarGroup } from '@bajaovrlay/shared';
 import type { UseFormReturn } from 'react-hook-form';

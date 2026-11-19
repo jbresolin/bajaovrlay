@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import { CarFieldMeaningSchema } from './carGroup.js';
 
 /**
@@ -26,6 +28,16 @@ export const teamRecordFieldMeanings = [
 
 /** One of teamRecordFieldMeanings: which attribute of the team a graphic's field shows. */
 export type TeamRecordFieldMeaning = (typeof teamRecordFieldMeanings)[number];
+
+/**
+ * Any meaning a car group may give a field: a field of a car in the positions, or an
+ * attribute of a team record. What carGroupsOfManifest.ts parses a checked group's
+ * meanings with, so the control page receives them typed, never cast.
+ */
+export const CarGroupFieldMeaningSchema = z.union([
+  CarFieldMeaningSchema,
+  z.enum(teamRecordFieldMeanings),
+]);
 
 /** True when a meaning names a field of a car in the positions (`laps`, `teamName`…). */
 export function isMeaningAFieldOfACarInThePositions(meaning: string): boolean {

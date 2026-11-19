@@ -18,8 +18,9 @@
  *   - Each mistake is refused with a sentence naming it: a field in two groups, a field
  *     the schema does not have, an unknown meaning, a group mixing a field only the
  *     positions have with one only a team record has, a meaning whose value does not fit
- *     the field (by the positions, and by a team record: a logo in a text field), a group named twice, a group with no field, and a group said to run
- *     behind one that does not exist.
+ *     the field (by the positions, and by a team record: a logo in a text field), a
+ *     group named twice, a group with no field, and a group said to run behind one that
+ *     does not exist.
  *   - Each refusal starts with where in the manifest it is (`v_baja.carGroups.0.label: …`),
  *     so the server's boot warning points the author at the line to fix.
  *

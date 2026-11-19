@@ -10,6 +10,7 @@ import { CarFieldMeaningSchema, type CarGroup, CarGroupSchema } from './carGroup
 import {
   canCarGroupBeFilledFromATeamRecord,
   canCarGroupBeFilledFromThePositions,
+  CarGroupFieldMeaningSchema,
   isMeaningAFieldOfACarInThePositions,
   isMeaningAnAttributeOfATeamRecord,
 } from './carGroupFillingWays.js';
@@ -36,6 +37,9 @@ export const ManifestCarGroupsSchema = z
       context.addIssue({ code: 'custom', path: ['v_baja', 'carGroups'], message: problem });
     }
   });
+
+/** A checked group's fields, each key with its meaning, as the control page receives them. */
+const fieldMeaningsSchema = z.record(z.string(), CarGroupFieldMeaningSchema);
 
 /** One car group as written, after the shape check and before the check across groups. */
 type CarGroupAsWritten = z.infer<typeof CarGroupSchema>;
@@ -212,9 +216,10 @@ export function readCarGroupsOfManifest(manifest: unknown): CarGroupsOfManifestR
   if (carGroupsAsWritten === undefined) {
     return { status: 'none' };
   }
-  const carGroups = carGroupsAsWritten.map((carGroup) => {
-    // Every meaning passed the check above: a field of a car or an attribute of a team.
-    const fields = carGroup.fields as CarGroup['fields'];
+  const carGroups: CarGroup[] = carGroupsAsWritten.map((carGroup) => {
+    // Every meaning passed the check above (a field of a car or an attribute of a team),
+    // so this parse cannot fail here; it gives the meanings their type without a cast.
+    const fields = fieldMeaningsSchema.parse(carGroup.fields);
     return { ...carGroup, fields };
   });
   return { status: 'groups', carGroups };

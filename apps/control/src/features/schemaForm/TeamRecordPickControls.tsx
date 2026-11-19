@@ -36,7 +36,8 @@ const emptyEntityLibrary: EntityLibrary = {
  * The team picker of a car group on "Equipe dos Cadastros" (BAJAOVRLAY-80): a search box
  * (a team by its car number, its team or its school name, as the "Cadastro" kind finds
  * it), the team found, and what each field of the group reads now from that team. The team
- * chosen stays listed whatever the search, so its name stays in the box.
+ * chosen stays listed whatever the search, so its name stays in the box; a search that
+ * finds no team turns the dropdown off and says so, but never removes it.
  */
 export function TeamRecordPickControls(props: {
   carGroup: CarGroup;
@@ -64,6 +65,7 @@ export function TeamRecordPickControls(props: {
     teamChosen === undefined || teamsFound.includes(teamChosen)
       ? teamsFound
       : [teamChosen, ...teamsFound];
+  const isNoTeamListed = teamsListed.length === 0;
   const referenceValues = buildEntityReferenceValuesOfTeamRecord(
     carGroup,
     props.carNumberTextChosen,
@@ -78,31 +80,33 @@ export function TeamRecordPickControls(props: {
         disabled={isDisabled}
         onChange={(event) => setSearchText(event.target.value)}
       />
-      {teamsListed.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{ptBR.entityLibrary.editor.noRecordFound}</p>
-      ) : (
-        <Select
-          value={props.carNumberTextChosen}
-          onValueChange={props.onTeamChosen}
-          disabled={isDisabled}
+      {/* The dropdown stays drawn (turned off) when a search finds no team: a refused save's
+          message points at it (aria-describedby), and a control that vanished with the
+          search would leave the message describing nothing. */}
+      <Select
+        value={props.carNumberTextChosen}
+        onValueChange={props.onTeamChosen}
+        disabled={isDisabled || isNoTeamListed}
+      >
+        <SelectTrigger
+          id={`${controlId}-team`}
+          size="sm"
+          className="w-full"
+          aria-label={texts.teamRecordLabel(groupLabel)}
+          {...props.describeControlWithTheMessage('team')}
         >
-          <SelectTrigger
-            id={`${controlId}-team`}
-            size="sm"
-            className="w-full"
-            aria-label={texts.teamRecordLabel(groupLabel)}
-            {...props.describeControlWithTheMessage('team')}
-          >
-            <SelectValue placeholder={ptBR.entityLibrary.form.noChoice} />
-          </SelectTrigger>
-          <SelectContent>
-            {teamsListed.map((team) => (
-              <SelectItem key={readKeyOfRecord('team', team)} value={readKeyOfRecord('team', team)}>
-                {describeRecordOfType('team', team)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <SelectValue placeholder={ptBR.entityLibrary.form.noChoice} />
+        </SelectTrigger>
+        <SelectContent>
+          {teamsListed.map((team) => (
+            <SelectItem key={readKeyOfRecord('team', team)} value={readKeyOfRecord('team', team)}>
+              {describeRecordOfType('team', team)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {isNoTeamListed && (
+        <p className="text-sm text-muted-foreground">{ptBR.entityLibrary.editor.noRecordFound}</p>
       )}
 
       {props.carNumberTextChosen !== '' && (

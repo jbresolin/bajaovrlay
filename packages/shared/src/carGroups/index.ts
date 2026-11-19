@@ -14,6 +14,7 @@ export {
 export {
   canCarGroupBeFilledFromATeamRecord,
   canCarGroupBeFilledFromThePositions,
+  CarGroupFieldMeaningSchema,
   isMeaningAFieldOfACarInThePositions,
   isMeaningAnAttributeOfATeamRecord,
   type TeamRecordFieldMeaning,
