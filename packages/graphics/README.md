@@ -71,6 +71,16 @@ On the manifest itself:
   `rightBehindGroup` (the battle card's car behind) adds "Disputa pela Nª posição". A field
   in two groups, one the schema lacks, an unknown meaning or one that does not fit the field
   refuses all the groups: warned about at boot, and the fields are shown one by one.
+  Since BAJAOVRLAY-80 a meaning may also be an attribute of a team record in Cadastros
+  (`carNumber`, `teamName`, `schoolName`, `schoolFullName`, `city`, `state`, `logoUrl`,
+  `carPhotoUrl`, `logoOnLightPlate`). A group whose every meaning is one is offered "Equipe
+  dos Cadastros": one team, found by number or name, fills each field with its own
+  reference to that team. A group mixing a field only the positions have with one only a
+  team has (`laps` beside `city`) is refused. Grouped: the battle card (two cars), the
+  notice (its car, by the positions, the event or Cadastros) and the team card ("Equipe",
+  all eight fields). Not grouped: the bracket match card and bug (their items read the
+  bracket's match; the bug's short name is no team attribute), and the podium, the
+  intermission board, the lower strip and the bracket, whose teams are lists.
 
 On each property of `schema.properties` (`type` picks the control: `string` text,
 `integer`/`number` number, `boolean` switch):

@@ -5,7 +5,14 @@ import {
   readSchemaPropertyOfField,
 } from '../bindings/bindingFitsGraphicField.js';
 import { findBindablePath } from '../dataShapes/bindablePaths.js';
+import { listAttributesThatFitDataSchemaField } from '../entities/entityFitsGraphicField.js';
 import { CarFieldMeaningSchema, type CarGroup, CarGroupSchema } from './carGroup.js';
+import {
+  canCarGroupBeFilledFromATeamRecord,
+  canCarGroupBeFilledFromThePositions,
+  isMeaningAFieldOfACarInThePositions,
+  isMeaningAnAttributeOfATeamRecord,
+} from './carGroupFillingWays.js';
 import { buildPathOfCarFieldChosenByNumber } from './carGroupPaths.js';
 
 /**
@@ -13,8 +20,9 @@ import { buildPathOfCarFieldChosenByNumber } from './carGroupPaths.js';
  * `v_baja.carGroups`. Loose, so the rest of the manifest passes through untouched. The
  * check across them (superRefine) refuses, each with a sentence naming it: a group
  * declared twice, a group with no field, a field the data schema does not have, a field
- * in two groups, an unknown meaning, a meaning whose value does not fit the field, and a
- * group said to run right behind a group that does not exist.
+ * in two groups, an unknown meaning, a group no one pick can fill (BAJAOVRLAY-80: a
+ * position beside a city), a meaning whose value does not fit the field, and a group said
+ * to run right behind a group that does not exist.
  * The sentences are for the graphic's author (the server's boot log), so they are English.
  */
 export const ManifestCarGroupsSchema = z
@@ -49,6 +57,7 @@ function findProblemsInCarGroups(carGroups: CarGroupAsWritten[], dataSchema: unk
     if (fieldEntries.length === 0) {
       problems.push(`the car group "${carGroup.id}" has no field`);
     }
+    let isEveryFieldKnown = true;
     for (const [fieldKey, meaningAsWritten] of fieldEntries) {
       const groupIdSeenBefore = groupIdOfEachField.get(fieldKey);
       if (groupIdSeenBefore !== undefined) {
@@ -66,7 +75,13 @@ function findProblemsInCarGroups(carGroups: CarGroupAsWritten[], dataSchema: unk
       );
       if (problemOfTheField !== undefined) {
         problems.push(problemOfTheField);
+        isEveryFieldKnown = false;
       }
+    }
+    // The ways are judged only once every field is known, or one misspelt meaning would
+    // also be reported as a mix of the two ways.
+    if (isEveryFieldKnown && fieldEntries.length > 0) {
+      problems.push(...findProblemsOfTheWaysOfOneGroup(carGroup, dataSchema));
     }
   }
 
@@ -82,7 +97,10 @@ function findProblemsInCarGroups(carGroups: CarGroupAsWritten[], dataSchema: unk
   return problems;
 }
 
-/** Whether one field of a group exists in the data schema and can show its meaning. */
+/**
+ * Whether one field of a group exists in the data schema and has a meaning some way can
+ * fill: a field of a car in the positions, or an attribute of a team record.
+ */
 function findProblemOfOneField(
   groupId: string,
   fieldKey: string,
@@ -92,17 +110,71 @@ function findProblemOfOneField(
   if (readSchemaPropertyOfField(dataSchema, fieldKey) === undefined) {
     return `the car group "${groupId}" names the field "${fieldKey}", which the data schema does not have`;
   }
-  const meaningReading = CarFieldMeaningSchema.safeParse(meaningAsWritten);
+  const isMeaningKnown =
+    isMeaningAFieldOfACarInThePositions(meaningAsWritten) ||
+    isMeaningAnAttributeOfATeamRecord(meaningAsWritten);
+  if (!isMeaningKnown) {
+    return `the car group "${groupId}" gives the field "${fieldKey}" the meaning "${meaningAsWritten}", which is not a field of a car nor an attribute of a team`;
+  }
+  return undefined;
+}
+
+/** True when a car's field of this meaning, read from the positions, fits the field. */
+function doesPositionsMeaningFitTheField(
+  meaning: string,
+  fieldKey: string,
+  dataSchema: unknown,
+): boolean {
+  const meaningReading = CarFieldMeaningSchema.safeParse(meaning);
   if (!meaningReading.success) {
-    return `the car group "${groupId}" gives the field "${fieldKey}" the meaning "${meaningAsWritten}", which is not a field of a car`;
+    return false;
   }
   const pathOfTheMeaning = buildPathOfCarFieldChosenByNumber(meaningReading.data);
   const valueTypeOfTheMeaning = findBindablePath('positions', pathOfTheMeaning)?.valueType;
   const valueTypesThatFit = listValueTypesThatFitDataSchemaField(dataSchema, fieldKey);
-  if (valueTypeOfTheMeaning === undefined || !valueTypesThatFit.includes(valueTypeOfTheMeaning)) {
-    return `the car group "${groupId}" gives the field "${fieldKey}" the meaning "${meaningAsWritten}", whose value does not fit it`;
+  return valueTypeOfTheMeaning !== undefined && valueTypesThatFit.includes(valueTypeOfTheMeaning);
+}
+
+/** True when a team record's attribute of this meaning fits the field (a logo an image). */
+function doesTeamAttributeFitTheField(
+  meaning: string,
+  fieldKey: string,
+  dataSchema: unknown,
+): boolean {
+  const attributesThatFit = listAttributesThatFitDataSchemaField('team', dataSchema, fieldKey);
+  return attributesThatFit.some((attribute) => attribute.attributeKey === meaning);
+}
+
+/**
+ * The mistakes of one group whose fields all exist and all have a known meaning: no way
+ * fills every field (a position beside a city), or a field its meaning does not fit by a
+ * way the group offers (a team name in a whole-number field). The fit is checked for
+ * every way the meanings allow, as the editor offers each of them.
+ */
+function findProblemsOfTheWaysOfOneGroup(
+  carGroup: CarGroupAsWritten,
+  dataSchema: unknown,
+): string[] {
+  const isFilledFromThePositions = canCarGroupBeFilledFromThePositions(carGroup);
+  const isFilledFromATeamRecord = canCarGroupBeFilledFromATeamRecord(carGroup);
+  if (!isFilledFromThePositions && !isFilledFromATeamRecord) {
+    return [
+      `the car group "${carGroup.id}" mixes fields only the positions have with attributes only a team record has, so no one pick fills it`,
+    ];
   }
-  return undefined;
+  const problems: string[] = [];
+  for (const [fieldKey, meaning] of Object.entries(carGroup.fields)) {
+    const doesNotFitThePositions =
+      isFilledFromThePositions && !doesPositionsMeaningFitTheField(meaning, fieldKey, dataSchema);
+    const doesNotFitTheTeamRecord =
+      isFilledFromATeamRecord && !doesTeamAttributeFitTheField(meaning, fieldKey, dataSchema);
+    if (doesNotFitThePositions || doesNotFitTheTeamRecord) {
+      problems.push(
+        `the car group "${carGroup.id}" gives the field "${fieldKey}" the meaning "${meaning}", whose value does not fit it`,
+      );
+    }
+  }
+  return problems;
 }
 
 /**
@@ -141,11 +213,8 @@ export function readCarGroupsOfManifest(manifest: unknown): CarGroupsOfManifestR
     return { status: 'none' };
   }
   const carGroups = carGroupsAsWritten.map((carGroup) => {
-    const fields: CarGroup['fields'] = {};
-    for (const [fieldKey, meaningAsWritten] of Object.entries(carGroup.fields)) {
-      // Every meaning passed the check above, so this parse cannot fail here.
-      fields[fieldKey] = CarFieldMeaningSchema.parse(meaningAsWritten);
-    }
+    // Every meaning passed the check above: a field of a car or an attribute of a team.
+    const fields = carGroup.fields as CarGroup['fields'];
     return { ...carGroup, fields };
   });
   return { status: 'groups', carGroups };

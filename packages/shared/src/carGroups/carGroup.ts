@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import type { TeamRecordFieldMeaning } from './carGroupFillingWays.js';
+
 /**
  * What a field of a car group is: one field of a car in the positions shape, by the
  * shape's own name (`position`, `carNumber`, `teamName`…). The picker reads the field of
@@ -35,7 +37,8 @@ export type CarFieldMeaning = z.infer<typeof CarFieldMeaningSchema>;
  * graphic that describe one car, filled by choosing that car once in the item editor.
  * - `id`: how the manifest names the group (`ahead`);
  * - `label`: what the operator reads ("Carro da frente"), in pt-BR like a field's title;
- * - `fields`: each field's key in the data schema, with what it shows of the car;
+ * - `fields`: each field's key in the data schema, with what it shows of the car (a field
+ *   of a car in the positions, or an attribute of its team record, BAJAOVRLAY-80);
  * - `rightBehindGroup`: for the second car of a battle, the group whose car runs right
  *   ahead of this one, so "Disputa pela 2ª posição" can set both at once.
  * Strict, so a misspelt key is refused rather than dropped. Whether the fields exist and
@@ -48,10 +51,17 @@ export const CarGroupSchema = z.strictObject({
   rightBehindGroup: z.string().min(1).optional(),
 });
 
+/**
+ * What a field of a car group shows: a field of a car in the positions, or an attribute
+ * of a team record in Cadastros (BAJAOVRLAY-80); `carNumber`, `teamName` and `schoolName`
+ * are both. carGroupFillingWays.ts says which ways can fill a group from its meanings.
+ */
+export type CarGroupFieldMeaning = CarFieldMeaning | TeamRecordFieldMeaning;
+
 /** One car group as the control page uses it, every meaning known. */
 export type CarGroup = {
   id: string;
   label: string;
-  fields: Record<string, CarFieldMeaning>;
+  fields: Record<string, CarGroupFieldMeaning>;
   rightBehindGroup?: string;
 };

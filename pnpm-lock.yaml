@@ -266,6 +266,9 @@ importers:
       '@bajaovrlay/race-clock':
         specifier: workspace:*
         version: link:../../packages/graphics/race-clock
+      '@bajaovrlay/team-card':
+        specifier: workspace:*
+        version: link:../../packages/graphics/team-card
       '@bajaovrlay/theme':
         specifier: workspace:*
         version: link:../../packages/theme

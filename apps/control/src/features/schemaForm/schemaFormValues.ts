@@ -130,10 +130,12 @@ export type SchemaFormValues = {
  * - `typed`: typed by hand, the group's fields shown together, typed only;
  * - `fromTheEvent`: on an event template only (BAJAOVRLAY-67), each field read from the
  *   event's payload field of its own name ("Do evento");
+ * - `teamRecord`: one team of Cadastros ("Equipe dos Cadastros", BAJAOVRLAY-80), each
+ *   field reading its own attribute of that team as an ordinary "Cadastro" reference;
  * - `separate`: "Campos separados", each field edited on its own as before.
  */
 export type CarGroupWay =
-  'notChosen' | 'carNumber' | 'place' | 'typed' | 'fromTheEvent' | 'separate';
+  'notChosen' | 'carNumber' | 'place' | 'typed' | 'fromTheEvent' | 'teamRecord' | 'separate';
 
 /**
  * Which fields the operator changed since the form was last filled: the part of

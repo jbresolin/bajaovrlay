@@ -1,25 +1,20 @@
-import type { CarGroup, EntityLibrary } from '@bajaovrlay/shared';
+import {
+  canCarGroupBeFilledFromATeamRecord,
+  canCarGroupBeFilledFromThePositions,
+  type CarGroup,
+  type EntityLibrary,
+} from '@bajaovrlay/shared';
 import { type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ptBR } from '@/i18n/ptBR';
 
-import { emptySchemaFormBindingValue, readBindingFromSchemaFormValue } from './bindingFormValue';
-import { BindingValueNowLine } from './BindingValueNowLine';
 import { CarBattleSelect } from './CarBattleSelect';
 import {
   canCarGroupBeReadFromTheEvent,
   type CarPickInForm,
   chooseCarGroupWayAfterSeparateFields,
-  readAgreementOfCarGroupFields,
   readCarPickShownInGroup,
 } from './carGroupChoice';
 import {
@@ -27,17 +22,22 @@ import {
   writeCarGroupTypedByHand,
   writeCarGroupWay,
   writeCarPickIntoForm,
+  writeTeamRecordIntoForm,
 } from './carGroupFormWrites';
+import { SeparateFieldsNote } from './CarGroupSeparateFieldsNote';
+import { readTeamRecordShownInGroup } from './carGroupTeamRecord';
+import { CarPickValuesNowList, EventValuesNowList } from './CarGroupValuesNowLists';
+import { CarGroupWaySelect } from './CarGroupWaySelect';
 import {
   type AttributesOfTheGroupMessage,
   CarPickControls,
   type ControlOfTheGroupMessage,
 } from './CarPickControls';
-import { describeEventPathWithItsExample } from './eventFieldFormValue';
 import type { SchemaFormBindingOptions } from './schemaFormBindingOptions';
 import type { SchemaFormFieldDescription } from './schemaFormDescription';
 import { SchemaFormFieldRow } from './SchemaFormFieldRow';
 import type { SchemaFormValues } from './schemaFormValues';
+import { TeamRecordPickControls } from './TeamRecordPickControls';
 
 const texts = ptBR.carGroups;
 const wholeNumberFromOnePattern = /^[1-9]\d*$/;
@@ -55,7 +55,10 @@ export type FieldOfCarGroup = { field: SchemaFormFieldDescription; controlId: st
  * this car and the one right behind it at once. On an event template (BAJAOVRLAY-67), a
  * fourth way, "Do evento", reads the car, team and school from the event, each field
  * listed with the sample event's value; offered only where every field has a payload
- * field of its meaning that fits it.
+ * field of its meaning that fits it. "Equipe dos Cadastros" (BAJAOVRLAY-80) fills every
+ * field from one team of Cadastros, found by number or name; offered where every meaning
+ * is an attribute of a team, and the only pick of a group the positions cannot fill (the
+ * team card, which opens on it).
  * The picks are written into each field's kind and binding (carGroupFormWrites.ts), so the
  * form's check and the commands read the fields exactly as they always did.
  */
@@ -98,6 +101,8 @@ export function CarGroupFields(props: {
   const pickShown: CarPickInForm | undefined = isPicked
     ? readCarPickShownInGroup(carGroup, formValuesNow, way === 'carNumber' ? 'number' : 'place')
     : undefined;
+  const teamShown =
+    way === 'teamRecord' ? readTeamRecordShownInGroup(carGroup, formValuesNow) : undefined;
 
   /** The source a new pick starts on: the one shown, or the only source there is. */
   function chooseSourceForANewPick(sourceIdShown: string): string {
@@ -113,6 +118,14 @@ export function CarGroupFields(props: {
     }
     if (chosenWay === 'fromTheEvent') {
       writeCarGroupFromTheEvent(form, carGroup);
+      return;
+    }
+    if (chosenWay === 'teamRecord') {
+      writeTeamRecordIntoForm(
+        form,
+        carGroup,
+        readTeamRecordShownInGroup(carGroup, form.getValues()),
+      );
       return;
     }
     const pickedBy = chosenWay === 'carNumber' ? 'number' : 'place';
@@ -149,6 +162,11 @@ export function CarGroupFields(props: {
     }
     if (way === 'fromTheEvent') {
       return { text: firstMessage, controlAbout: 'way' };
+    }
+    if (teamShown !== undefined) {
+      return teamShown === ''
+        ? { text: texts.teamMissing(groupLabel), controlAbout: 'team' }
+        : { text: firstMessage, controlAbout: 'team' };
     }
     if (pickShown === undefined) {
       return { text: texts.wayMissing(groupLabel), controlAbout: 'way' };
@@ -192,31 +210,33 @@ export function CarGroupFields(props: {
         />
       )}
 
-      {/* Shown in "Campos separados" too: a way chosen there fills every field alike,
-          which is how fields that disagree are grouped again. */}
-      <Select
-        value={way === 'notChosen' || way === 'separate' ? '' : way}
-        onValueChange={chooseWay}
-        disabled={isDisabled}
-      >
-        <SelectTrigger
-          id={controlId}
-          size="sm"
-          className="w-full"
-          aria-label={texts.wayLabel(groupLabel)}
-          {...describeControlWithTheMessage('way')}
-        >
-          <SelectValue placeholder={ptBR.schemaForm.nothingChosenPlaceholder} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="carNumber">{texts.wayOptions.carNumber}</SelectItem>
-          <SelectItem value="place">{texts.wayOptions.place}</SelectItem>
-          <SelectItem value="typed">{texts.wayOptions.typed}</SelectItem>
-          {isFromTheEventOffered || way === 'fromTheEvent' ? (
-            <SelectItem value="fromTheEvent">{texts.wayOptions.fromTheEvent}</SelectItem>
-          ) : null}
-        </SelectContent>
-      </Select>
+      <CarGroupWaySelect
+        way={way}
+        groupLabel={groupLabel}
+        controlId={controlId}
+        waysOffered={{
+          isFromThePositionsOffered: canCarGroupBeFilledFromThePositions(carGroup),
+          isFromATeamRecordOffered: canCarGroupBeFilledFromATeamRecord(carGroup),
+          isFromTheEventOffered,
+        }}
+        isDisabled={isDisabled}
+        attributesOfTheMessage={describeControlWithTheMessage('way')}
+        onWayChosen={chooseWay}
+      />
+
+      {teamShown !== undefined && (
+        <TeamRecordPickControls
+          carGroup={carGroup}
+          fieldsOfTheGroup={fieldsOfTheGroup}
+          carNumberTextChosen={teamShown}
+          controlId={controlId}
+          dataSchema={props.dataSchema}
+          entityLibrary={props.entityLibrary}
+          isDisabled={isDisabled}
+          describeControlWithTheMessage={describeControlWithTheMessage}
+          onTeamChosen={(carNumberText) => writeTeamRecordIntoForm(form, carGroup, carNumberText)}
+        />
+      )}
 
       {pickShown !== undefined && (
         <CarPickControls
@@ -231,45 +251,20 @@ export function CarGroupFields(props: {
       )}
 
       {pickShown !== undefined && (
-        <ul className="flex flex-col gap-1" aria-label={texts.valuesNowHeading}>
-          {fieldsOfTheGroup.map(({ field }) => {
-            const bindingRead = readBindingFromSchemaFormValue(
-              field,
-              formValuesNow.bindings[field.key] ?? emptySchemaFormBindingValue,
-              props.dataSchema,
-              false,
-            );
-            return (
-              <li key={field.key} className="flex flex-wrap items-baseline gap-x-2">
-                <span className="text-xs">{field.label}</span>
-                {bindingRead.status === 'binding' && (
-                  <BindingValueNowLine
-                    binding={bindingRead.binding}
-                    bindingOptions={bindingOptions}
-                  />
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <CarPickValuesNowList
+          fieldsOfTheGroup={fieldsOfTheGroup}
+          formValues={formValuesNow}
+          dataSchema={props.dataSchema}
+          bindingOptions={bindingOptions}
+        />
       )}
 
       {way === 'fromTheEvent' && (
-        <ul className="flex flex-col gap-1" aria-label={texts.valuesNowHeading}>
-          {fieldsOfTheGroup.map(({ field }) => (
-            <li key={field.key} className="flex flex-wrap items-baseline gap-x-2">
-              <span className="text-xs">{field.label}</span>
-              {sampleEventPayload === undefined ? null : (
-                <span className="text-xs text-muted-foreground">
-                  {describeEventPathWithItsExample(
-                    carGroup.fields[field.key] ?? '',
-                    sampleEventPayload,
-                  )}
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
+        <EventValuesNowList
+          carGroup={carGroup}
+          fieldsOfTheGroup={fieldsOfTheGroup}
+          sampleEventPayload={sampleEventPayload}
+        />
       )}
 
       {way === 'separate' && <SeparateFieldsNote carGroup={carGroup} formValues={formValuesNow} />}
@@ -321,27 +316,3 @@ export function CarGroupFields(props: {
 
 /** A group's message and the control it is about, which it describes. */
 type GroupMessage = { text: string; controlAbout: ControlOfTheGroupMessage };
-
-/**
- * The lines that say why a group's fields are separate, when they do not follow one car,
- * and how to group them again: choosing a way, which fills every field alike.
- */
-function SeparateFieldsNote(props: { carGroup: CarGroup; formValues: SchemaFormValues }) {
-  const agreement = readAgreementOfCarGroupFields(props.carGroup, props.formValues);
-  const groupLabel = props.carGroup.label;
-  let whyNote: string | undefined;
-  if (agreement.status === 'differentCars') {
-    whyNote = texts.differentCarsNote(groupLabel);
-  } else if (agreement.status === 'notOnePick') {
-    whyNote = texts.notOnePickNote(groupLabel);
-  }
-  if (whyNote === undefined) {
-    return null;
-  }
-  return (
-    <>
-      <p className="text-sm text-muted-foreground">{whyNote}</p>
-      <p className="text-sm text-muted-foreground">{texts.chooseWayToGroupNote(groupLabel)}</p>
-    </>
-  );
-}

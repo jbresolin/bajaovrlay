@@ -26,7 +26,10 @@ reads the manifest's JSON Schema into field descriptions (`schemaFormDescription
   pick's source, number or place and "Ao vivo", `CarBattleSelect.tsx` the
   battle card's "Disputa pela Nª posição"; `carGroupChoice.ts` reads whether a group's fields agree on one
   car and builds a pick's per-field bindings, `carGroupFormWrites.ts` writes them, so every builder above
-  reads the fields as before.
+  reads the fields as before. `CarGroupWaySelect.tsx` is "Como escolher …", `CarGroupValuesNowLists.tsx`
+  and `CarGroupSeparateFieldsNote.tsx` the lines under it. One team of Cadastros (BAJAOVRLAY-80):
+  `TeamRecordPickControls.tsx` finds and picks the team, `carGroupTeamRecord.ts` reads and builds each
+  field's "Cadastro" reference to it.
 - `bindingChoices.ts` with `bindingPathChoicesKeptPerSchema.ts`: the paths a field may read, worked
   out once per schema object and field.
 

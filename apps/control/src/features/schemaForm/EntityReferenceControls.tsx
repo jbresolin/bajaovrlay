@@ -202,9 +202,10 @@ export function EntityReferenceControls(props: EntityReferenceControlsProps) {
 /**
  * "Valor agora": what the field would get if the item were taken now, read with the
  * shared resolution the server's take runs; an image as a thumbnail drawn from the media
- * store. Nothing until the kind, the record and the attribute are all chosen.
+ * store. Nothing until the kind, the record and the attribute are all chosen. The team
+ * picker of a car group (TeamRecordPickControls.tsx) lists one per field.
  */
-function EntityValueNowLine(props: {
+export function EntityValueNowLine(props: {
   field: SchemaFormFieldDescription;
   dataSchema: unknown;
   entityLibrary: EntityLibrary;

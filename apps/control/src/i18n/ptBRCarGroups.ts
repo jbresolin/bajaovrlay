@@ -1,7 +1,7 @@
 /**
  * The pt-BR texts of a car group in the item editor (BAJAOVRLAY-66), reached as
  * `ptBR.carGroups`: one picker per car in place of the car's fields ("Carro da frente"),
- * by number, by place or typed by hand, the battle card's "Disputa pela Nª posição" and
+ * by number, by place, from one team of Cadastros (BAJAOVRLAY-80) or typed by hand, the battle card's "Disputa pela Nª posição" and
  * "Campos separados". Each control's name ends with the group's label, so two cars of one
  * graphic never share a name.
  */
@@ -13,7 +13,12 @@ export const ptBRCarGroups = {
     typed: 'Digitado à mão',
     // On an event template only (BAJAOVRLAY-67): the car of the event shown.
     fromTheEvent: 'Do evento',
+    // One team of Cadastros fills every field (BAJAOVRLAY-80): the team card, the notice.
+    teamRecord: 'Equipe dos Cadastros',
   },
+  // The team picker of "Equipe dos Cadastros": a search box, then the team found.
+  teamSearchLabel: (groupLabel: string) => `Buscar equipe — ${groupLabel}`,
+  teamRecordLabel: (groupLabel: string) => `Equipe dos Cadastros — ${groupLabel}`,
   sourceLabel: (groupLabel: string) => `Fonte de ${groupLabel}`,
   carNumberLabel: (groupLabel: string) => `Número do carro — ${groupLabel}`,
   placeLabel: (groupLabel: string) => `Posição — ${groupLabel}`,
@@ -39,6 +44,7 @@ export const ptBRCarGroups = {
   carNumberMissing: (groupLabel: string) =>
     `Digite o número do carro de ${groupLabel} (um número inteiro, a partir de 1).`,
   placeMissing: (groupLabel: string) => `Escolha a posição de ${groupLabel}.`,
+  teamMissing: (groupLabel: string) => `Escolha a equipe de ${groupLabel} nos Cadastros.`,
   // Under a car picked: what each of its fields reads now.
   valuesNowHeading: 'Valores agora',
 };

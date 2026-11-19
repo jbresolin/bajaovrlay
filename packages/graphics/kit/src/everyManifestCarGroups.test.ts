@@ -12,9 +12,10 @@
  *   - Every manifest under packages/graphics passes the shared check of its car groups.
  *   - The battle card groups its fields (the car ahead and the car right behind it, the
  *     gap with the car behind), and the notice its car, team and school, whose templates
- *     read them "Do evento" (BAJAOVRLAY-67); each group fills the fields it should. The
- *     team card, whose usual items read Cadastros, keeps its fields one by one until a
- *     "Do cadastro" way exists.
+ *     read them "Do evento" (BAJAOVRLAY-67); the team card its whole team, every field an
+ *     attribute of the team record in Cadastros (BAJAOVRLAY-80). Each group fills the
+ *     fields it should. The graphics left without a group, and why, are listed in the
+ *     graphics README under `v_baja.carGroups`.
  *
  * What these tests deliberately do not cover:
  *   - The check's refusals one by one; carGroupsOfManifest.test.ts in packages/shared.
@@ -64,7 +65,7 @@ describe('the car groups of every manifest', () => {
     expect(refusedGraphics, 'no manifest may declare a car group the check refuses').toEqual([]);
   });
 
-  it('groups the fields of one car in the battle card and the notice only', () => {
+  it('groups the fields of one car in the battle card, the notice and the team card only', () => {
     // Arrange: every manifest on disk.
     const manifests = listEveryGraphicManifest();
 
@@ -77,7 +78,7 @@ describe('the car groups of every manifest', () => {
       }
     }
 
-    // Assert: the battle card and the notice alone, each group filling exactly these fields.
+    // Assert: the battle card, the notice and the team card alone, each group filling exactly these fields.
     expect(groupsOfEachGraphic, 'the per-car fields must be grouped as listed').toEqual({
       'battle-card': [
         {
@@ -110,6 +111,22 @@ describe('the car groups of every manifest', () => {
           id: 'car',
           label: 'Carro',
           fields: { carNumber: 'carNumber', teamName: 'teamName', schoolName: 'schoolName' },
+        },
+      ],
+      'team-card': [
+        {
+          id: 'team',
+          label: 'Equipe',
+          fields: {
+            carNumber: 'carNumber',
+            teamName: 'teamName',
+            schoolName: 'schoolName',
+            city: 'city',
+            state: 'state',
+            carPhotoUrl: 'carPhotoUrl',
+            logoUrl: 'logoUrl',
+            logoOnLightPlate: 'logoOnLightPlate',
+          },
         },
       ],
     });
