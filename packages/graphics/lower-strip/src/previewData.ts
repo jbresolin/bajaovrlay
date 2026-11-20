@@ -3,8 +3,9 @@
  * enduro's 34 cars (realEnduroField.ts) with the race clock an hour in under the green
  * flag, counting from the moment the page opened, and the clock block unless the address
  * says `?clock=off`. Three more switches show the looks of BAJAOVRLAY-81: `?flag=off` (no
- * flag), `?laps=on` (each car's laps) and `?gap=laps|lapsAndTime|time` (the gap). Whether the data is valid is left to the graphic's own load(), so the
- * preview shows exactly the answer a renderer would get. The stage behind it is the kit's
+ * flag), `?laps=on` (each car's laps) and `?gap=laps|lapsAndTime|time` (the gap). Whether
+ * the data is valid is left to the graphic's own load(), so the preview shows exactly the
+ * answer a renderer would get. The stage behind it is the kit's
  * `?stage=grey|black`.
  */
 import { type LowerStripData, type StripGapDisplay, stripGapDisplays } from './lowerStripModel.js';

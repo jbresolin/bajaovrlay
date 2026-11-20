@@ -36,16 +36,22 @@ export type StripGapDisplay = (typeof stripGapDisplays)[number];
 
 // One car of the running order: what the strip draws, and every other field of the
 // positions entry let through (the source sends status, lap times… which the strip
-// ignores), so a whole list bound from the positions fits as it comes. The laps and the
-// two gaps are drawn only when the item asks for them, so they are optional; their limits
-// repeat the canonical positions shape's (a lapped car is at least one lap down).
+// ignores), so a whole list bound from the positions fits as it comes.
+//
+// The laps and the two gaps (BAJAOVRLAY-81) are lenient on purpose: before they existed
+// the strip let any value through in those fields, so a typed list or an odd source that
+// sends, say, `gapToLeaderLaps: 0` or a fractional gap must not get its whole update
+// refused now. A value outside the canonical positions shape's limits (a lapped car is at
+// least one lap down; times and laps are whole numbers from 0) is read as absent, so only
+// that one cell stays blank. The manifest leaves them undeclared (let through by
+// `additionalProperties`) for the same reason.
 const stripCarSchema = z.looseObject({
   position: z.int().min(1),
   carNumber: z.int().min(1),
   schoolName: z.string(),
-  laps: z.int().min(0).optional(),
-  gapToLeaderMs: z.int().min(0).optional(),
-  gapToLeaderLaps: z.int().min(1).optional(),
+  laps: z.int().min(0).optional().catch(undefined),
+  gapToLeaderMs: z.int().min(0).optional().catch(undefined),
+  gapToLeaderLaps: z.int().min(1).optional().catch(undefined),
 });
 
 // Strict: a field the graphic does not know (usually a typo) is refused, not ignored.

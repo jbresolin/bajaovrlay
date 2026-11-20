@@ -17,6 +17,8 @@
  *   - Switching the gap on while on air redraws the page in place, on the same pills, with
  *     the shorter page, and switching it back to "Não mostrar" gives the six-car page.
  *   - Data with neither choice draws exactly the pills of before: no laps or gap cell.
+ *   - A list with a bad gap (0 laps behind, or a fractional time) is still taken on air:
+ *     the running order changes and only that car's gap cell stays blank.
  *   - With no flag the clock block's pill is hidden and the time still shows.
  *
  * What these tests deliberately do not cover:
@@ -123,6 +125,40 @@ describe('the laps and the gap in each pill', () => {
       [...(lapsCells ?? []), ...(gapCells ?? [])].every((cell) => cell.hidden),
       'every laps and gap cell is hidden',
     ).toBe(true);
+  });
+});
+
+describe('a list with a bad laps or gap value', () => {
+  it('still updates the order on air, and leaves only the bad cells blank', async () => {
+    // Arrange: the strip on air with the gap shown in laps and time.
+    const lowerStrip = createLowerStripOnThePage();
+    await loadLowerStripWithData(lowerStrip, {
+      ...createRealEnduroStripData(),
+      gapDisplay: 'lapsAndTime',
+    });
+    await lowerStrip.playAction({ skipAnimation: true });
+
+    // Act: the source sends a new order whose 2nd car says "0 laps behind" and whose 3rd
+    // has a fractional time gap, values the positions shape would never send.
+    const answer = await lowerStrip.updateAction({
+      data: {
+        entries: [
+          { position: 1, carNumber: 10, schoolName: 'UFSJ', laps: 6 },
+          { position: 2, carNumber: 51, schoolName: 'FAHOR', laps: 6, gapToLeaderLaps: 0 },
+          { position: 3, carNumber: 47, schoolName: 'UTFPR-PB', laps: 6, gapToLeaderMs: 1500.5 },
+          { position: 4, carNumber: 1, schoolName: 'FEI', laps: 5, gapToLeaderLaps: 1 },
+        ],
+      },
+    });
+
+    // Assert: accepted, the new order on air, the two bad gaps blank, the good one shown.
+    expect(answer, 'a bad gap must not refuse the whole update').toEqual({ statusCode: 200 });
+    expect(readCarPillsOnAir(lowerStrip), 'the new order, the bad gaps left blank').toEqual([
+      '1º 10 UFSJ',
+      '2º 51 FAHOR',
+      '3º 47 UTFPR-PB',
+      '4º 1 FEI +1 volta',
+    ]);
   });
 });
 

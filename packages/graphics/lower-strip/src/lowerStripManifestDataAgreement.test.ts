@@ -14,7 +14,8 @@
  *     before the start; the block switched off; a positions entry with every field; no
  *     flag, the laps on and each gap display (BAJAOVRLAY-81); and a car without its school,
  *     a position of 0, a negative clock time, an unknown flag, a missing clock field, an
- *     unknown field, an unknown gap display, a gap of 0 laps and laps written as text.
+ *     unknown field and an unknown gap display; and, since a bad laps or gap value only
+ *     blanks its cell, both accept a gap of 0 laps, a fractional gap and laps as text.
  *
  * What these tests deliberately do not cover:
  *   - The rest of the manifest; lowerStripManifest.test.ts covers it.
@@ -105,23 +106,33 @@ const dataAgreementScenarios = [
     data: { ...createRealEnduroStripData(), gapDisplay: 'intervalo' },
     isValid: false,
   },
-  // A lapped car is at least one lap down; "0 laps behind" is the leader's lap, in ms.
+  // The laps and gaps are lenient in both (BAJAOVRLAY-81): a value outside the positions
+  // shape's limits only blanks its cell, so the list is still taken. A gap of 0 laps...
   {
-    name: 'both refuse a gap of 0 laps',
+    name: 'both accept a gap of 0 laps, which only blanks that cell',
     data: {
       ...createRealEnduroStripData(),
       entries: [{ position: 2, carNumber: 10, schoolName: 'UFSJ', gapToLeaderLaps: 0 }],
     },
-    isValid: false,
+    isValid: true,
   },
-  // The laps are a whole number, never a text a typed list might carry.
+  // ...a fractional gap in ms...
   {
-    name: 'both refuse laps written as text',
+    name: 'both accept a fractional gap in ms',
+    data: {
+      ...createRealEnduroStripData(),
+      entries: [{ position: 2, carNumber: 1, schoolName: 'FEI', gapToLeaderMs: 12_399.5 }],
+    },
+    isValid: true,
+  },
+  // ...and laps written as text, as a typed list might carry them.
+  {
+    name: 'both accept laps written as text',
     data: {
       ...createRealEnduroStripData(),
       entries: [{ position: 1, carNumber: 51, schoolName: 'FAHOR', laps: '43' }],
     },
-    isValid: false,
+    isValid: true,
   },
   // The school is what the pill names: required in both.
   {

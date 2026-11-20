@@ -46,18 +46,6 @@
             },
             "schoolName": {
               "type": "string"
-            },
-            "laps": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "gapToLeaderMs": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "gapToLeaderLaps": {
-              "type": "integer",
-              "minimum": 1
             }
           },
           "required": ["position", "carNumber", "schoolName"],

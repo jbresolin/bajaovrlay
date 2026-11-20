@@ -13,7 +13,8 @@
  *     nothing when the source did not send them.
  *   - The gap, for each of the four choices, on a lapped car, on a car on the leader's
  *     lap, on the leader and on a car the source sent no gap for: laps as "+2 voltas",
- *     time as "+12,3" (to the tenth, cut, no unit, as the tower writes it).
+ *     time as "+12,3" (to the tenth, cut, no unit, as the tower writes it), "+75,3" past
+ *     a minute.
  *   - The leader never shows a gap, and "+0 voltas" never appears.
  *
  * What these tests deliberately do not cover:
@@ -159,6 +160,13 @@ describe('writeGapText', () => {
       expected: '+12,3',
     },
 
+    // Past a minute a gap stays in seconds, as the timing screen writes it: "+75,3".
+    {
+      name: 'laps and time: a gap past a minute stays in seconds, "+75,3"',
+      car: { ...createFeiOnTheLeadersLap(), gapToLeaderMs: 75_399 },
+      gapDisplay: 'lapsAndTime',
+      expected: '+75,3',
+    },
     // "Só tempo": only a time; a lapped car has none in the positions shape.
     {
       name: 'time: a car on the leader’s lap reads "+12,3"',

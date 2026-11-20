@@ -17,6 +17,8 @@
  *   - The strip bound to the positions' "Lista completa", with the real sample of the
  *     enduro (laps, gaps in ms and in laps, intervals, lap times, status), the laps on and
  *     each gap display, passes.
+ *   - A list with a bad gap (0 laps behind, a fractional time) is still taken: the strip
+ *     only blanks that cell, so the server must not refuse the list for it.
  *   - A gap display the strip does not know is refused, naming the field.
  *
  * What these tests deliberately do not cover:
@@ -148,6 +150,26 @@ describe('the lower strip bound to the positions’ "Lista completa"', () => {
       expect(problem, 'the positions list must fit the strip as it comes').toBeUndefined();
     },
   );
+
+  it('accepts a list whose gaps are outside the positions shape’s limits', () => {
+    // Arrange: the strip, and two cars with gaps no positions source should send.
+    const graphic = buildGraphicFromItsPackage('lower-strip');
+    const data = {
+      ...dataSavedBeforeTheChange['lower-strip'],
+      entries: [
+        { position: 1, carNumber: 51, schoolName: 'FAHOR', laps: 6 },
+        { position: 2, carNumber: 10, schoolName: 'UFSJ', laps: 6, gapToLeaderLaps: 0 },
+        { position: 3, carNumber: 1, schoolName: 'FEI', laps: 6, gapToLeaderMs: 1500.5 },
+      ],
+      gapDisplay: 'lapsAndTime',
+    };
+
+    // Act: check it as an update would.
+    const problem = findProblemInGraphicData(graphic, data);
+
+    // Assert: taken, as before these cells existed; the strip blanks the bad cells.
+    expect(problem, 'a bad gap must not refuse the whole list').toBeUndefined();
+  });
 
   it('refuses a gap display the strip does not know, naming the field', () => {
     // Arrange: the strip, with a gap display misspelt by a hand-written request.

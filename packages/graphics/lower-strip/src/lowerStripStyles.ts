@@ -92,9 +92,9 @@ const lowerStripOwnStyles = css`
     font-size: var(--size-strip);
   }
 
-  /* The laps in the tower's laps green, the gap muted, both at the strip's size: the
-     cars a page drop instead (stripPages.ts), so no text is ever shrunk to fit. */
-  /* The same line box as the school's, so the three texts share one baseline. */
+  /* The laps in the tower's laps green, the gap muted, both at the strip's size (the cars
+     a page drop instead, stripPages.ts, so no text is ever shrunk to fit), in the same
+     line box as the school's, so the three texts share one baseline. */
   .laps,
   .gap {
     line-height: 1.3;

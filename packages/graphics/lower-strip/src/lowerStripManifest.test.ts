@@ -17,7 +17,8 @@
  *     read from the text of packages/theme/ardosia/tokens.css.
  *   - The cars are bound live to the positions' whole list by default, and need only the
  *     position, the car and the school of each entry, letting every other field through;
- *     the laps and the two gaps are the positions shape's own names, optional.
+ *     the laps and the two gaps the strip may draw pass through undeclared, as before, so
+ *     a bad value never refuses the whole list.
  *   - The laps are off and the gap "Não mostrar" by default, neither required, so an item
  *     saved before BAJAOVRLAY-81 looks and validates the same.
  *   - The clock fields are the race clock's own, word for word (titles, roles, defaults),
@@ -176,24 +177,20 @@ describe('lower-strip.ograf.json settings', () => {
     expect(allowsOtherFields, 'a positions entry fits with all its fields').toBe(true);
   });
 
-  it('reads the laps and gaps by the positions shape’s own names, optional (BAJAOVRLAY-81)', () => {
-    // Arrange: what each car of the list may carry.
+  it('leaves the laps and gaps to pass through undeclared, so a bad one never refuses the list (BAJAOVRLAY-81)', () => {
+    // Arrange: what each car of the list declares.
     const carFields = lowerStripManifest.schema.properties.entries.items.properties;
 
-    // Act: pick out the three fields the new cells read.
-    const lapsAndGapFields = {
-      laps: carFields.laps,
-      gapToLeaderMs: carFields.gapToLeaderMs,
-      gapToLeaderLaps: carFields.gapToLeaderLaps,
-    };
+    // Act: look for the three fields the new cells read.
+    const declaredLapsAndGapFields = ['laps', 'gapToLeaderMs', 'gapToLeaderLaps'].filter(
+      (fieldName) => fieldName in carFields,
+    );
 
-    // Assert: the canonical names and limits (a lapped car is at least one lap down), so
-    // "Lista completa" of the positions fills them as it comes; none is required.
-    expect(lapsAndGapFields, 'the positions shape’s own laps and gap fields').toEqual({
-      laps: { type: 'integer', minimum: 0 },
-      gapToLeaderMs: { type: 'integer', minimum: 0 },
-      gapToLeaderLaps: { type: 'integer', minimum: 1 },
-    });
+    // Assert: none is declared. OGraf requires a single type on any field declared, and a
+    // type would make the server refuse the whole list for one bad value, which it never
+    // did before these cells existed; they pass through as every other positions field
+    // does (additionalProperties), and the graphic blanks a bad one (lowerStripModel.ts).
+    expect(declaredLapsAndGapFields, 'the three fields pass through undeclared').toEqual([]);
   });
 
   it('offers the laps off and the gap as "Não mostrar" by default, so old items look the same', () => {

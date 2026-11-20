@@ -54,6 +54,12 @@ export class LowerStripPageTurns {
   private isTurningPage = false;
   /** Whether an update arrived during a turn; the turn draws it once it has ended. */
   private wasUpdateKeptForAfterTheTurn = false;
+  /**
+   * The cars a page the page on air was drawn with; undefined before the first draw. When
+   * an update changes it (a laps or gap cell switched on or off), every page boundary
+   * moves, so the strip starts again at page 1 (see drawCurrentPage).
+   */
+  private carsPerPageOnAir: number | undefined = undefined;
 
   constructor(options: LowerStripPageTurnsOptions) {
     this.options = options;
@@ -73,19 +79,25 @@ export class LowerStripPageTurns {
   /**
    * Draws the page shown now from the stored data on the lane on air, in place: pills are
    * reused by slot, and one added (the page grew) is placed as asked. A list that shrank
-   * under the page on air lands on its last page.
+   * under the page on air lands on its last page. When the cars a page changed since the
+   * page on air was drawn (BAJAOVRLAY-81), the strip starts again at page 1: keeping the
+   * page number would jump backwards or forwards in the order ("6/6" becoming "6/9", cars
+   * 21 to 24), where page 1 is the leader, which a viewer can follow.
    */
   drawCurrentPage(placement: PillPlacement): void {
     const parts = this.options.readParts();
     const data = this.options.readData();
     const columns = readStripCarColumns(data);
+    const carsPerPage = chooseCarsPerStripPage(columns);
+    const hasCarsPerPageChanged =
+      this.carsPerPageOnAir !== undefined && this.carsPerPageOnAir !== carsPerPage;
+    if (hasCarsPerPageChanged) {
+      this.currentPageNumber = 1;
+    }
     const pageCount = this.countPages();
     this.currentPageNumber = Math.min(this.currentPageNumber, pageCount);
-    const cars = listCarsOfStripPage(
-      data.entries,
-      this.currentPageNumber,
-      chooseCarsPerStripPage(columns),
-    );
+    this.carsPerPageOnAir = carsPerPage;
+    const cars = listCarsOfStripPage(data.entries, this.currentPageNumber, carsPerPage);
     const pillsAdded = drawCarsOnLane(this.readLaneOnAir(), cars, columns);
     if (placement === 'offAir') {
       placeBarPiecesOffAir(parts.bar, pillsAdded);
@@ -173,8 +185,10 @@ export class LowerStripPageTurns {
       this.wasUpdateKeptForAfterTheTurn = false;
       const data = this.options.readData();
       const columns = readStripCarColumns(data);
-      const cars = listCarsOfStripPage(data.entries, pageNumber, chooseCarsPerStripPage(columns));
+      const carsPerPage = chooseCarsPerStripPage(columns);
+      const cars = listCarsOfStripPage(data.entries, pageNumber, carsPerPage);
       drawCarsOnLane(arrivingLane, cars, columns);
+      this.carsPerPageOnAir = carsPerPage;
       const leavingPills = listPillsOfLane(leavingLane);
       const arrivingPills = listPillsOfLane(arrivingLane);
       placeBarPiecesOffAir(parts.bar, arrivingPills);

@@ -33,11 +33,13 @@ export function writeGapText(car: StripCar, gapDisplay: StripGapDisplay): string
   }
   const isLapGapAllowed = gapDisplay === 'laps' || gapDisplay === 'lapsAndTime';
   const isTimeGapAllowed = gapDisplay === 'time' || gapDisplay === 'lapsAndTime';
-  if (isLapGapAllowed && car.gapToLeaderLaps !== undefined) {
-    return ptBR.gapInLaps(car.gapToLeaderLaps);
-  }
+  // The time first, then the laps, in the tower's order (towerText.ts); a car carries
+  // only one of the two, so the order changes nothing for good data.
   if (isTimeGapAllowed && car.gapToLeaderMs !== undefined) {
     return ptBR.gapInSeconds(writeSecondsToTheTenthCutAsText(car.gapToLeaderMs));
+  }
+  if (isLapGapAllowed && car.gapToLeaderLaps !== undefined) {
+    return ptBR.gapInLaps(car.gapToLeaderLaps);
   }
   return '';
 }
