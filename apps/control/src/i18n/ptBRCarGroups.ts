@@ -47,4 +47,8 @@ export const ptBRCarGroups = {
   teamMissing: (groupLabel: string) => `Escolha a equipe de ${groupLabel} nos Cadastros.`,
   // Under a car picked: what each of its fields reads now.
   valuesNowHeading: 'Valores agora',
+  // A pick written without the editor (BAJAOVRLAY-82) into a field the graphic's form
+  // cannot draw: only a manifest changed under a stored item could do it.
+  fieldNotInTheForm: (fieldKey: string) =>
+    `O campo "${fieldKey}" do gráfico não pode receber o carro escolhido.`,
 };

@@ -49,6 +49,19 @@ export {
 export { buildSchemaFormValuesFromItemFields } from './buildSchemaFormValuesFromItemFields';
 // How each car group of a graphic opens: by number, by place, typed, nothing yet or separate.
 export { buildCarGroupWaysAtOpening } from './carGroupChoice';
+// One car picked for a group: by number (as typed) or by place, on one source, live or not.
+export type { CarPickInForm } from './carGroupChoice';
+// A car pick read from and written into a stored item without the editor (BAJAOVRLAY-82).
+export {
+  // Every field of each group as the editor's picker writes it, checked as a save checks it.
+  buildItemFieldsOfCarPicks,
+  // One group with its pick, as buildItemFieldsOfCarPicks takes it.
+  type CarPickOfGroup,
+  // The pick an item stores for one group, when its fields follow one car.
+  readCarPickStoredInItemFields,
+  // The source and "Ao vivo / Congelado" the item's cars already read, kept by a new pick.
+  readSourceAndWhenOfCarGroupsInItemFields,
+} from './carGroupPicksOfStoredItem';
 export type {
   // One field of a form that passed the check: its value, "cleared", or "filled at the take".
   CheckedSchemaFormField,

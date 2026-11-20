@@ -6,6 +6,7 @@ Every word the operator reads on the control page. Start reading at `ptBR.ts`.
   here and never write it inline; ESLint refuses literal text in `features/` and `app/`.
 - `ptBRKeyboard.ts` (`ptBR.keyboard`: the "?" dialog and each shortcut's words),
   `ptBRQuickFire.ts` (`ptBR.quickFire`: the quick-fire strip, the macros and their editor),
+  `ptBRQuickCarPick.ts` (`ptBR.quickCarPick`: "Escolher carros" on a button or a row),
   `ptBRLayers.ts` (`ptBR.layers`), `ptBRQuickEdit.ts` (`ptBR.playout.quickEdit`: "Edição
   rápida") and `ptBRDataSources.ts` (`ptBR.dataSources`: the "Fontes de dados" page and the
   header chip; its flex HTTP/JSON form in `ptBRFlexSourceForm.ts`, `ptBR.dataSources.flexForm`)

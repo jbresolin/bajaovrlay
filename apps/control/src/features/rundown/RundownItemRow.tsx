@@ -10,6 +10,7 @@ import { ActionButton } from '@/features/connection/ActionButton';
 import { ItemEntityMarker } from '@/features/entityLibrary/ItemEntityMarker';
 import { findWhyTheTakeOfItemIsOff } from '@/features/events/itemTakenThroughAnEvent';
 import { ItemColorChip } from '@/features/items/ItemColorChip';
+import { type CarGroupsToPickQuickly, QuickCarPickPopover } from '@/features/quickCarPick';
 import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
 import { useWhyTheRoleCannotSend } from '@/state/operatorSessionContext';
@@ -38,13 +39,20 @@ export type RundownItemRowProps = {
   moveToShortcutsChoices: MoveToShortcutsChoice[];
   /** Called when one of them is chosen, with the panel it names. */
   onMoveToShortcutsChosen: (panelId: string) => void;
+  /**
+   * What "Escolher carros" offers for the item (BAJAOVRLAY-82: the battle card's cars), or
+   * undefined for an item without cars to pick, whose menu then does not list it.
+   */
+  offerOfQuickCarPick: CarGroupsToPickQuickly | undefined;
 };
 
 /**
  * One row of the rundown: a handle to drag it by, the item's colour and label, the
  * graphic and the layer it uses, the buttons "Disparar", "Prévia", "Editar item" and
- * "Excluir", and a "⋯" menu ("Mover para atalhos") that a right-click on the row opens
- * too, as on a quick-fire button.
+ * "Excluir", and a "⋯" menu ("Mover para atalhos", and "Escolher carros" on an item with
+ * cars to pick, BAJAOVRLAY-82) that a right-click on the row opens too, as on a quick-fire
+ * button. "Escolher carros" opens its box under the row; the box saves the cars, then
+ * previews or takes the item with the row's own "Prévia" and "Disparar".
  * The label is itself a button: a click on it puts the cursor on this row, without
  * taking anything. The row at the cursor is marked for the eye (border and "Próximo")
  * and for a screen reader (`aria-current`). Must be drawn inside RundownItemList, which
@@ -55,7 +63,9 @@ export function RundownItemRow(props: RundownItemRowProps) {
   const isConnected = useIsConnectedToServer();
   const isCursorOffForTheRole = useWhyTheRoleCannotSend('moveCursor') !== undefined;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const hasMenuAnythingToOffer = props.moveToShortcutsChoices.length > 0;
+  const [isQuickCarPickOpen, setIsQuickCarPickOpen] = useState(false);
+  const hasMenuAnythingToOffer =
+    props.moveToShortcutsChoices.length > 0 || props.offerOfQuickCarPick !== undefined;
 
   // The browser's own menu would cover the row; ours opens instead. Without a connection
   // nothing in it could be sent, so the browser's menu is left alone then.
@@ -98,92 +108,106 @@ export function RundownItemRow(props: RundownItemRowProps) {
   };
 
   return (
-    <li
-      ref={setRowElement}
-      style={shiftWhileDragging}
-      aria-label={item.label}
-      aria-current={isAtCursor ? 'true' : undefined}
-      onContextMenu={openMenuInsteadOfTheBrowsers}
-      className={cn(
-        'flex items-start gap-2 rounded-md border bg-card p-2',
-        isAtCursor && 'border-primary bg-accent',
-        isDragging && 'relative z-10 opacity-70 shadow-md',
-      )}
+    <QuickCarPickPopover
+      item={item}
+      offer={props.offerOfQuickCarPick}
+      isOpen={isQuickCarPickOpen}
+      onOpenChange={setIsQuickCarPickOpen}
+      onPreviewChosen={props.onPreviewPressed}
+      onTakeChosen={onTakePressed}
     >
-      {/* The handle is the only part that starts a drag, so a click on "Disparar" can
+      <li
+        ref={setRowElement}
+        style={shiftWhileDragging}
+        aria-label={item.label}
+        aria-current={isAtCursor ? 'true' : undefined}
+        onContextMenu={openMenuInsteadOfTheBrowsers}
+        className={cn(
+          'flex items-start gap-2 rounded-md border bg-card p-2',
+          isAtCursor && 'border-primary bg-accent',
+          isDragging && 'relative z-10 opacity-70 shadow-md',
+        )}
+      >
+        {/* The handle is the only part that starts a drag, so a click on "Disparar" can
           never be taken for the start of one. `touch-none` lets a finger drag it on a
           tablet instead of scrolling the page. */}
-      <button
-        type="button"
-        ref={setDragHandleElement}
-        {...dragHandleAttributes}
-        {...dragHandleListeners}
-        disabled={!isConnected}
-        aria-label={ptBR.rundown.moveItemHandle}
-        className="mt-0.5 cursor-grab touch-none rounded-sm p-1 text-muted-foreground outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <DragHandleIcon />
-      </button>
+        <button
+          type="button"
+          ref={setDragHandleElement}
+          {...dragHandleAttributes}
+          {...dragHandleListeners}
+          disabled={!isConnected}
+          aria-label={ptBR.rundown.moveItemHandle}
+          className="mt-0.5 cursor-grab touch-none rounded-sm p-1 text-muted-foreground outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <DragHandleIcon />
+        </button>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="flex items-center gap-2">
-          <ItemColorChip color={item.color} />
-          {/* A real button, so the keyboard reaches it too. It reads as plain text; its
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <ItemColorChip color={item.color} />
+            {/* A real button, so the keyboard reaches it too. It reads as plain text; its
               longer name ("Marcar como próximo: ...") tells a screen reader what it does.
               Off for a role that may not move the cursor (Dados, BAJAOVRLAY-29): the label
               still reads the same, it just does not move the cursor. */}
-          <button
-            type="button"
-            disabled={!isConnected || isCursorOffForTheRole}
-            aria-label={ptBR.rundown.setCursorToItemButton(item.label)}
-            onClick={props.onSetCursorPressed}
-            className="min-w-0 flex-1 cursor-pointer truncate rounded-sm text-left text-sm font-medium outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:no-underline"
-          >
-            {item.label}
-          </button>
-          {isAtCursor ? <Badge>{ptBR.rundown.nextItemBadge}</Badge> : null}
-          {hasMenuAnythingToOffer ? (
-            <RundownRowMoreActionsMenu
-              itemLabel={item.label}
-              isOpen={isMenuOpen}
-              onOpenChange={setIsMenuOpen}
-              moveToShortcutsChoices={props.moveToShortcutsChoices}
-              onMoveToShortcutsChosen={props.onMoveToShortcutsChosen}
-            />
-          ) : null}
-        </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span className="truncate">{graphicName}</span>
-          <Badge variant="outline">{layerName}</Badge>
-          <ItemSourceMarker item={item} />
-          <ItemEntityMarker item={item} />
-        </div>
-        <div className="flex flex-wrap items-center gap-1">
-          <ActionButton
-            commandType="takeItem"
-            size="xs"
-            disabledReason={findWhyTheTakeOfItemIsOff(item)}
-            onClick={(click) => takeThisItemAndLetGoOfTheFocus(click.currentTarget)}
-          >
-            {ptBR.rundown.takeItemButton}
-          </ActionButton>
-          {/* Shows the item on the preview output, as a preview asked for by hand. It
+            <button
+              type="button"
+              disabled={!isConnected || isCursorOffForTheRole}
+              aria-label={ptBR.rundown.setCursorToItemButton(item.label)}
+              onClick={props.onSetCursorPressed}
+              className="min-w-0 flex-1 cursor-pointer truncate rounded-sm text-left text-sm font-medium outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:no-underline"
+            >
+              {item.label}
+            </button>
+            {isAtCursor ? <Badge>{ptBR.rundown.nextItemBadge}</Badge> : null}
+            {hasMenuAnythingToOffer ? (
+              <RundownRowMoreActionsMenu
+                itemLabel={item.label}
+                isOpen={isMenuOpen}
+                onOpenChange={setIsMenuOpen}
+                moveToShortcutsChoices={props.moveToShortcutsChoices}
+                onMoveToShortcutsChosen={props.onMoveToShortcutsChosen}
+                onQuickCarPickChosen={
+                  props.offerOfQuickCarPick === undefined
+                    ? undefined
+                    : () => setIsQuickCarPickOpen(true)
+                }
+              />
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span className="truncate">{graphicName}</span>
+            <Badge variant="outline">{layerName}</Badge>
+            <ItemSourceMarker item={item} />
+            <ItemEntityMarker item={item} />
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            <ActionButton
+              commandType="takeItem"
+              size="xs"
+              disabledReason={findWhyTheTakeOfItemIsOff(item)}
+              onClick={(click) => takeThisItemAndLetGoOfTheFocus(click.currentTarget)}
+            >
+              {ptBR.rundown.takeItemButton}
+            </ActionButton>
+            {/* Shows the item on the preview output, as a preview asked for by hand. It
               neither takes nor moves the cursor, so any row can be looked at while the
               planned item stays next. */}
-          <ActionButton
-            commandType="previewItem"
-            size="xs"
-            variant="outline"
-            onClick={props.onPreviewPressed}
-          >
-            {ptBR.rundown.previewItemButton}
-          </ActionButton>
-          <ActionButton size="xs" variant="ghost" onClick={props.onEditPressed}>
-            {ptBR.rundown.editItemButton}
-          </ActionButton>
-          <DeleteItemButton onDeleteConfirmed={props.onDeleteConfirmed} />
+            <ActionButton
+              commandType="previewItem"
+              size="xs"
+              variant="outline"
+              onClick={props.onPreviewPressed}
+            >
+              {ptBR.rundown.previewItemButton}
+            </ActionButton>
+            <ActionButton size="xs" variant="ghost" onClick={props.onEditPressed}>
+              {ptBR.rundown.editItemButton}
+            </ActionButton>
+            <DeleteItemButton onDeleteConfirmed={props.onDeleteConfirmed} />
+          </div>
         </div>
-      </div>
-    </li>
+      </li>
+    </QuickCarPickPopover>
   );
 }

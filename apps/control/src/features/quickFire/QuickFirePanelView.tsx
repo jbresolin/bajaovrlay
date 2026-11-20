@@ -4,10 +4,11 @@ import {
   listItemsOfRundownInOrder,
   type QuickFirePanel,
 } from '@bajaovrlay/shared';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { ActionButton } from '@/features/connection/ActionButton';
 import { useItemEditorTarget } from '@/features/items/ItemEditorTargetProvider';
+import { findCarGroupsToPickQuickly } from '@/features/quickCarPick';
 import { findGraphicNameOrItsId } from '@/features/rundown/graphicAndLayerNames';
 import { findRundownShownOnPage } from '@/features/rundown/rundownShownOnPage';
 import { ptBR } from '@/i18n/ptBR';
@@ -46,6 +47,18 @@ export function QuickFirePanelView(props: QuickFirePanelViewProps) {
   const [isRenaming, setIsRenaming] = useState(false);
 
   const buttonsInOrder = listItemsOfQuickFirePanelInOrder(items, panel.id);
+  // What "Escolher carros" offers each button (BAJAOVRLAY-82), read from its graphic's
+  // manifest once per change of the items or the graphics, never at a poll.
+  const offerOfQuickCarPickOfEachItem = useMemo(
+    () =>
+      new Map(
+        listItemsOfQuickFirePanelInOrder(items, panel.id).map((item) => [
+          item.id,
+          findCarGroupsToPickQuickly(item, graphics),
+        ]),
+      ),
+    [items, graphics, panel.id],
+  );
   const digitKeys = keyboardMap.fireQuickFireButton.keys;
 
   // "Mover para rundown" puts the item after the last item of the rundown on screen, so
@@ -120,6 +133,7 @@ export function QuickFirePanelView(props: QuickFirePanelViewProps) {
               item={item}
               graphicName={findGraphicNameOrItsId(graphics, item.graphicId)}
               digitKey={digitKeys[position] ?? null}
+              offerOfQuickCarPick={offerOfQuickCarPickOfEachItem.get(item.id)}
               onTakePressed={() => sendTakeByThisOperator({ type: 'takeItem', itemId: item.id })}
               onPreviewChosen={() =>
                 void sendCommand({ type: 'previewItem', itemId: item.id, origin: 'manual' })

@@ -13,7 +13,9 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+
+import { findCarGroupsToPickQuickly } from '@/features/quickCarPick';
 
 import { findGraphicNameOrItsId, findLayerNameOrItsId } from './graphicAndLayerNames';
 import { listItemIdsInOrderAfterDrag } from './itemIdsInOrderAfterDrag';
@@ -65,6 +67,13 @@ export type RundownItemListProps = {
  */
 export function RundownItemList(props: RundownItemListProps) {
   const { itemsInOrder, cursorItemId, graphics, layers } = props;
+  // What "Escolher carros" offers each row (BAJAOVRLAY-82), read from its graphic's manifest
+  // once per change of the rows or the graphics, never at a poll.
+  const offerOfQuickCarPickOfEachItem = useMemo(
+    () =>
+      new Map(itemsInOrder.map((item) => [item.id, findCarGroupsToPickQuickly(item, graphics)])),
+    [itemsInOrder, graphics],
+  );
   const itemIdsInOrder = itemsInOrder.map((item) => item.id);
 
   const dragSensors = useSensors(
@@ -133,6 +142,7 @@ export function RundownItemList(props: RundownItemListProps) {
               onEditPressed={() => props.onEditPressed(item.id)}
               onDeleteConfirmed={() => props.onDeleteConfirmed(item.id)}
               moveToShortcutsChoices={props.moveToShortcutsChoices}
+              offerOfQuickCarPick={offerOfQuickCarPickOfEachItem.get(item.id)}
               onMoveToShortcutsChosen={(panelId) => props.onMoveToShortcutsChosen(item.id, panelId)}
             />
           ))}

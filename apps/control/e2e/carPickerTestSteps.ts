@@ -1,9 +1,11 @@
 /**
  * Steps for the item editor's car picker (BAJAOVRLAY-66), as an operator takes them: a
  * graphic's fields about one car ("Carro da frente") are filled by choosing that car once,
- * by its number or, on the battle card, with "Disputa pela Nª posição" for both cars.
+ * by its number or, on the battle card, with "Disputa pela Nª posição" for both cars. And
+ * "Escolher carros" (BAJAOVRLAY-82): the same cars picked from a quick-fire button's
+ * chevron, without the editor.
  */
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 import { seededSimulatorLabel } from './dataSourcesTestSteps';
 
@@ -55,4 +57,46 @@ export async function chooseBattleForPlaceInTheEditor(
     'Disputa pela posição',
     `Disputa pela ${placeNumber}ª posição`,
   );
+}
+
+/**
+ * Opens "Escolher carros" with the small chevron of a quick-fire button and returns its
+ * box, once it is on screen.
+ */
+export async function openQuickCarPickOfButton(page: Page, itemLabel: string): Promise<Locator> {
+  await page.getByRole('button', { name: `Escolher carros: ${itemLabel}`, exact: true }).click();
+  const box = page.getByRole('dialog', { name: `Escolher carros — ${itemLabel}` });
+  await expect(box, 'the chevron must open the box of "Escolher carros"').toBeVisible();
+  return box;
+}
+
+/**
+ * Opens "Escolher carros" from a quick-fire button's "⋯" menu, the other way in, and
+ * returns its box once it is on screen.
+ */
+export async function openQuickCarPickFromMenuOfButton(
+  page: Page,
+  itemLabel: string,
+): Promise<Locator> {
+  await page.getByRole('button', { name: `Mais ações: ${itemLabel}`, exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Escolher carros', exact: true }).click();
+  const box = page.getByRole('dialog', { name: `Escolher carros — ${itemLabel}` });
+  await expect(box, 'the menu entry must open the box of "Escolher carros"').toBeVisible();
+  return box;
+}
+
+/**
+ * Types the battle card's two cars by number in the box, as an operator does: "Por número"
+ * (a card stored as a battle for a place opens on "Pela posição"), the car ahead, Enter,
+ * the car behind.
+ */
+export async function typeBothCarsInQuickCarPick(
+  box: Locator,
+  cars: { carAheadNumber: number; carBehindNumber: number },
+): Promise<void> {
+  await box.getByRole('tab', { name: 'Por número' }).click();
+  const carAheadBox = box.getByLabel('Carro da frente', { exact: true });
+  await carAheadBox.fill(String(cars.carAheadNumber));
+  await carAheadBox.press('Enter');
+  await box.getByLabel('Carro de trás', { exact: true }).fill(String(cars.carBehindNumber));
 }

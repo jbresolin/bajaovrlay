@@ -9,7 +9,8 @@ The quick-fire strip (right column, above the layers): a tab per panel and "Macr
 - `QuickFirePanelView.tsx` — one panel: "+ Atalho" (opens the page's item editor on this panel),
   "Renomear", "Excluir painel", and the grid; `PanelNameForm.tsx` names a panel.
 - `QuickFireItemButton.tsx` — one button: click = `takeItem` through features/autoPreview (the
-  page's one take path); right-click or "⋯" = "Prévia", "Editar", "Mover para rundown".
+  page's one take path); right-click or "⋯" = "Prévia", "Editar", "Mover para rundown", and on an item
+  with cars to pick "Escolher carros", which its chevron opens too (features/quickCarPick, BAJAOVRLAY-82).
 - `quickFireTabs.ts` (pure; its test is the table to read) and `useQuickFireKeys.ts` — the tabs in
   order, F1–F4, and what 1–9 fire, with keys and rules from `src/keyboard/keyboardMap.ts`.
 

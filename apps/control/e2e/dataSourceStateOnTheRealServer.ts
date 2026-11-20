@@ -113,6 +113,20 @@ export async function readDataOnAirOfLayerFromTheRealServer(
 }
 
 /**
+ * Reads the data the real server has on one layer's preview output (what "Prévia" shows),
+ * or undefined when nothing is previewed there.
+ */
+export async function readDataInPreviewOfLayerFromTheRealServer(
+  layerId: string,
+): Promise<Record<string, unknown> | undefined> {
+  const state = await readStateFromTheRealServer();
+  const instanceInPreview = state.instances.find(
+    (instance) => instance.layerId === layerId && instance.target === 'preview',
+  );
+  return instanceInPreview?.resolvedData;
+}
+
+/**
  * Reads the instance the real server has on one layer's program output (what OBS draws),
  * or undefined when nothing is there: its id, to tell an instance changed in place from
  * one taken again, and the data it shows.
