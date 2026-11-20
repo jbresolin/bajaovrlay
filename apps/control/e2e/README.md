@@ -82,7 +82,7 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
 
 - The lower third, the team card and the standings (BAJAOVRLAY-24): `lowerThirdTeamCardStandingsWalk.e2e.ts` (the brief's walk,
   three tests): car 7 of the simulator's teams given a logo with "Logo sobre placa clara" ticked, and a "Cartão de equipe"
-  whose every field reads car 7 in Cadastros shows "Joinville · SC" and the logo on its plate in the "Programa" monitor; a
+  whose every field reads car 7 in Cadastros (picked once in its "Equipe" group, BAJAOVRLAY-80) shows "Joinville · SC" and the logo on its plate in the "Programa" monitor; a
   "Tarja" reading a person typed on Pessoas shows the name and the role; a "Classificação" whose "Equipes" and "Partes da
   pontuação" open on the simulator (the manifest's suggestions) shows 20 rows under the six parts. The page turn is the
   standings package's component test (fake time), never a 10 s wait here.

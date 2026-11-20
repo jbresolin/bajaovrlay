@@ -7,8 +7,19 @@ export {
   carFieldMeanings,
   CarFieldMeaningSchema,
   type CarGroup,
+  type CarGroupFieldMeaning,
   CarGroupSchema,
 } from './carGroup.js';
+// Which ways can fill a group (BAJAOVRLAY-80): a car in the positions, one team record.
+export {
+  canCarGroupBeFilledFromATeamRecord,
+  canCarGroupBeFilledFromThePositions,
+  CarGroupFieldMeaningSchema,
+  isMeaningAFieldOfACarInThePositions,
+  isMeaningAnAttributeOfATeamRecord,
+  type TeamRecordFieldMeaning,
+  teamRecordFieldMeanings,
+} from './carGroupFillingWays.js';
 // The positions paths a car pick writes, by number or by place, and a path read back.
 export {
   buildPathOfCarFieldAtPlace,

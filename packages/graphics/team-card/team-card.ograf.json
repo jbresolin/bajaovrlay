@@ -13,7 +13,23 @@
   "stepCount": 1,
   "v_baja": {
     "defaultLayerId": "lower-third",
-    "category": "team"
+    "category": "team",
+    "carGroups": [
+      {
+        "id": "team",
+        "label": "Equipe",
+        "fields": {
+          "carNumber": "carNumber",
+          "teamName": "teamName",
+          "schoolName": "schoolName",
+          "city": "city",
+          "state": "state",
+          "carPhotoUrl": "carPhotoUrl",
+          "logoUrl": "logoUrl",
+          "logoOnLightPlate": "logoOnLightPlate"
+        }
+      }
+    ]
   },
   "actionDurations": [
     { "type": "playAction", "duration": 400 },

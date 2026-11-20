@@ -238,10 +238,12 @@ describe('the car of a template, "Do evento"', () => {
     // Act: read the ways the car may be chosen.
     const ways = readOptionsOfDropdown('Como escolher Carro');
 
-    // Assert: the three of BAJAOVRLAY-66, no "Do evento".
+    // Assert: the three of BAJAOVRLAY-66 and the team of Cadastros (BAJAOVRLAY-80), no
+    // "Do evento".
     expect(ways, 'only a template reads its car from the event').toEqual([
       'Pelo número do carro',
       'Pelo lugar na corrida',
+      'Equipe dos Cadastros',
       'Digitado à mão',
     ]);
   });

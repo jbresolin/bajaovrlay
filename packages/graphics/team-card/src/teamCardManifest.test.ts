@@ -19,6 +19,8 @@
  *   - The car, the team and the school are required; every data field has a pt-BR title;
  *     the field names are the team entity's attribute keys, so an item maps each one to
  *     the attribute of the same name in Cadastros.
+ *   - Every field is one team group (`v_baja.carGroups`, BAJAOVRLAY-80), so the item
+ *     editor fills the whole card by picking the team once in Cadastros.
  *   - The photo and the logo, and only they, carry `v_baja.role: "imageUrl"`, so the
  *     control page offers an image picker (or a team's image attributes) for exactly those.
  *   - The plate is a switch that starts off.
@@ -134,9 +136,41 @@ describe('team-card.ograf.json settings', () => {
 
     // Assert: the server reads the default layer and the category from it; no update rule.
     expect(
-      bajaVendorFields,
+      {
+        defaultLayerId: bajaVendorFields.defaultLayerId,
+        category: bajaVendorFields.category,
+      },
       'the team card must ask for the lower-third layer and the team category',
     ).toEqual({ defaultLayerId: 'lower-third', category: 'team' });
+    expect(
+      Object.keys(bajaVendorFields),
+      'besides the layer and the category, only the team group (no update rule)',
+    ).toEqual(['defaultLayerId', 'category', 'carGroups']);
+  });
+
+  it('groups every field as one team, so one pick in Cadastros fills the whole card', () => {
+    // Arrange: nothing to set up; the manifest is read from disk.
+
+    // Act: read its car groups (BAJAOVRLAY-80).
+    const carGroups = teamCardManifest.v_baja.carGroups;
+
+    // Assert: one group, "Equipe", each of the eight fields reading its own team attribute.
+    expect(carGroups, 'one team group covering every field of the card').toEqual([
+      {
+        id: 'team',
+        label: 'Equipe',
+        fields: {
+          carNumber: 'carNumber',
+          teamName: 'teamName',
+          schoolName: 'schoolName',
+          city: 'city',
+          state: 'state',
+          carPhotoUrl: 'carPhotoUrl',
+          logoUrl: 'logoUrl',
+          logoOnLightPlate: 'logoOnLightPlate',
+        },
+      },
+    ]);
   });
 
   it('declares the play and stop lengths the theme sets in --motion-in and --motion-out', () => {

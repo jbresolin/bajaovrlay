@@ -8,13 +8,17 @@
 import {
   buildPathOfCarFieldAtPlace,
   buildPathOfCarFieldChosenByNumber,
-  type CarFieldMeaning,
+  canCarGroupBeFilledFromATeamRecord,
+  canCarGroupBeFilledFromThePositions,
+  CarFieldMeaningSchema,
   type CarGroup,
+  type CarGroupFieldMeaning,
   readCarPickOfPositionsPath,
 } from '@bajaovrlay/shared';
 
 import { buildBindingPathKey, readBindingPathKey } from './bindingChoices';
 import { emptySchemaFormBindingValue } from './bindingFormValue';
+import { readTeamRecordReferencedByEveryField } from './carGroupTeamRecord';
 import { listEventPathChoicesOfField } from './eventFieldFormValue';
 import { readOwnValueOfRecord } from './plainRecord';
 import type { CarGroupWay, SchemaFormBindingValue, SchemaFormValues } from './schemaFormValues';
@@ -34,15 +38,18 @@ export type CarPickInForm =
  * - `typed`: every field is typed by hand (and whether anything is typed at all);
  * - `fromTheEvent`: every field reads the event's payload field of its own meaning
  *   (BAJAOVRLAY-67: a template's car, "Do evento");
+ * - `oneTeamRecord`: every field reads its own attribute of one team in Cadastros
+ *   (BAJAOVRLAY-80), its car number as the form holds it;
  * - `differentCars`: every field reads the positions, but not of one car;
- * - `notOnePick`: anything else (one field typed among bound ones, read from the library
- *   or another field of an event, another path, a transform, one field frozen and the
- *   others live).
+ * - `notOnePick`: anything else (one field typed among bound ones, another team or another
+ *   attribute of the library, another field of an event, another path, a transform, one
+ *   field frozen and the others live).
  */
 export type CarGroupFieldsAgreement =
   | { status: 'oneCarPick'; pick: CarPickInForm }
   | { status: 'typed'; isAnythingTyped: boolean }
   | { status: 'fromTheEvent' }
+  | { status: 'oneTeamRecord'; carNumberText: string }
   | { status: 'differentCars' }
   | { status: 'notOnePick' };
 
@@ -59,7 +66,7 @@ function readBindingValueOfField(
  * of the positions with no transform; undefined otherwise.
  */
 function readCarPickOfBindingValue(
-  meaning: CarFieldMeaning,
+  meaning: CarGroupFieldMeaning,
   bindingValue: SchemaFormBindingValue,
 ): CarPickInForm | undefined {
   const shapeAndPath = readBindingPathKey(bindingValue.pathKey);
@@ -108,9 +115,13 @@ export function readAgreementOfCarGroupFields(
   );
 
   if (kinds.every((kind) => kind === 'literal')) {
+    // A switch left off is not something typed: the team card's "Logo sobre placa clara"
+    // starts off on every new card, which would otherwise open it as typed by hand.
     const isAnythingTyped = fieldEntries.some(([fieldKey]) => {
       const typedValue = readOwnValueOfRecord(formValues.values, fieldKey);
-      return typedValue !== undefined && typedValue !== null && typedValue !== '';
+      return (
+        typedValue !== undefined && typedValue !== null && typedValue !== '' && typedValue !== false
+      );
     });
     return { status: 'typed', isAnythingTyped };
   }
@@ -120,6 +131,12 @@ export function readAgreementOfCarGroupFields(
         readOwnValueOfRecord(formValues.eventPaths ?? {}, fieldKey) === meaning,
     );
     return isEveryFieldReadingItsOwnMeaning ? { status: 'fromTheEvent' } : { status: 'notOnePick' };
+  }
+  if (kinds.every((kind) => kind === 'entity')) {
+    const carNumberText = readTeamRecordReferencedByEveryField(carGroup, formValues);
+    return carNumberText === undefined
+      ? { status: 'notOnePick' }
+      : { status: 'oneTeamRecord', carNumberText };
   }
   if (!kinds.every((kind) => kind === 'binding')) {
     return { status: 'notOnePick' };
@@ -165,6 +182,8 @@ function chooseWayFromAgreement(
       return agreement.isAnythingTyped ? 'typed' : whenNothingIsTyped;
     case 'fromTheEvent':
       return 'fromTheEvent';
+    case 'oneTeamRecord':
+      return 'teamRecord';
     case 'differentCars':
     case 'notOnePick':
       return whenTheyDisagree;
@@ -172,9 +191,21 @@ function chooseWayFromAgreement(
 }
 
 /**
- * How a group opens in the editor: grouped when its fields agree (a new item, with
- * nothing typed, asks how to choose), and with "Campos separados" on when they do not, so
- * an item saved before the picker is shown as it is and never silently changed.
+ * True when a team record is the only pick that fills the group (the team card, whose city
+ * and logo are in no car of the positions): with nothing typed, it shows its team picker.
+ */
+function isCarGroupFilledByATeamRecordOnly(carGroup: CarGroup): boolean {
+  return (
+    canCarGroupBeFilledFromATeamRecord(carGroup) && !canCarGroupBeFilledFromThePositions(carGroup)
+  );
+}
+
+/**
+ * How a group opens in the editor: grouped when its fields agree, and with "Campos
+ * separados" on when they do not, so an item saved before the picker is shown as it is and
+ * never silently changed. A new item, with nothing typed, asks how to choose; a group only a
+ * team record can fill (the team card, BAJAOVRLAY-80) opens on its team picker instead,
+ * so one pick fills the card.
  */
 export function chooseCarGroupWayAtOpening(
   carGroup: CarGroup,
@@ -182,7 +213,7 @@ export function chooseCarGroupWayAtOpening(
 ): CarGroupWay {
   return chooseWayFromAgreement(
     readAgreementOfCarGroupFields(carGroup, formValues),
-    'notChosen',
+    isCarGroupFilledByATeamRecordOnly(carGroup) ? 'teamRecord' : 'notChosen',
     'separate',
   );
 }
@@ -191,7 +222,9 @@ export function chooseCarGroupWayAtOpening(
  * How a group shows once "Campos separados" is turned off: grouped when its fields agree,
  * otherwise still separate. Hiding fields that disagree would leave on screen a picker
  * saying nothing while a save stores the mixed bindings; only a pick (or "Digitado à
- * mão") changes the fields, so only that ends "Campos separados" for them.
+ * mão") changes the fields, so only that ends "Campos separados" for them. With nothing
+ * typed it goes back to typing by hand, or to the team picker on a group only a team
+ * record fills (the team card, as it opened).
  */
 export function chooseCarGroupWayAfterSeparateFields(
   carGroup: CarGroup,
@@ -199,7 +232,7 @@ export function chooseCarGroupWayAfterSeparateFields(
 ): CarGroupWay {
   return chooseWayFromAgreement(
     readAgreementOfCarGroupFields(carGroup, formValues),
-    'typed',
+    isCarGroupFilledByATeamRecordOnly(carGroup) ? 'teamRecord' : 'typed',
     'separate',
   );
 }
@@ -262,13 +295,23 @@ export function buildBindingValuesOfCarPick(
 ): Record<string, SchemaFormBindingValue> {
   const bindingValues: Record<string, SchemaFormBindingValue> = {};
   for (const [fieldKey, meaning] of Object.entries(carGroup.fields)) {
+    // Only a group whose every meaning is a car's field is offered a pick; a meaning that
+    // is not (a team's city) would leave its path empty, which the form's check refuses.
+    const carFieldReading = CarFieldMeaningSchema.safeParse(meaning);
     let pathKey = '';
-    if (pick.pickedBy === 'number') {
-      pathKey = buildBindingPathKey('positions', buildPathOfCarFieldChosenByNumber(meaning));
-    } else if (pick.placeNumber !== undefined) {
+    if (carFieldReading.success && pick.pickedBy === 'number') {
       pathKey = buildBindingPathKey(
         'positions',
-        buildPathOfCarFieldAtPlace(meaning, pick.placeNumber),
+        buildPathOfCarFieldChosenByNumber(carFieldReading.data),
+      );
+    } else if (
+      carFieldReading.success &&
+      pick.pickedBy === 'place' &&
+      pick.placeNumber !== undefined
+    ) {
+      pathKey = buildBindingPathKey(
+        'positions',
+        buildPathOfCarFieldAtPlace(carFieldReading.data, pick.placeNumber),
       );
     }
     bindingValues[fieldKey] = {

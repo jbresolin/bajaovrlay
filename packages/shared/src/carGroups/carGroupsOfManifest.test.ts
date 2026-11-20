@@ -13,10 +13,14 @@
  *   - The battle card's two groups are read as written, the car behind naming the group
  *     it runs right behind.
  *   - A manifest without groups reads as "none", so every other graphic is untouched.
+ *   - The team card's group, every field an attribute of a team record (BAJAOVRLAY-80),
+ *     is read as written too.
  *   - Each mistake is refused with a sentence naming it: a field in two groups, a field
- *     the schema does not have, an unknown meaning, a meaning whose value does not fit
- *     the field, a group named twice, a group with no field, and a group said to run
- *     behind one that does not exist.
+ *     the schema does not have, an unknown meaning, a group mixing a field only the
+ *     positions have with one only a team record has, a meaning whose value does not fit
+ *     the field (by the positions, and by a team record: a logo in a text field), a
+ *     group named twice, a group with no field, and a group said to run behind one that
+ *     does not exist.
  *   - Each refusal starts with where in the manifest it is (`v_baja.carGroups.0.label: …`),
  *     so the server's boot warning points the author at the line to fix.
  *
@@ -111,6 +115,47 @@ function buildBattleCardManifestWithCarGroups(carGroups: unknown) {
   };
 }
 
+/** The team card's manifest, cut down to its data schema and its one group of a team. */
+function buildTeamCardManifestWithItsTeamGroup() {
+  return {
+    id: 'baja-team-card',
+    name: 'Cartão de equipe',
+    main: 'team-card.js',
+    schema: {
+      type: 'object',
+      properties: {
+        carNumber: { type: 'integer', title: 'Carro' },
+        teamName: { type: 'string', title: 'Equipe' },
+        schoolName: { type: 'string', title: 'Escola' },
+        city: { type: 'string', title: 'Cidade' },
+        state: { type: 'string', title: 'Estado (UF)' },
+        carPhotoUrl: { type: 'string', title: 'Foto do carro', v_baja: { role: 'imageUrl' } },
+        logoUrl: { type: 'string', title: 'Logo da equipe', v_baja: { role: 'imageUrl' } },
+        logoOnLightPlate: { type: 'boolean', title: 'Logo sobre placa clara' },
+      },
+    },
+    v_baja: {
+      defaultLayerId: 'lower-third',
+      carGroups: [
+        {
+          id: 'team',
+          label: 'Equipe',
+          fields: {
+            carNumber: 'carNumber',
+            teamName: 'teamName',
+            schoolName: 'schoolName',
+            city: 'city',
+            state: 'state',
+            carPhotoUrl: 'carPhotoUrl',
+            logoUrl: 'logoUrl',
+            logoOnLightPlate: 'logoOnLightPlate',
+          },
+        },
+      ],
+    },
+  };
+}
+
 describe('readCarGroupsOfManifest', () => {
   it("reads the battle card's two cars as written", () => {
     // Arrange: the battle card's manifest with its two groups.
@@ -160,13 +205,24 @@ describe('readCarGroupsOfManifest', () => {
         'v_baja.carGroups: the car group "ahead" names the field "aheadLap", which the data schema does not have',
     },
     {
-      // A meaning must be a field of a car in the positions, or the picker cannot read it.
+      // A meaning must be a field of a car in the positions or an attribute of a team
+      // record, or no picker can read it.
       name: 'refuses an unknown meaning',
       changeTheGroups: (carGroups: CarGroupAsWritten[]) => {
         readGroupAt(carGroups, 0).fields.aheadLaps = 'lapsDone';
       },
       expectedProblem:
-        'v_baja.carGroups: the car group "ahead" gives the field "aheadLaps" the meaning "lapsDone", which is not a field of a car',
+        'v_baja.carGroups: the car group "ahead" gives the field "aheadLaps" the meaning "lapsDone", which is not a field of a car nor an attribute of a team',
+    },
+    {
+      // Laps are in the positions only and a city in a team record only: neither a car
+      // pick nor a team pick could fill both (BAJAOVRLAY-80).
+      name: 'refuses a group that mixes a field only the positions have with one only a team record has',
+      changeTheGroups: (carGroups: CarGroupAsWritten[]) => {
+        readGroupAt(carGroups, 0).fields.aheadSchoolName = 'city';
+      },
+      expectedProblem:
+        'v_baja.carGroups: the car group "ahead" mixes fields only the positions have with attributes only a team record has, so no one pick fills it',
     },
     {
       // A team name cannot go into a whole-number field: the take would refuse it.
@@ -221,6 +277,38 @@ describe('readCarGroupsOfManifest', () => {
       reading.status === 'refused' ? reading.problems : [],
       'the refusal must say what is wrong',
     ).toContain(expectedProblem);
+  });
+
+  it("reads the team card's group, whose fields are all attributes of a team record", () => {
+    // Arrange: the team card's manifest with its one group, "Equipe".
+    const manifest = buildTeamCardManifestWithItsTeamGroup();
+
+    // Act: read its car groups.
+    const reading = readCarGroupsOfManifest(manifest);
+
+    // Assert: the group as written; the city, the logo and the plate are known meanings.
+    expect(reading, 'the team group must be read exactly as the manifest writes it').toEqual({
+      status: 'groups',
+      carGroups: manifest.v_baja.carGroups,
+    });
+  });
+
+  it("refuses a team record's logo on a field that is no image", () => {
+    // Arrange: the team card with its logo field turned into a plain text field.
+    const manifest = buildTeamCardManifestWithItsTeamGroup();
+    const propertiesOfTheCard: Record<string, unknown> = manifest.schema.properties;
+    propertiesOfTheCard.logoUrl = { type: 'string', title: 'Logo da equipe' };
+
+    // Act: read its car groups.
+    const reading = readCarGroupsOfManifest(manifest);
+
+    // Assert: refused, naming the field the logo cannot go into.
+    expect(
+      reading.status === 'refused' ? reading.problems : [],
+      'a logo is an image, which only an image field takes',
+    ).toContain(
+      'v_baja.carGroups: the car group "team" gives the field "logoUrl" the meaning "logoUrl", whose value does not fit it',
+    );
   });
 
   it("starts a refusal of a group's own shape with where it is in the manifest", () => {

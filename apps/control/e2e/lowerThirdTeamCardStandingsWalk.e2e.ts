@@ -9,8 +9,8 @@
  * What these tests prove (the brief's four E2E steps; steps 1 and 2 share a test):
  *   1. The simulator's teams imported, car 7 given a logo with "Logo sobre placa clara"
  *      ticked: the team keeps the logo and the choice.
- *   2. A team card made from the rundown with every field read from car 7 in Cadastros,
- *      and taken: on the server it carries the name, the city and state, the logo's
+ *   2. A team card made from the rundown with every field read from car 7 in Cadastros
+ *      by picking the team once in its "Equipe" group (BAJAOVRLAY-80), and taken: on the server it carries the name, the city and state, the logo's
  *      address and the plate; in the program monitor it shows the name, "Joinville · SC"
  *      and the logo on its light plate.
  *   3. A person typed in Cadastros, and a lower third whose name and role read that
@@ -150,24 +150,14 @@ test.describe('the lower third, the team card and the standings', () => {
       'Cartão — equipe 7',
       'Cartão de equipe',
     );
-    const fieldsAndAttributes = [
-      { title: 'Carro', attribute: 'Número do carro' },
-      { title: 'Equipe', attribute: 'Nome da equipe' },
-      { title: 'Escola', attribute: 'Escola (sigla)' },
-      { title: 'Cidade', attribute: 'Cidade' },
-      { title: 'Estado (UF)', attribute: 'UF' },
-      { title: 'Logo da equipe', attribute: 'Logo' },
-      { title: 'Logo sobre placa clara', attribute: 'Logo sobre placa clara' },
-    ];
-    for (const { title, attribute } of fieldsAndAttributes) {
-      await readFieldFromTheLibrary(consolePage, itemEditor, {
-        title,
-        entityTypeName: 'Equipe',
-        search: '7',
-        record: recordOfCar7,
-        attribute,
-      });
-    }
+    // The card opens on its "Equipe" group's team picker: one search, one pick.
+    await itemEditor.getByLabel('Buscar equipe — Equipe', { exact: true }).fill('7');
+    await chooseInEditorDropdown(
+      consolePage,
+      itemEditor,
+      'Equipe dos Cadastros — Equipe',
+      recordOfCar7,
+    );
     await saveAndTakeTheItemInTheEditor(itemEditor);
 
     // Assert (step 2): the server has car 7's card on air, and the monitor draws it with

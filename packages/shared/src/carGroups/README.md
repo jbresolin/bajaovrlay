@@ -8,4 +8,6 @@ Zod check against the manifest's data schema, refusing a group as a whole on any
 `carGroupPaths.ts` writes the ordinary positions bindings a pick fills each field with
 (`entryOfCar.<meaning>` by number, `entries.<index>.<meaning>` by place) and reads a stored
 path back, so nothing about bindings, their storage or their resolution changes.
-`index.ts` lists every export.
+`carGroupFillingWays.ts` (BAJAOVRLAY-80) says which ways can fill a group from its
+meanings: a car of the positions, or one team record of Cadastros (the team card's city
+and logo exist only there). `index.ts` lists every export.

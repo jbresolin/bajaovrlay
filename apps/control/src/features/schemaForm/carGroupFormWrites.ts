@@ -2,13 +2,16 @@
  * Writing a car group's choice into react-hook-form (BAJAOVRLAY-66): a pick fills every
  * field of the group alike (its kind "Fonte" and its own binding), typing by hand turns
  * every field back to typed (the values typed stay underneath), and the group's way is
- * kept beside the fields. Both the group's picker and the battle card's "Disputa pela Nª
- * posição" (which writes two groups) go through here, so they cannot write differently.
+ * kept beside the fields; a team of Cadastros (BAJAOVRLAY-80) writes each field's
+ * "Cadastro" reference the same way. Both the group's picker and the battle card's
+ * "Disputa pela Nª posição" (which writes two groups) go through here, so they cannot
+ * write differently.
  */
 import type { CarGroup } from '@bajaovrlay/shared';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { buildBindingValuesOfCarPick, type CarPickInForm } from './carGroupChoice';
+import { buildEntityReferenceValuesOfTeamRecord } from './carGroupTeamRecord';
 import type { CarGroupWay, SchemaFormValues } from './schemaFormValues';
 
 /** Keeps the way a group is chosen, as the operator changed it. */
@@ -48,6 +51,25 @@ export function writeCarGroupFromTheEvent(
     form.setValue(`eventPaths.${fieldKey}`, meaning, { shouldDirty: true });
   }
   writeCarGroupWay(form, carGroup, 'fromTheEvent');
+  checkGroupAgainAfterAFailedSave(form, carGroup);
+}
+
+/**
+ * Fills every field of the group from one team of Cadastros (BAJAOVRLAY-80): its kind
+ * "Cadastro", and a reference to that team's attribute of the field's own meaning. '' (no
+ * team yet) keeps the way chosen and leaves the record for the form's check to ask for.
+ */
+export function writeTeamRecordIntoForm(
+  form: UseFormReturn<SchemaFormValues>,
+  carGroup: CarGroup,
+  carNumberText: string,
+): void {
+  const referenceValues = buildEntityReferenceValuesOfTeamRecord(carGroup, carNumberText);
+  for (const [fieldKey, referenceValue] of Object.entries(referenceValues)) {
+    form.setValue(`kinds.${fieldKey}`, 'entity', { shouldDirty: true });
+    form.setValue(`entityReferences.${fieldKey}`, referenceValue, { shouldDirty: true });
+  }
+  writeCarGroupWay(form, carGroup, 'teamRecord');
   checkGroupAgainAfterAFailedSave(form, carGroup);
 }
 

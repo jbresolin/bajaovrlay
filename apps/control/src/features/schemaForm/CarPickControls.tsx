@@ -17,7 +17,7 @@ import type { SchemaFormBindingOptions } from './schemaFormBindingOptions';
 const texts = ptBR.carGroups;
 
 /** The control of a car group a message of the group is about (CarGroupFields.tsx). */
-export type ControlOfTheGroupMessage = 'way' | 'source' | 'carNumber' | 'place';
+export type ControlOfTheGroupMessage = 'way' | 'source' | 'carNumber' | 'place' | 'team';
 
 /**
  * What a control carries while the group's message is about it: marked invalid and
