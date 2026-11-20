@@ -13,14 +13,14 @@
  *   - The face maps every pt-BR letter (the accented ones in both cases), º and ª, the
  *     digits, the ASCII punctuation and space, and the typographic marks the catalog uses.
  *   - The only characters of the page's source (src/, tests left out) the face lacks are
- *     the six symbols of charactersLeftToTheSystemFaces, each named with where it is drawn.
+ *     the seven symbols of charactersLeftToTheSystemFaces, each named with where it is drawn.
  *     A new character outside the subset fails here, so whoever adds it decides on purpose.
  *   - The reading itself works: "A" is found and the CJK "世" is not.
  *
  * What these tests deliberately do not cover:
  *   - That the page draws its text in this face, and loads it from its own address;
  *     e2e/controlPageTextInTheBundledFace.e2e.ts, in a real Chromium.
- *   - How the six symbols look in the system's faces: they are marks, not words.
+ *   - How the seven symbols look in the system's faces: they are marks, not words.
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -64,6 +64,8 @@ const charactersLeftToTheSystemFaces = [
   // "▲" and "▼": the sort marks of the history table's columns.
   '▲',
   '▼',
+  // "▾": the chevron on a quick-fire button that opens "Escolher carros" (BAJAOVRLAY-82).
+  '▾',
   // "☰": the handle that drags a rundown row or a shortcut.
   '☰',
 ];
@@ -124,7 +126,7 @@ describe('the control page font', () => {
     const codePointsDrawn = readCodePointsOfWoff2Font(fontBytes);
     const charactersMissing = listCharactersTheFontLacks(allSourceText, codePointsDrawn);
 
-    // Assert: exactly the six symbols left to the system's faces, no more and no fewer.
+    // Assert: exactly the seven symbols left to the system's faces, no more and no fewer.
     expect(
       charactersMissing,
       'a character outside the bundled face must be added to charactersLeftToTheSystemFaces on purpose',

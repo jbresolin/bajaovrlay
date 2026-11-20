@@ -22,7 +22,7 @@
  *
  * What these tests deliberately do not cover:
  *   - Which characters the file holds; src/fonts/controlPageFontCoversPtBR.test.ts.
- *   - The six symbols the face lacks (← → ⋯ ▲ ▼ ☰), left to the machine's symbol faces.
+ *   - The seven symbols the face lacks (← → ⋯ ▲ ▼ ▾ ☰), left to the machine's symbol faces.
  *   - That boxes still fit their text; triggerFieldsFitTheirBox.e2e.ts and the layout tests.
  */
 import { expect, type Page, test } from '@playwright/test';
