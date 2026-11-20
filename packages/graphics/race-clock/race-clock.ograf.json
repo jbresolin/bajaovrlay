@@ -33,6 +33,7 @@
       "state": {
         "type": "string",
         "title": "Bandeira",
+        "description": "Opcional; sem bandeira, nada da bandeira aparece e o espaço dela se fecha.",
         "enum": ["pre", "green", "yellow", "red", "checkered", "finished"],
         "gddType": "select",
         "gddOptions": {
@@ -97,14 +98,7 @@
         "default": true
       }
     },
-    "required": [
-      "sessionName",
-      "state",
-      "clockMode",
-      "referenceTimeMs",
-      "referenceWallClockMs",
-      "running"
-    ],
+    "required": ["sessionName", "clockMode", "referenceTimeMs", "referenceWallClockMs", "running"],
     "additionalProperties": false
   }
 }

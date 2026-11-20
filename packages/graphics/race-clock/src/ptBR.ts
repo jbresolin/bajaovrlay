@@ -44,6 +44,8 @@ export const ptBR = {
     playButton: 'Entrar (play)',
     stopButton: 'Sair (stop)',
     flagButton: (flagLabel: string) => `Bandeira: ${flagLabel}`,
+    /** Takes the flag away, as an item with "Bandeira" cleared does (BAJAOVRLAY-81). */
+    noFlagButton: 'Sem bandeira',
     flagBandOnButton: 'Faixa: ligar',
     flagBandOffButton: 'Faixa: desligar',
     unreadableAddressData: 'O parâmetro ?data= do endereço não é um JSON válido.',

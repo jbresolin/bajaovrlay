@@ -9,8 +9,10 @@ the list 1 to 9 messages: `src/messageLimits.ts` holds the numbers with their me
 manifest repeats them, so the item editor refuses a message that would not fit, in pt-BR.
 Start reading at `src/message-ticker.ts`; it wires `messageTickerModel.ts`,
 `messageTickerPageTurns.ts`, `messageTickerView.ts`, `messageTickerStyles.ts` and `ptBR.ts`.
+The flag is optional (BAJAOVRLAY-81): with "Bandeira" cleared the block shows the time alone,
+closed up, with no flag pill.
 Preview: `pnpm --filter @bajaovrlay/message-ticker dev`, then http://localhost:5200/preview.html (add
-`?clock=off`, `?messages=1`, `?stage=grey|black` or `?data=<JSON>`). Unit tests:
+`?clock=off`, `?messages=1`, `?flag=off`, `?stage=grey|black` or `?data=<JSON>`). Unit tests:
 `pnpm --filter @bajaovrlay/message-ticker test`; Playwright on the built `dist/` (lifecycle, the
 longest message fitting the bar, screenshots): `pnpm --filter @bajaovrlay/message-ticker test:e2e`.
 

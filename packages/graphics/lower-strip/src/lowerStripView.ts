@@ -22,8 +22,9 @@ import {
 import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 import { html, type TemplateResult } from 'lit';
 
-import type { StripCar } from './lowerStripModel.js';
+import type { StripCar, StripCarColumns } from './lowerStripModel.js';
 import { ptBR } from './ptBR.js';
+import { writeGapText, writeLapsText } from './stripCarTexts.js';
 import { writePageCellText } from './stripPages.js';
 
 /** The elements of the bar that change after the first render. */
@@ -79,8 +80,10 @@ function createCarPillCell(className: string, testId: string): HTMLSpanElement {
 }
 
 /**
- * Builds one empty car pill: the position, the car chip and the school, in that order. The
- * school is a scrolling box: a name too long for the pill scrolls inside it (BAJAOVRLAY-55).
+ * Builds one empty car pill: the position, the car chip, the school, then the laps and the
+ * gap to the leader (BAJAOVRLAY-81), in that order. The school is a scrolling box: a name
+ * too long for the pill scrolls inside it (BAJAOVRLAY-55). The last two cells are hidden
+ * until the item asks for them and the car has something to show.
  */
 function createCarPill(): HTMLLIElement {
   const pill = document.createElement('li');
@@ -88,33 +91,69 @@ function createCarPill(): HTMLLIElement {
   pill.dataset.testid = 'lower-strip-car';
   const schoolCell = createCarPillCell('school', 'lower-strip-car-school');
   makeScrollingTextBox(schoolCell);
+  const lapsCell = createCarPillCell('laps', 'lower-strip-car-laps');
+  const gapCell = createCarPillCell('gap', 'lower-strip-car-gap');
+  lapsCell.hidden = true;
+  gapCell.hidden = true;
   pill.append(
     createCarPillCell('position', 'lower-strip-car-position'),
     createCarPillCell('chip', 'lower-strip-car-number'),
     schoolCell,
+    lapsCell,
+    gapCell,
   );
   return pill;
 }
 
-/** Writes one car into a pill: "1º" (the leader's on the green chip), the number, the school. */
-function writeCarIntoPill(pill: HTMLLIElement, car: StripCar): void {
-  const [positionCell, chipCell, schoolCell] = pill.children;
+/** Writes an optional cell: its text, and hidden when it has none, so it takes no room. */
+function writeOptionalCell(cell: HTMLElement, text: string): void {
+  writeTextIfChanged(cell, text);
+  const isEmpty = text === '';
+  if (cell.hidden !== isEmpty) {
+    cell.hidden = isEmpty;
+  }
+}
+
+/**
+ * Writes one car into a pill: "1º" (the leader's on the green chip), the number, the
+ * school, and the laps and gap the item asks for (stripCarTexts.ts).
+ */
+function writeCarIntoPill(pill: HTMLLIElement, car: StripCar, columns: StripCarColumns): void {
+  const [positionCell, chipCell, schoolCell, lapsCell, gapCell] = pill.children;
   const isSchoolCellWhole = schoolCell instanceof HTMLElement;
-  if (positionCell === undefined || chipCell === undefined || !isSchoolCellWhole) {
+  const areOptionalCellsWhole = lapsCell instanceof HTMLElement && gapCell instanceof HTMLElement;
+  if (
+    positionCell === undefined ||
+    chipCell === undefined ||
+    !isSchoolCellWhole ||
+    !areOptionalCellsWhole
+  ) {
     throw new Error('a car pill lost a cell; this is a bug in lowerStripView.ts');
   }
+  const lapsText = writeLapsText(car, columns.isLapsShown);
+  const gapText = writeGapText(car, columns.gapDisplay);
   writeTextIfChanged(positionCell, ptBR.positionWithOrdinal(car.position));
   writeTextIfChanged(chipCell, String(car.carNumber));
   writeScrollingTextIfChanged(schoolCell, car.schoolName);
+  writeOptionalCell(lapsCell, lapsText);
+  writeOptionalCell(gapCell, gapText);
   pill.toggleAttribute('data-leader', car.position === 1);
-  pill.setAttribute('aria-label', ptBR.carPillName(car.position, car.carNumber, car.schoolName));
+  const extraTexts = [lapsText, gapText].filter((text) => text !== '');
+  pill.setAttribute(
+    'aria-label',
+    ptBR.carPillName(car.position, car.carNumber, car.schoolName, extraTexts),
+  );
 }
 
 /**
  * Draws a page of cars on a lane, reusing its pills by slot, and answers the pills that
  * were added (which the caller places: off air, on air, or ready to rise).
  */
-export function drawCarsOnLane(lane: HTMLOListElement, cars: readonly StripCar[]): HTMLElement[] {
+export function drawCarsOnLane(
+  lane: HTMLOListElement,
+  cars: readonly StripCar[],
+  columns: StripCarColumns,
+): HTMLElement[] {
   const pillsAdded: HTMLElement[] = [];
   while (lane.children.length < cars.length) {
     const pill = createCarPill();
@@ -126,7 +165,7 @@ export function drawCarsOnLane(lane: HTMLOListElement, cars: readonly StripCar[]
   }
   for (const [index, car] of cars.entries()) {
     const pill = lane.children[index] as HTMLLIElement;
-    writeCarIntoPill(pill, car);
+    writeCarIntoPill(pill, car, columns);
   }
   return pillsAdded;
 }

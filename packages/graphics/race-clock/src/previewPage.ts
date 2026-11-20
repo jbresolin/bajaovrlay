@@ -43,6 +43,15 @@ async function startPreview(): Promise<void> {
       );
     });
   }
+  addPreviewButton(ptBR.preview.noFlagButton, () => {
+    // The renderer tells a graphic a field is gone by sending it as undefined.
+    const noFlagUpdate = { data: { state: undefined } };
+    void runActionAndShowAnswer(
+      'updateAction',
+      () => raceClock.updateAction(noFlagUpdate),
+      'onAir',
+    );
+  });
   addPreviewButton(ptBR.preview.flagBandOnButton, () => {
     const bandOnUpdate = { data: { showFlagBand: true } };
     void runActionAndShowAnswer(

@@ -58,6 +58,10 @@ function addMoreButtons(messageTicker: MessageTickerGraphic): void {
       sendUpdate(messageTicker, { state: flagState });
     });
   }
+  // The renderer tells a graphic a field is gone by sending it as undefined.
+  addPreviewButton(ptBR.preview.noFlagButton, () => {
+    sendUpdate(messageTicker, { state: undefined });
+  });
 }
 
 async function startPreview(): Promise<void> {

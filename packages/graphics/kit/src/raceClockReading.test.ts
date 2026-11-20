@@ -10,6 +10,8 @@
  * What these tests prove:
  *   - The reading's field schemas take a real reading and refuse a negative time and an
  *     unknown flag, as each graphic's strict schema will once it spreads them in.
+ *   - The flag is optional (BAJAOVRLAY-81): a reading without it passes, and the graphics
+ *     then draw no flag at all.
  *   - The time text is the shared H:MM:SS of `@bajaovrlay/shared/clock` for a running
  *     elapsed clock, a running countdown and a held clock.
  *
@@ -67,6 +69,20 @@ describe('the reading field schemas', () => {
 
     // Assert: refused; a graphic shows "0:00" from a countdown's sum, never from its data.
     expect(parsed.success, 'a negative reference time must be refused').toBe(false);
+  });
+
+  it('take a reading with no flag at all, since the flag is optional (BAJAOVRLAY-81)', () => {
+    // Arrange: the enduro an hour in, its flag left out, as an item with "Bandeira"
+    // cleared sends it.
+    const { state: flagLeftOut, ...readingWithoutFlag } = createEnduroOneHourInReading();
+
+    // Act: check it.
+    const parsed = readingSchema.safeParse(readingWithoutFlag);
+
+    // Assert: it passes, and no flag appears from nowhere.
+    expect(flagLeftOut, 'the reading we started from had a flag').toBe('green');
+    expect(parsed.success, 'a reading without a flag must pass').toBe(true);
+    expect(parsed.data?.state, 'the flag stays absent; nothing fills it in').toBeUndefined();
   });
 
   it('refuse a flag state the clock does not know', () => {

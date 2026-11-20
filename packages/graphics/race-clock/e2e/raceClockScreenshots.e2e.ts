@@ -17,6 +17,7 @@
  *     band has no word, only the pattern).
  *   - With the band switched off (showFlagBand false) the card is head and body only,
  *     40 px lower, exactly like its baseline.
+ *   - With no flag at all (BAJAOVRLAY-81), band switch on, the card is that same card.
  *
  * What these tests deliberately do not cover:
  *   - Motion; the screenshots show the end of the play-in animation only, and a session
@@ -115,6 +116,32 @@ test.describe('the race clock looks like its baseline', () => {
     await expect(
       page.getByTestId('race-clock-panel'),
       'the race clock without its band must look exactly like its baseline',
+    ).toHaveScreenshot('race-clock-sem-faixa.png', { maxDiffPixelRatio: 0.01 });
+  });
+
+  test('with no flag, exactly as without the band (BAJAOVRLAY-81)', async ({ page }) => {
+    // Arrange: the green-flag enduro with the band switched ON but no flag at all, as an
+    // item with "Bandeira" cleared sends it.
+    const heldClockWithoutFlag = {
+      sessionName: 'Enduro de Resistência',
+      clockMode: 'elapsed',
+      referenceTimeMs: 3_900_000,
+      referenceWallClockMs: Date.parse('2026-05-16T14:30:00.000Z'),
+      running: false,
+      lapsCompletedByLeader: 12,
+      showFlagBand: true,
+    };
+
+    // Act: open the preview on air with it.
+    await openPreviewWithHeldClock(page, heldClockWithoutFlag);
+
+    // Assert: the card closes up as with the band off: 152 px, and the very same baseline
+    // as the card without its band.
+    const cardPlace = await page.getByTestId('race-clock-panel').boundingBox();
+    expect(cardPlace?.height, 'with no flag the card must be 152 px tall').toBe(152);
+    await expect(
+      page.getByTestId('race-clock-panel'),
+      'the race clock with no flag must look exactly like the one without its band',
     ).toHaveScreenshot('race-clock-sem-faixa.png', { maxDiffPixelRatio: 0.01 });
   });
 });

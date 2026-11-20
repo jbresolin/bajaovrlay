@@ -16,7 +16,7 @@ import {
 } from '@bajaovrlay/graphics-kit/barMotion';
 import { chooseNextPageInCycle } from '@bajaovrlay/graphics-kit/pageCycle';
 
-import type { LowerStripData } from './lowerStripModel.js';
+import { type LowerStripData, readStripCarColumns } from './lowerStripModel.js';
 import {
   drawCarsOnLane,
   emptyLane,
@@ -25,7 +25,7 @@ import {
   markLaneOnAir,
   writePageCell,
 } from './lowerStripView.js';
-import { countStripPages, listCarsOfStripPage } from './stripPages.js';
+import { chooseCarsPerStripPage, countStripPages, listCarsOfStripPage } from './stripPages.js';
 
 /** What the turns need from the component; the readers are called again after every await. */
 export type LowerStripPageTurnsOptions = {
@@ -59,9 +59,10 @@ export class LowerStripPageTurns {
     this.options = options;
   }
 
-  /** How many pages the stored running order fills. */
+  /** How many pages the stored running order fills, at the item's cars a page. */
   countPages(): number {
-    return countStripPages(this.options.readData().entries.length);
+    const data = this.options.readData();
+    return countStripPages(data.entries.length, chooseCarsPerStripPage(readStripCarColumns(data)));
   }
 
   /** The pills of the page on air, left to right: what the play-in and the stop-out move. */
@@ -76,11 +77,16 @@ export class LowerStripPageTurns {
    */
   drawCurrentPage(placement: PillPlacement): void {
     const parts = this.options.readParts();
-    const entries = this.options.readData().entries;
+    const data = this.options.readData();
+    const columns = readStripCarColumns(data);
     const pageCount = this.countPages();
     this.currentPageNumber = Math.min(this.currentPageNumber, pageCount);
-    const cars = listCarsOfStripPage(entries, this.currentPageNumber);
-    const pillsAdded = drawCarsOnLane(this.readLaneOnAir(), cars);
+    const cars = listCarsOfStripPage(
+      data.entries,
+      this.currentPageNumber,
+      chooseCarsPerStripPage(columns),
+    );
+    const pillsAdded = drawCarsOnLane(this.readLaneOnAir(), cars, columns);
     if (placement === 'offAir') {
       placeBarPiecesOffAir(parts.bar, pillsAdded);
     } else {
@@ -165,8 +171,10 @@ export class LowerStripPageTurns {
     try {
       // Drawn from the latest data: an update that arrived before this point is on it.
       this.wasUpdateKeptForAfterTheTurn = false;
-      const cars = listCarsOfStripPage(this.options.readData().entries, pageNumber);
-      drawCarsOnLane(arrivingLane, cars);
+      const data = this.options.readData();
+      const columns = readStripCarColumns(data);
+      const cars = listCarsOfStripPage(data.entries, pageNumber, chooseCarsPerStripPage(columns));
+      drawCarsOnLane(arrivingLane, cars, columns);
       const leavingPills = listPillsOfLane(leavingLane);
       const arrivingPills = listPillsOfLane(arrivingLane);
       placeBarPiecesOffAir(parts.bar, arrivingPills);
