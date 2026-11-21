@@ -125,9 +125,8 @@ describe('readSourceOfQuickCarPick', () => {
 
     // Assert: the simulator, by its name, frozen.
     expect(source, 'a pick must keep the item’s source and "Congelado"').toEqual({
-      sourceId: seededSimulatorId,
-      sourceLabel: 'Simulador — Enduro',
-      isLive: false,
+      status: 'source',
+      source: { sourceId: seededSimulatorId, sourceLabel: 'Simulador — Enduro', isLive: false },
     });
   });
 
@@ -144,9 +143,8 @@ describe('readSourceOfQuickCarPick', () => {
 
     // Assert: the simulator, live, as the editor's picker starts.
     expect(source, 'the only source with positions must be used, live').toEqual({
-      sourceId: seededSimulatorId,
-      sourceLabel: 'Simulador — Enduro',
-      isLive: true,
+      status: 'source',
+      source: { sourceId: seededSimulatorId, sourceLabel: 'Simulador — Enduro', isLive: true },
     });
   });
 });

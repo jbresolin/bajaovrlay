@@ -13,8 +13,9 @@
  *     writes for car 47: each field its own meaning of that car, one source, live.
  *   - "Disputa pela 3ª posição" writes the car ahead at the 3rd place and the car behind
  *     at the 4th, by place.
- *   - The source and "Ao vivo" / "Congelado" the item already has are read back, so a new
- *     pick keeps them; an item typed by hand has none to read.
+ *   - The source and "Ao vivo" / "Congelado" the item already has are read back from its
+ *     first field reading the positions, so a new pick keeps them; an item typed by hand
+ *     has none to read.
  *   - The pick an item stores is read back (by number or by place), and an item whose
  *     fields do not follow one car has none.
  *   - A car number that is not a whole number is refused with the editor's pt-BR message.
@@ -153,6 +154,31 @@ describe('readSourceAndWhenOfCarGroupsInItemFields', () => {
       sourceId: simulatorId,
       isLive: false,
     });
+  });
+
+  it('takes the source only from a field reading the positions, not from one reading the standings', () => {
+    // Arrange: the car ahead's school read from the rehearsal replay's standings (bound by
+    // hand, field by field), and the car behind frozen on car 52 of the simulator's positions.
+    const carGroups = [readBattleCardGroup('ahead'), readBattleCardGroup('behind')];
+    const itemFields: ItemFields = {
+      aheadSchoolName: {
+        kind: 'binding',
+        sourceId: 'reproducao-ensaio',
+        shapeKey: 'standings',
+        path: 'entries.0.schoolName',
+        isLive: true,
+      },
+      ...buildFieldsOfTheCarBehindFrozenOnCar52(),
+    };
+
+    // Act: read the source and "Ao vivo / Congelado" of the item's cars.
+    const sourceAndWhen = readSourceAndWhenOfCarGroupsInItemFields(carGroups, itemFields);
+
+    // Assert: the simulator, frozen, from the first field that reads the positions.
+    expect(
+      sourceAndWhen,
+      'a field reading another shape must not decide where the cars are picked',
+    ).toEqual({ sourceId: simulatorId, isLive: false });
   });
 
   it('reads nothing from an item whose cars are typed by hand', () => {

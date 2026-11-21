@@ -12,6 +12,8 @@
  *     clock row.
  *   - 47 and 52 typed, then "No ar": `updateItemFields` with the bindings to cars 47 and 52,
  *     then `takeItem` of the row.
+ *   - A Space pressed on the box's "No ar" never reaches the rundown's Space (which takes
+ *     the item at the cursor).
  *
  * What these tests deliberately do not cover:
  *   - The box itself, case by case: QuickCarPickOnAQuickFireButton.test.tsx.
@@ -124,5 +126,30 @@ describe('"Escolher carros" on a rundown row', () => {
       },
       { type: 'takeItem', itemId: battleCardItemId, instanceIdSeenOnAir: null },
     ]);
+  });
+
+  it('keeps a Space pressed on "No ar" from taking the rundown’s next item', async () => {
+    // Arrange: the card's box open from its menu, the cursor on the start.
+    const { fakeServer } = renderOnControlPageConnectedToFakeServer(
+      <RundownPanel />,
+      buildSlicesWithTheBattleCardInTheRundown(),
+    );
+    openTheMenuOfRow(battleCardLabel);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Escolher carros' }));
+    const box = within(
+      screen.getByRole('dialog', { name: `Escolher carros — ${battleCardLabel}` }),
+    );
+
+    // Act: Space goes down and up on "No ar" (the browser presses the button itself).
+    const takeButton = box.getByRole('button', { name: 'No ar' });
+    fireEvent.keyDown(takeButton, { key: ' ' });
+    fireEvent.keyUp(takeButton, { key: ' ' });
+    await letThePageFinishWhatItStarted();
+
+    // Assert: the rundown's Space did not run: no takeNext, no take of the start.
+    expect(
+      fakeServer.listCommandsReceived(),
+      'a Space inside the box belongs to the box, never to the rundown',
+    ).toEqual([]);
   });
 });

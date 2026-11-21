@@ -137,7 +137,12 @@ export function QuickFireItemButton(props: QuickFireItemButtonProps) {
               {texts.moveToRundownAction}
             </DropdownMenuItem>
             {props.offerOfQuickCarPick === undefined ? null : (
-              <DropdownMenuItem onSelect={() => setIsQuickCarPickOpen(true)}>
+              // Off for a role that may not take (Dados), as the chevron is: the box ends
+              // in a take or a preview.
+              <DropdownMenuItem
+                disabled={whyTheRoleCannotTake !== undefined}
+                onSelect={() => setIsQuickCarPickOpen(true)}
+              >
                 {ptBR.quickCarPick.openAction}
               </DropdownMenuItem>
             )}

@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
+import { useWhyTheRoleCannotSend } from '@/state/operatorSessionContext';
 
 import type { MoveToShortcutsChoice } from './moveToShortcutsChoices';
 
@@ -32,6 +33,9 @@ export type RundownRowMoreActionsMenuProps = {
  */
 export function RundownRowMoreActionsMenu(props: RundownRowMoreActionsMenuProps) {
   const isConnected = useIsConnectedToServer();
+  // "Escolher carros" ends in a take or a preview, so a role that may not take (Dados)
+  // sees it greyed out, as "Disparar" is.
+  const isQuickCarPickOffForTheRole = useWhyTheRoleCannotSend('takeItem') !== undefined;
   const texts = ptBR.rundown;
   return (
     <DropdownMenu open={props.isOpen} onOpenChange={props.onOpenChange}>
@@ -55,7 +59,10 @@ export function RundownRowMoreActionsMenu(props: RundownRowMoreActionsMenuProps)
           </DropdownMenuItem>
         ))}
         {props.onQuickCarPickChosen === undefined ? null : (
-          <DropdownMenuItem onSelect={props.onQuickCarPickChosen}>
+          <DropdownMenuItem
+            disabled={isQuickCarPickOffForTheRole}
+            onSelect={props.onQuickCarPickChosen}
+          >
             {ptBR.quickCarPick.openAction}
           </DropdownMenuItem>
         )}

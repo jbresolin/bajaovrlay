@@ -26,6 +26,8 @@ export const ptBRQuickCarPick = {
     `O carro ${carNumber} não está nas posições de ${sourceLabel}.`,
   noPositionsYet: (sourceLabel: string) => `${sourceLabel} ainda não mandou posições.`,
   sameCarTwice: 'Escolha carros diferentes.',
+  // "Pela posição" for a place whose car behind the source does not list now.
+  noCarAtPlaceNow: (placeNumber: number) => `Não há carro na ${placeNumber}ª posição agora.`,
   // The one line of what the cars typed are now, from the live positions.
   readOut: (carTexts: string[]) => `Agora: ${carTexts.join(' × ')}`,
   carNow: (position: number, carNumber: number, teamName: string) =>
@@ -36,6 +38,8 @@ export const ptBRQuickCarPick = {
     `Fonte: ${sourceLabel} · ${isLive ? 'ao vivo' : 'congelado na entrada'}`,
   noSourceWithPositions:
     'Nenhuma fonte manda posições agora. Escolha a fonte dos carros no editor do item.',
+  severalSourcesWithPositions:
+    'Mais de uma fonte manda posições: escolha a fonte no editor do item.',
   // While the item is on the program output: a take puts it on air again, the graphic
   // going out and coming back with the new cars (no command changes a live car in place).
   onAirNote: 'Já está no ar: "No ar" troca o gráfico pelo dos carros escolhidos.',

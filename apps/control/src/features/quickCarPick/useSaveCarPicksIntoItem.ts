@@ -7,8 +7,12 @@ import {
   useSendCommandAndReadItsRefusal,
 } from '@/state/ControlPageStateProvider';
 
-/** How a save of the picks ended: stored (or nothing to store), or why not, in pt-BR. */
-export type OutcomeOfCarPicksSave = { status: 'saved' } | { status: 'refused'; message: string };
+/**
+ * How a save of the picks ended: stored, saying whether the item changed (the same pair
+ * again stores nothing), or why not, in pt-BR.
+ */
+export type OutcomeOfCarPicksSave =
+  { status: 'saved'; hasChangedTheItem: boolean } | { status: 'refused'; message: string };
 
 /**
  * Of the fields the picks write, only those that differ from what the item stores: the
@@ -55,13 +59,15 @@ export function useSaveCarPicksIntoItem(): (
     }
     const fieldsThatChange = keepOnlyFieldsThatChange(itemNow.fields, fieldsOfThePicks.fields);
     if (Object.keys(fieldsThatChange).length === 0) {
-      return { status: 'saved' };
+      return { status: 'saved', hasChangedTheItem: false };
     }
     const refusal = await sendCommandAndReadItsRefusal({
       type: 'updateItemFields',
       itemId,
       fields: fieldsThatChange,
     });
-    return refusal === null ? { status: 'saved' } : { status: 'refused', message: refusal };
+    return refusal === null
+      ? { status: 'saved', hasChangedTheItem: true }
+      : { status: 'refused', message: refusal };
   };
 }

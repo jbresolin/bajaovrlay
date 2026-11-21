@@ -10,7 +10,10 @@ import {
 } from '@/features/items/battleCardOfTheLeaders.testSupport';
 import {
   buildEnduroSnapshotAtLap34,
+  buildRehearsalReplayThatIsOk,
   buildSimulatorThatIsOk,
+  buildSimulatorThatIsStale,
+  rehearsalReplayId,
   seededSimulatorId,
 } from '@/state/dataSourcesLikeTheServerSends.testSupport';
 import {
@@ -60,6 +63,74 @@ export function buildSlicesWithTheBattleCardButtonOnAir(): Slices {
         takenAt: '2027-03-20T14:10:00.000Z',
         status: 'on-air',
       },
+    ],
+  };
+}
+
+/**
+ * The same slices with the battle card (cars 31 and 38) also on the preview output of the
+ * lower third, previewed with this origin.
+ */
+export function buildSlicesWithTheBattleCardButtonInPreview(
+  previewOrigin: 'auto' | 'manual',
+): Slices {
+  const slices = buildSlicesWithTheBattleCardButton();
+  return {
+    ...slices,
+    instances: [
+      ...slices.instances,
+      {
+        id: 'instancia-disputa-em-previa',
+        graphicId: 'battle-card',
+        layerId: 'lower-third',
+        target: 'preview',
+        itemId: buildBattleCardButton().id,
+        resolvedData: {},
+        currentStep: 0,
+        takenAt: '2027-03-20T14:10:00.000Z',
+        status: 'ready',
+        previewOrigin,
+      },
+    ],
+  };
+}
+
+/** The same slices with the simulator late: its last poll failed, its data kept and stale. */
+export function buildSlicesWithTheSimulatorLate(): Slices {
+  return { ...buildSlicesWithTheBattleCardButton(), dataSources: [buildSimulatorThatIsStale()] };
+}
+
+/** The same slices with the simulator listing its first five cars only. */
+export function buildSlicesWithFiveCarsListed(): Slices {
+  const snapshot = buildEnduroSnapshotAtLap34(seededSimulatorId);
+  const positions = snapshot.shapes.positions;
+  if (positions === undefined) {
+    throw new Error('the lap-34 sample must hold positions');
+  }
+  const snapshotOfFiveCars = {
+    ...snapshot,
+    shapes: {
+      ...snapshot.shapes,
+      positions: { ...positions, entries: positions.entries.slice(0, 5) },
+    },
+  };
+  return { ...buildSlicesWithTheBattleCardButton(), dataSnapshots: [snapshotOfFiveCars] };
+}
+
+/**
+ * The battle card with its cars typed by hand (no source on the item), while two sources
+ * send positions: the simulator and the rehearsal replay.
+ */
+export function buildSlicesWithTwoSourcesAndTheCardTypedByHand(): Slices {
+  const slices = buildSlicesWithTheBattleCardButton();
+  const cardTypedByHand = { ...buildBattleCardButton(), fields: {} };
+  return {
+    ...slices,
+    items: slices.items.map((item) => (item.id === cardTypedByHand.id ? cardTypedByHand : item)),
+    dataSources: [buildSimulatorThatIsOk(), buildRehearsalReplayThatIsOk()],
+    dataSnapshots: [
+      buildEnduroSnapshotAtLap34(seededSimulatorId),
+      buildEnduroSnapshotAtLap34(rehearsalReplayId),
     ],
   };
 }

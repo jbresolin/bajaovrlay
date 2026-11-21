@@ -22,11 +22,13 @@ import {
   findProblemOfCarNumberTyped,
   type QuickCarPickCheck,
 } from './quickCarPickChecks';
+import { QuickCarPickSourceLine } from './QuickCarPickSourceLine';
 import {
   readSourceOfQuickCarPick,
   readStartOfQuickCarPick,
   type WayOfQuickCarPick,
 } from './quickCarPickStart';
+import { useRefreshPreviewOfItem } from './useRefreshPreviewOfItem';
 import { useSaveCarPicksIntoItem } from './useSaveCarPicksIntoItem';
 
 const texts = ptBR.quickCarPick;
@@ -54,13 +56,17 @@ export type QuickCarPickBoxProps = {
  * keeps the box open with the server's sentence; a refused take shows where takes from
  * that part of the page always show. While the item is on air, "No ar" takes it again (the
  * graphic goes out and in with the new cars): no command changes the cars a live instance
- * follows in place, and typing their values on air would freeze them (concept §5.3).
+ * follows in place, and typing their values on air would freeze them (concept §5.3; João's
+ * ruling on PR #73). An item also in "Prévia" is previewed again before the take, so the
+ * preview never keeps the old pair for a later "Tomar" (useRefreshPreviewOfItem.ts). A box
+ * closed (Esc, a click outside) while its save waits sends nothing more once it is answered.
  */
 export function QuickCarPickBox(props: QuickCarPickBoxProps) {
   const { item, offer } = props;
   const controlId = useId();
   const readServerStateNow = useReadServerStateNow();
   const saveCarPicksIntoItem = useSaveCarPicksIntoItem();
+  const refreshPreviewOfItem = useRefreshPreviewOfItem();
   const isConnected = useIsConnectedToServer();
   const whyTheRoleCannotTake = useWhyTheRoleCannotSend('takeItem');
   const whyTheRoleCannotPreview = useWhyTheRoleCannotSend('previewItem');
@@ -70,7 +76,10 @@ export function QuickCarPickBox(props: QuickCarPickBoxProps) {
 
   // What the box opens with, read once: what the operator types afterwards is the box's.
   const [start] = useState(() => readStartOfQuickCarPick(item, offer));
-  const [source] = useState(() => readSourceOfQuickCarPick(item, offer, readServerStateNow()));
+  const [sourceReading] = useState(() =>
+    readSourceOfQuickCarPick(item, offer, readServerStateNow()),
+  );
+  const source = sourceReading.status === 'source' ? sourceReading.source : undefined;
   const [way, setWay] = useState<WayOfQuickCarPick>(start.way);
   const [carNumberTextOfEachGroup, setCarNumberTextOfEachGroup] = useState(
     start.carNumberTextOfEachGroup,
@@ -102,6 +111,19 @@ export function QuickCarPickBox(props: QuickCarPickBoxProps) {
           }),
     [source, dataSources, dataSnapshots, overrides, bracketMatchFocuses, teams],
   );
+
+  const isSourceStale =
+    dataSources.find((dataSource) => dataSource.id === source?.sourceId)?.status.isStale === true;
+
+  // Whether the box is still on screen: one closed with Esc or a click outside while its
+  // save waits must not preview or take anything once the save is answered.
+  const isBoxStillOpenRef = useRef(true);
+  useEffect(() => {
+    isBoxStillOpenRef.current = true;
+    return () => {
+      isBoxStillOpenRef.current = false;
+    };
+  }, []);
 
   const numberBoxRefs = useRef<Array<HTMLInputElement | null>>([]);
   const placeBoxRef = useRef<HTMLInputElement | null>(null);
@@ -182,10 +204,21 @@ export function QuickCarPickBox(props: QuickCarPickBoxProps) {
     setRefusalOfTheSave(undefined);
     setIsWaitingForTheServer(true);
     const outcome = await saveCarPicksIntoItem(item.id, offer.dataSchema, check.picksOfGroups);
+    if (!isBoxStillOpenRef.current) {
+      return;
+    }
     setIsWaitingForTheServer(false);
     if (outcome.status === 'refused') {
       setRefusalOfTheSave(outcome.message);
       return;
+    }
+    // A preview of the item resolved from the old pair is replaced before the take; a
+    // "Prévia" replaces it by itself, and an unchanged pair leaves nothing old behind.
+    if (whatToDoNext === 'take' && outcome.hasChangedTheItem) {
+      const wasPreviewRefreshed = await refreshPreviewOfItem(item.id);
+      if (!wasPreviewRefreshed || !isBoxStillOpenRef.current) {
+        return;
+      }
     }
     props.onClose();
     if (whatToDoNext === 'preview') {
@@ -200,11 +233,7 @@ export function QuickCarPickBox(props: QuickCarPickBoxProps) {
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold">{texts.boxTitle(item.label)}</h2>
-      <p className="text-xs text-muted-foreground">
-        {source === undefined
-          ? texts.noSourceWithPositions
-          : texts.sourceLine(source.sourceLabel, source.isLive)}
-      </p>
+      <QuickCarPickSourceLine sourceReading={sourceReading} isSourceStale={isSourceStale} />
 
       {offer.battle === undefined ? null : (
         <Tabs

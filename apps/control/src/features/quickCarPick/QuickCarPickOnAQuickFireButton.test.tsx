@@ -21,26 +21,23 @@
  *     "No ar" then sends nothing.
  *   - A refused save keeps the box open with the server's sentence and takes nothing.
  *   - While the item is on air, the box says "No ar" will put it on air again.
- *   - A role that may not take (Dados) sees "Prévia" and "No ar" off, with the reason.
  *   - A button without cars (a race clock) offers neither the chevron nor the entry, and a
  *     click on the battle card's button itself still just takes it.
  *
  * What these tests deliberately do not cover:
  *   - Each check and message: quickCarPickChecks.test.ts. Each binding written, field by
  *     field: carGroupPicksOfStoredItem.test.ts (features/schemaForm).
- *   - The same box on a rundown row: QuickCarPickOnARundownRow.test.tsx.
+ *   - The guards (a place the source cannot fill, a box closed while its save waits, the
+ *     source line, a stale preview, Dados, Enter and the page's keys):
+ *     QuickCarPickGuards.test.tsx. The same box on a rundown row:
+ *     QuickCarPickOnARundownRow.test.tsx.
  *   - The real server and the graphic on air: e2e/quickBattlePick.e2e.ts.
  */
 import type { Slices } from '@bajaovrlay/shared';
-import type { SessionAnswer } from '@bajaovrlay/shared';
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { QuickFireStrip } from '@/features/quickFire/QuickFireStrip';
-import {
-  letThePageFinishWhatItStarted,
-  renderOnControlPageConnectedToFakeServer,
-} from '@/state/controlPageOnFakeServer.testSupport';
+import { letThePageFinishWhatItStarted } from '@/state/controlPageOnFakeServer.testSupport';
 
 import {
   battleCardLabel,
@@ -50,31 +47,26 @@ import {
   buildSlicesWithTheBattleCardButton,
   buildSlicesWithTheBattleCardButtonOnAir,
 } from './battleCardButton.testSupport';
+import {
+  drawTheStripWithTheBattleCard,
+  openTheBoxWithTheChevron,
+} from './quickCarPickOnTheStrip.testSupport';
 
 const battleCardItemId = buildBattleCardButton().id;
 
-/** The Dados role logged in at the second desk. */
-const dataRoleAtMesa2: SessionAnswer = {
-  isLoginRequired: true,
-  session: { role: 'dados', station: 'Mesa 2', expiresAt: '2026-11-15T07:00:00.000Z' },
-};
-
-/** Draws the strip on a page connected to a fake server, and opens the battle card's box. */
-function openTheBoxOfTheBattleCard(slices: Slices, sessionAnswer?: SessionAnswer) {
-  const page = renderOnControlPageConnectedToFakeServer(
-    <QuickFireStrip />,
-    slices,
-    sessionAnswer === undefined ? undefined : { sessionAnswer },
-  );
-  fireEvent.click(screen.getByRole('button', { name: `Escolher carros: ${battleCardLabel}` }));
-  const box = screen.getByRole('dialog', { name: `Escolher carros — ${battleCardLabel}` });
-  return { ...page, box: within(box) };
+/** Draws the strip with the battle card and opens its box, both part of an arrangement. */
+function openTheBoxOfTheBattleCard(slices: Slices) {
+  const page = drawTheStripWithTheBattleCard(slices);
+  return { ...page, box: openTheBoxWithTheChevron() };
 }
 
 describe('"Escolher carros" on a quick-fire button', () => {
   it('opens with the cars the item stores, named as they run now', () => {
-    // Arrange and act: the strip with the leaders' card, and its chevron pressed.
-    const { box } = openTheBoxOfTheBattleCard(buildSlicesWithTheBattleCardButton());
+    // Arrange: the strip with the leaders' card.
+    drawTheStripWithTheBattleCard(buildSlicesWithTheBattleCardButton());
+
+    // Act: press its chevron.
+    const box = openTheBoxWithTheChevron();
 
     // Assert: 31 and 38 in the boxes, and the read-out naming the 1st and the 2nd.
     expect(box.getByLabelText('Carro da frente'), 'the car ahead stored').toHaveValue('31');
@@ -209,29 +201,16 @@ describe('"Escolher carros" on a quick-fire button', () => {
   });
 
   it('says "No ar" puts the card on air again while it is on air', () => {
-    // Arrange and act: the card on the program output, and its box opened.
-    const { box } = openTheBoxOfTheBattleCard(buildSlicesWithTheBattleCardButtonOnAir());
+    // Arrange: the strip, with the card on the program output.
+    drawTheStripWithTheBattleCard(buildSlicesWithTheBattleCardButtonOnAir());
+
+    // Act: open its box.
+    const box = openTheBoxWithTheChevron();
 
     // Assert: the note about taking it again.
     expect(
       box.getByText('Já está no ar: "No ar" troca o gráfico pelo dos carros escolhidos.'),
       'the operator must know the card goes out and in with the new cars',
-    ).toBeInTheDocument();
-  });
-
-  it('turns "Prévia" and "No ar" off for Dados, saying why', () => {
-    // Arrange and act: the box opened by the Dados role.
-    const { box } = openTheBoxOfTheBattleCard(
-      buildSlicesWithTheBattleCardButton(),
-      dataRoleAtMesa2,
-    );
-
-    // Assert: both buttons off, and the reason in words.
-    expect(box.getByRole('button', { name: 'Prévia' }), 'Dados may not preview').toBeDisabled();
-    expect(box.getByRole('button', { name: 'No ar' }), 'Dados may not take').toBeDisabled();
-    expect(
-      box.getByText(/Produtor/),
-      'the reason must be written under the buttons',
     ).toBeInTheDocument();
   });
 });
@@ -240,10 +219,7 @@ describe('the buttons around "Escolher carros"', () => {
   it('offers no chevron and no entry on a button without cars', () => {
     // Arrange: the strip, with three race clocks and the battle card, and its chevrons
     // counted before a menu hides the rest of the page from a screen reader.
-    renderOnControlPageConnectedToFakeServer(
-      <QuickFireStrip />,
-      buildSlicesWithTheBattleCardButton(),
-    );
+    drawTheStripWithTheBattleCard(buildSlicesWithTheBattleCardButton());
     const chevrons = screen.getAllByRole('button', { name: /^Escolher carros:/ });
 
     // Act: open the "⋯" menu of "Logo Baja", a race clock.
@@ -264,10 +240,7 @@ describe('the buttons around "Escolher carros"', () => {
 
   it('opens the box from the battle card’s "⋯" menu', () => {
     // Arrange: the strip, and the battle card's "⋯" menu open.
-    renderOnControlPageConnectedToFakeServer(
-      <QuickFireStrip />,
-      buildSlicesWithTheBattleCardButton(),
-    );
+    drawTheStripWithTheBattleCard(buildSlicesWithTheBattleCardButton());
     fireEvent.keyDown(screen.getByRole('button', { name: `Mais ações: ${battleCardLabel}` }), {
       key: 'Enter',
     });
@@ -284,10 +257,7 @@ describe('the buttons around "Escolher carros"', () => {
 
   it('still takes the item when the button itself is clicked', async () => {
     // Arrange: the strip.
-    const { fakeServer } = renderOnControlPageConnectedToFakeServer(
-      <QuickFireStrip />,
-      buildSlicesWithTheBattleCardButton(),
-    );
+    const { fakeServer } = drawTheStripWithTheBattleCard(buildSlicesWithTheBattleCardButton());
 
     // Act: click the battle card's button.
     fireEvent.click(screen.getByRole('button', { name: new RegExp(`^${battleCardLabel}`) }));

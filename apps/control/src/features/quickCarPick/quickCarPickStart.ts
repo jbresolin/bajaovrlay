@@ -12,7 +12,11 @@ import {
 } from '@/features/schemaForm';
 
 import type { CarGroupsToPickQuickly } from './carGroupsToPickQuickly';
-import { chooseSourceForQuickCarPick, type SlicesForPositions } from './positionsOfTheSource';
+import {
+  chooseSourceForQuickCarPick,
+  type SlicesForPositions,
+  type SourceChoiceOfQuickCarPick,
+} from './positionsOfTheSource';
 
 /** The two ways of the box: a number per car, or the place of a battle. */
 export type WayOfQuickCarPick = 'carNumber' | 'place';
@@ -28,6 +32,11 @@ export type StartOfQuickCarPick = {
 
 /** The source every pick is made on, as the box shows it. */
 export type SourceOfQuickCarPick = { sourceId: string; sourceLabel: string; isLive: boolean };
+
+/** What the box reads its cars from: the source, or why none can be told. */
+export type SourceReadingOfQuickCarPick =
+  | { status: 'source'; source: SourceOfQuickCarPick }
+  | Exclude<SourceChoiceOfQuickCarPick, { status: 'source' }>;
 
 /** Reads what the box opens with from the item's stored fields. */
 export function readStartOfQuickCarPick(
@@ -68,25 +77,30 @@ export function readStartOfQuickCarPick(
 /**
  * The source of the picks: the one the item's cars read, with their "Ao vivo / Congelado";
  * for cars typed by hand, the only source sending positions, live (the editor's default).
- * Undefined when no source can be told: the box then sends nothing.
+ * When no source can be told, the reason (none sends positions, or several do): the box
+ * then says it and sends nothing.
  */
 export function readSourceOfQuickCarPick(
   item: Item,
   offer: CarGroupsToPickQuickly,
   slices: SlicesForPositions,
-): SourceOfQuickCarPick | undefined {
+): SourceReadingOfQuickCarPick {
   const storedSourceAndWhen = readSourceAndWhenOfCarGroupsInItemFields(
     offer.carGroups,
     item.fields,
   );
-  const sourceId = chooseSourceForQuickCarPick(storedSourceAndWhen?.sourceId, slices);
-  if (sourceId === undefined) {
-    return undefined;
+  const sourceChoice = chooseSourceForQuickCarPick(storedSourceAndWhen?.sourceId, slices);
+  if (sourceChoice.status !== 'source') {
+    return sourceChoice;
   }
+  const { sourceId } = sourceChoice;
   const dataSource = slices.dataSources.find((candidate) => candidate.id === sourceId);
   return {
-    sourceId,
-    sourceLabel: dataSource?.label ?? sourceId,
-    isLive: storedSourceAndWhen?.isLive ?? true,
+    status: 'source',
+    source: {
+      sourceId,
+      sourceLabel: dataSource?.label ?? sourceId,
+      isLive: storedSourceAndWhen?.isLive ?? true,
+    },
   };
 }

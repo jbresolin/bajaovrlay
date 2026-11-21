@@ -45,7 +45,7 @@ export function readCarPickStoredInItemFields(
 
 /**
  * The source and "Ao vivo / Congelado" the item's cars already read: those of the first
- * field of these groups stored as a binding. Undefined when none is (cars typed by hand),
+ * field of these groups stored as a binding to the positions. Undefined when none is (cars typed by hand),
  * and the console then chooses a source itself. A new pick keeps both, so the console never
  * turns a frozen battle live, nor moves it to another source.
  */
@@ -56,7 +56,10 @@ export function readSourceAndWhenOfCarGroupsInItemFields(
   for (const carGroup of carGroups) {
     for (const fieldKey of Object.keys(carGroup.fields)) {
       const storedField = readOwnValueOfRecord(itemFields, fieldKey);
-      if (storedField?.kind === 'binding') {
+      // Only a field reading the positions names the source cars are picked on; a field of
+      // the group bound elsewhere (the session) says nothing about it. "Ao vivo" comes from
+      // this first bound field: a pick writes one choice into every field of its cars.
+      if (storedField?.kind === 'binding' && storedField.shapeKey === 'positions') {
         return { sourceId: storedField.sourceId, isLive: storedField.isLive };
       }
     }

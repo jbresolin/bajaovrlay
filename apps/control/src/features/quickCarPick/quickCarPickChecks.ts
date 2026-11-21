@@ -16,14 +16,12 @@ import { ptBR } from '@/i18n/ptBR';
 
 import type { BattleOfCarGroups } from './carGroupsToPickQuickly';
 import { findCarByNumber } from './positionsOfTheSource';
+import { readWholeNumberTyped } from './wholeNumberTyped';
 
 const texts = ptBR.quickCarPick;
 
 /** A battle for the Nth place needs a car at N + 1, so the last place offered is the 9th. */
 export const highestBattlePlace = highestPlaceACarCanBePickedAt - 1;
-
-/** Whole numbers from 1, with no sign, point or space inside. */
-const wholeNumberFromOnePattern = /^[1-9]\d*$/;
 
 /** What every pick is made on, and what the numbers are checked against. */
 export type QuickCarPickSource = {
@@ -52,14 +50,13 @@ export function findProblemOfCarNumberTyped(
   carNumberText: string,
   source: QuickCarPickSource,
 ): string | undefined {
-  const trimmedText = carNumberText.trim();
-  if (!wholeNumberFromOnePattern.test(trimmedText)) {
+  const carNumber = readWholeNumberTyped(carNumberText);
+  if (carNumber === undefined) {
     return ptBR.carGroups.carNumberMissing(carGroup.label);
   }
   if (source.positions === undefined) {
     return texts.noPositionsYet(source.sourceLabel);
   }
-  const carNumber = Number(trimmedText);
   if (findCarByNumber(source.positions, carNumber) === undefined) {
     return texts.carNotInPositions(carNumber, source.sourceLabel);
   }
@@ -104,18 +101,19 @@ export function checkCarNumbersTyped(
 
 /** The place typed in "Pela posição", or undefined when it is no place from 1 to the 9th. */
 export function readBattlePlaceTyped(placeText: string): number | undefined {
-  const trimmedText = placeText.trim();
-  if (!wholeNumberFromOnePattern.test(trimmedText)) {
+  const placeNumber = readWholeNumberTyped(placeText);
+  if (placeNumber === undefined) {
     return undefined;
   }
-  const placeNumber = Number(trimmedText);
   return placeNumber <= highestBattlePlace ? placeNumber : undefined;
 }
 
 /**
  * Checks "Pela posição": the battle for the Nth place sets the car ahead at N and the car
  * behind at N + 1, both by place (the rule of the editor's "Disputa pela Nª posição"), so
- * the card follows whichever cars run there.
+ * the card follows whichever cars run there. Refused, like a number box, when the source
+ * has sent no positions yet or lists no car at N + 1 now (a field of 6 cars has no battle
+ * for the 6th place): a take of such a pair would be refused for a missing required field.
  */
 export function checkBattlePlaceTyped(
   battle: BattleOfCarGroups,
@@ -129,6 +127,19 @@ export function checkBattlePlaceTyped(
       problems: [{ about: 'place', message: texts.battlePlaceInvalid(highestBattlePlace) }],
     };
   }
+  if (source.positions === undefined) {
+    return {
+      status: 'problems',
+      problems: [{ about: 'place', message: texts.noPositionsYet(source.sourceLabel) }],
+    };
+  }
+  const placeOfTheCarBehind = placeNumber + 1;
+  if (source.positions.length < placeOfTheCarBehind) {
+    return {
+      status: 'problems',
+      problems: [{ about: 'place', message: texts.noCarAtPlaceNow(placeOfTheCarBehind) }],
+    };
+  }
   const { sourceId, isLive } = source;
   return {
     status: 'picks',
@@ -139,7 +150,7 @@ export function checkBattlePlaceTyped(
       },
       {
         carGroup: battle.carGroupBehind,
-        pick: { pickedBy: 'place', sourceId, placeNumber: placeNumber + 1, isLive },
+        pick: { pickedBy: 'place', sourceId, placeNumber: placeOfTheCarBehind, isLive },
       },
     ],
   };

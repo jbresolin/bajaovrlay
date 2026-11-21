@@ -2,8 +2,10 @@ import type { Item } from '@bajaovrlay/shared';
 import type { KeyboardEvent, ReactNode } from 'react';
 
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
+import { useWhyTheRoleCannotSend } from '@/state/operatorSessionContext';
 
 import type { CarGroupsToPickQuickly } from './carGroupsToPickQuickly';
 import { QuickCarPickBox } from './QuickCarPickBox';
@@ -74,20 +76,36 @@ export function QuickCarPickPopover(props: QuickCarPickPopoverProps) {
 /**
  * The small chevron on a quick-fire button that opens "Escolher carros" (and closes it
  * again). Must be drawn inside a QuickCarPickPopover with an offer. Off while the page is
- * disconnected, like the "⋯" beside it.
+ * disconnected, like the "⋯" beside it, and for a role that may not take (Dados): the box
+ * ends in a take or a preview, so it is greyed out with the role's reason as its tooltip,
+ * on a focusable span since a disabled button receives neither hover nor focus.
  */
 export function QuickCarPickOpenButton(props: { itemLabel: string; className: string }) {
   const isConnected = useIsConnectedToServer();
-  return (
+  const whyTheRoleCannotTake = useWhyTheRoleCannotSend('takeItem');
+  const chevron = (
     <PopoverTrigger asChild>
       <button
         type="button"
-        disabled={!isConnected}
+        disabled={!isConnected || whyTheRoleCannotTake !== undefined}
         aria-label={texts.openButton(props.itemLabel)}
         className={props.className}
       >
         {texts.openSymbol}
       </button>
     </PopoverTrigger>
+  );
+  if (whyTheRoleCannotTake === undefined) {
+    return chevron;
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span tabIndex={0} className={props.className}>
+          {chevron}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{whyTheRoleCannotTake}</TooltipContent>
+    </Tooltip>
   );
 }

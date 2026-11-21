@@ -10,9 +10,9 @@ import { ptBR } from '@/i18n/ptBR';
 
 import { findCarAtPlace, findCarByNumber } from './positionsOfTheSource';
 import { readBattlePlaceTyped } from './quickCarPickChecks';
+import { readWholeNumberTyped } from './wholeNumberTyped';
 
 const texts = ptBR.quickCarPick;
-const wholeNumberFromOnePattern = /^[1-9]\d*$/;
 
 /** One car as the read-out names it ("6º 47 Carnaúba Baja"), or "—" for no car. */
 function describeCarNow(car: PositionEntry | undefined): string {
@@ -26,11 +26,11 @@ function findCarOfNumberTyped(
   carNumberText: string,
   positions: PositionEntry[] | undefined,
 ): PositionEntry | undefined {
-  const trimmedText = carNumberText.trim();
-  if (positions === undefined || !wholeNumberFromOnePattern.test(trimmedText)) {
+  const carNumber = readWholeNumberTyped(carNumberText);
+  if (positions === undefined || carNumber === undefined) {
     return undefined;
   }
-  return findCarByNumber(positions, Number(trimmedText));
+  return findCarByNumber(positions, carNumber);
 }
 
 /** The read-out of "Por número": each box's car now, in the order of the boxes. */

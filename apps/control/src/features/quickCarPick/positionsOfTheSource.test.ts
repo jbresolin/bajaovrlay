@@ -12,7 +12,8 @@
  *     car 38's team name laid over them.
  *   - A source that has sent nothing yet has no positions.
  *   - The item's own source is kept; with none, the only source sending positions is
- *     chosen; with two such sources and none on the item, none is chosen.
+ *     chosen; with two such sources and none on the item, none is chosen and that is why;
+ *     with no source at all, the reason says no source sends positions.
  *   - A car is found by its number, and by its place counted from 1.
  *
  * What these tests deliberately do not cover:
@@ -75,10 +76,13 @@ describe('chooseSourceForQuickCarPick', () => {
     const slices = buildSlicesWithTwoSourcesSendingPositions();
 
     // Act: choose the source of a new pick for an item on the replay.
-    const sourceId = chooseSourceForQuickCarPick(rehearsalReplayId, slices);
+    const sourceChoice = chooseSourceForQuickCarPick(rehearsalReplayId, slices);
 
     // Assert: the replay, as stored.
-    expect(sourceId, 'a pick must never move the item to another source').toBe(rehearsalReplayId);
+    expect(sourceChoice, 'a pick must never move the item to another source').toEqual({
+      status: 'source',
+      sourceId: rehearsalReplayId,
+    });
   });
 
   it('chooses the only source sending positions when the item reads none', () => {
@@ -86,10 +90,13 @@ describe('chooseSourceForQuickCarPick', () => {
     const slices = buildSlicesWithTheBattleCardOfTheLeaders();
 
     // Act: choose the source of a new pick for an item with no source.
-    const sourceId = chooseSourceForQuickCarPick(undefined, slices);
+    const sourceChoice = chooseSourceForQuickCarPick(undefined, slices);
 
     // Assert: the simulator.
-    expect(sourceId, 'the only source with positions must be chosen').toBe(seededSimulatorId);
+    expect(sourceChoice, 'the only source with positions must be chosen').toEqual({
+      status: 'source',
+      sourceId: seededSimulatorId,
+    });
   });
 
   it('chooses none when two sources send positions and the item reads neither', () => {
@@ -97,10 +104,25 @@ describe('chooseSourceForQuickCarPick', () => {
     const slices = buildSlicesWithTwoSourcesSendingPositions();
 
     // Act: choose the source of a new pick for an item with no source.
-    const sourceId = chooseSourceForQuickCarPick(undefined, slices);
+    const sourceChoice = chooseSourceForQuickCarPick(undefined, slices);
 
-    // Assert: none; the operator chooses in the item editor.
-    expect(sourceId, 'a guess between two sources would be wrong half the time').toBeUndefined();
+    // Assert: none, saying there are several; the operator chooses in the item editor.
+    expect(sourceChoice, 'a guess between two sources would be wrong half the time').toEqual({
+      status: 'severalSourcesWithPositions',
+    });
+  });
+
+  it('chooses none when no source is listed at all, saying no source sends positions', () => {
+    // Arrange: no source at all.
+    const slices = { ...buildSlicesWithTheBattleCardOfTheLeaders(), dataSources: [] };
+
+    // Act: choose the source of a new pick for an item with no source.
+    const sourceChoice = chooseSourceForQuickCarPick(undefined, slices);
+
+    // Assert: none, and why.
+    expect(sourceChoice, 'with no source the box must say none sends positions').toEqual({
+      status: 'noSourceWithPositions',
+    });
   });
 });
 

@@ -12,7 +12,8 @@
  *   - Cars 47 and 52 pass as two picks by number, frozen when the item is frozen.
  *   - Each wrong box gets its own message (table below).
  *   - "Disputa pela 3ª posição" gives the car ahead at the 3rd place and the car behind at
- *     the 4th; a place outside 1 to 9 is refused.
+ *     the 4th; a place outside 1 to 9, any place before the source has sent positions, and
+ *     a place whose car behind the source does not list now are refused (table below).
  *
  * What these tests deliberately do not cover:
  *   - The bindings each pick writes: carGroupPicksOfStoredItem.test.ts (features/schemaForm).
@@ -157,17 +158,66 @@ describe('checkBattlePlaceTyped', () => {
     ]);
   });
 
-  it('refuses the 10th place, which has no car with a path of its own behind it', () => {
-    // Arrange: the battle card's battle.
+  /** The simulator's first five cars only: a field too small for some battles. */
+  function buildSimulatorListingFiveCars(): QuickCarPickSource {
+    const simulator = buildSimulatorAsTheSource(true);
+    return { ...simulator, positions: simulator.positions?.slice(0, 5) };
+  }
+
+  const refusedPlaceScenarios = [
+    // Above the 9th: the 10th place's car behind would be the 11th, which has no path.
+    {
+      name: 'refuses the 10th place, which has no car with a path of its own behind it',
+      placeText: '10',
+      source: () => buildSimulatorAsTheSource(true),
+      expectedMessage: 'Digite uma posição de 1 a 9.',
+    },
+    // Not a number at all: a slip of the finger.
+    {
+      name: 'refuses a place that is not a number',
+      placeText: '3º',
+      source: () => buildSimulatorAsTheSource(true),
+      expectedMessage: 'Digite uma posição de 1 a 9.',
+    },
+    // The source has sent nothing yet: no car runs anywhere, so no pair can be shown.
+    {
+      name: 'refuses any place while the source has sent no positions',
+      placeText: '3',
+      source: () => ({ ...buildSimulatorAsTheSource(true), positions: undefined }),
+      expectedMessage: 'Simulador — Enduro ainda não mandou posições.',
+    },
+    // Five cars listed (a heat, or the start of a session): the battle for 5th place has
+    // no car behind, and a take would be refused for its missing required fields.
+    {
+      name: 'refuses the battle for 5th place when only five cars are listed',
+      placeText: '5',
+      source: buildSimulatorListingFiveCars,
+      expectedMessage: 'Não há carro na 6ª posição agora.',
+    },
+  ];
+
+  it.each(refusedPlaceScenarios)('$name', ({ placeText, source, expectedMessage }) => {
+    // Arrange: the battle card's battle, and the source as the row describes it.
     const { battle } = readBattleCardOffer();
 
-    // Act: check "10".
-    const check = checkBattlePlaceTyped(battle, '10', buildSimulatorAsTheSource(true));
+    // Act: check the place typed.
+    const check = checkBattlePlaceTyped(battle, placeText, source());
 
-    // Assert: refused, saying which places can be chosen.
-    expect(check, 'only the places 1 to 9 can be battled for').toEqual({
+    // Assert: refused under "Disputa pela posição", saying why.
+    expect(check, 'the place must be refused with its own pt-BR reason').toEqual({
       status: 'problems',
-      problems: [{ about: 'place', message: 'Digite uma posição de 1 a 9.' }],
+      problems: [{ about: 'place', message: expectedMessage }],
     });
+  });
+
+  it('passes the battle for 4th place when only five cars are listed', () => {
+    // Arrange: the battle card's battle, and a source listing five cars.
+    const { battle } = readBattleCardOffer();
+
+    // Act: check "4": the 4th and the 5th, both listed.
+    const check = checkBattlePlaceTyped(battle, '4', buildSimulatorListingFiveCars());
+
+    // Assert: it passes; only a missing car behind refuses the battle.
+    expect(check.status, 'the last listed pair must still be a battle').toBe('picks');
   });
 });
