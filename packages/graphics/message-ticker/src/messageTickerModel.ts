@@ -6,10 +6,11 @@
  *
  * The label and the messages are typed (the messages are the item form's list of texts,
  * BAJAOVRLAY-23), within the limits of messageLimits.ts. The clock is the race clock's
- * four clock fields and the flag (the kit's), required with typed defaults as on the strip,
- * the conservative choice. The block is off unless switched on (decided at gate 2 of
- * PR #26): a ticker taken between sessions would otherwise show a stopped 0:00 under
- * "Pré-largada".
+ * four clock fields and the flag (the kit's), the four clock fields required with typed
+ * defaults as on the strip, the conservative choice; the flag optional (BAJAOVRLAY-81):
+ * with none the block shows its time without the flag pill. The block is off unless
+ * switched on (decided at gate 2 of PR #26): a ticker taken between sessions would
+ * otherwise show a stopped 0:00 under "Pré-largada".
  */
 import { describeFirstDataProblemInPortuguese } from '@bajaovrlay/graphics-kit/dataProblems';
 import { raceClockReadingFieldSchemas } from '@bajaovrlay/graphics-kit/raceClockReading';

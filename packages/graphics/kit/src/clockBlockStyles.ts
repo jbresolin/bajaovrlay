@@ -47,6 +47,12 @@ export const clockBlockStyles = css`
     border-radius: var(--radius-pill);
   }
 
+  /* No flag in the reading (BAJAOVRLAY-81): the pill leaves the row, and the card closes
+     up around the time. */
+  .clock-block-flag[hidden] {
+    display: none;
+  }
+
   .clock-block-flag-word {
     padding-top: var(--glyph-nudge);
     font-family: var(--font-display);

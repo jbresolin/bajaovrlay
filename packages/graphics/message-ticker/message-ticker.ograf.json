@@ -55,6 +55,7 @@
       "state": {
         "type": "string",
         "title": "Bandeira",
+        "description": "Opcional; sem bandeira, nada da bandeira aparece e o espaço dela se fecha.",
         "enum": ["pre", "green", "yellow", "red", "checkered", "finished"],
         "gddType": "select",
         "gddOptions": {
@@ -125,7 +126,6 @@
     "required": [
       "label",
       "messages",
-      "state",
       "clockMode",
       "referenceTimeMs",
       "referenceWallClockMs",

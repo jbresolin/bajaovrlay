@@ -11,7 +11,8 @@
  *
  * What these tests prove:
  *   - The same payloads pass or fail both checks: three messages; one; nine; a message of
- *     exactly 50 characters (accents included); and no message, ten messages, an empty
+ *     exactly 50 characters (accents included); no flag (optional since BAJAOVRLAY-81); and
+ *     no message, ten messages, an empty
  *     message, a message of spaces, one of 51 characters, a label of 11, and an unknown field.
  *
  * What these tests deliberately do not cover:
@@ -33,6 +34,12 @@ function writeMessageOfLength(length: number): string {
 const dataAgreementScenarios = [
   // The design's ticker.
   { name: 'both accept three messages', data: createEnduroTickerData(), isValid: true },
+  // "Bandeira" cleared (BAJAOVRLAY-81): the clock block shows its time with no flag pill.
+  {
+    name: 'both accept a ticker with no flag',
+    data: { ...createEnduroTickerData(), state: undefined },
+    isValid: true,
+  },
   // One message: a ticker that never turns.
   {
     name: 'both accept one message',

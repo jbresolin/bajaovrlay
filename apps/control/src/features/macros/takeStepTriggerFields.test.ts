@@ -52,13 +52,14 @@ describe('listGraphicFieldsOfEachItem', () => {
     // Act: list its fields.
     const fieldsOfEachItem = listGraphicFieldsOfEachItem(items, [buildRaceClockGraphic()]);
 
-    // Assert: the first two, "Título" required, as the manifest lists them.
+    // Assert: the first two, as the manifest lists them: "Título" required, "Bandeira"
+    // optional since BAJAOVRLAY-81.
     expect(
       fieldsOfEachItem['item-relogio-enduro']?.slice(0, 2),
       'the fields must be the graphic’s, with their titles',
     ).toEqual([
       { fieldKey: 'sessionName', title: 'Título', isRequired: true },
-      { fieldKey: 'state', title: 'Bandeira', isRequired: true },
+      { fieldKey: 'state', title: 'Bandeira', isRequired: false },
     ]);
   });
 });

@@ -16,9 +16,14 @@
  *     (the clock block, six cars and the page cell), and the stop length `--motion-out`,
  *     read from the text of packages/theme/ardosia/tokens.css.
  *   - The cars are bound live to the positions' whole list by default, and need only the
- *     position, the car and the school of each entry, letting every other field through.
+ *     position, the car and the school of each entry, letting every other field through;
+ *     the laps and the two gaps the strip may draw pass through undeclared, as before, so
+ *     a bad value never refuses the whole list.
+ *   - The laps are off and the gap "Não mostrar" by default, neither required, so an item
+ *     saved before BAJAOVRLAY-81 looks and validates the same.
  *   - The clock fields are the race clock's own, word for word (titles, roles, defaults),
- *     so "Relógio da fonte" fills them as it fills the race clock's.
+ *     so "Relógio da fonte" fills them as it fills the race clock's; the flag is optional
+ *     on both (BAJAOVRLAY-81).
  *   - The clock block's switch starts on.
  *
  * What these tests deliberately do not cover:
@@ -172,7 +177,65 @@ describe('lower-strip.ograf.json settings', () => {
     expect(allowsOtherFields, 'a positions entry fits with all its fields').toBe(true);
   });
 
-  it('declares the race clock’s clock fields (four with roles, and the flag) word for word', () => {
+  it('leaves the laps and gaps to pass through undeclared, so a bad one never refuses the list (BAJAOVRLAY-81)', () => {
+    // Arrange: what each car of the list declares.
+    const carFields = lowerStripManifest.schema.properties.entries.items.properties;
+
+    // Act: look for the three fields the new cells read.
+    const declaredLapsAndGapFields = ['laps', 'gapToLeaderMs', 'gapToLeaderLaps'].filter(
+      (fieldName) => fieldName in carFields,
+    );
+
+    // Assert: none is declared. OGraf requires a single type on any field declared, and a
+    // type would make the server refuse the whole list for one bad value, which it never
+    // did before these cells existed; they pass through as every other positions field
+    // does (additionalProperties), and the graphic blanks a bad one (lowerStripModel.ts).
+    expect(declaredLapsAndGapFields, 'the three fields pass through undeclared').toEqual([]);
+  });
+
+  it('offers the laps off and the gap as "Não mostrar" by default, so old items look the same', () => {
+    // Arrange: the two choices of what each car shows.
+    const lapsSwitch = lowerStripManifest.schema.properties.showLaps;
+    const gapChoice = lowerStripManifest.schema.properties.gapDisplay;
+
+    // Act: read what the item form shows for them.
+    const choicesAsShown = {
+      laps: { type: lapsSwitch.type, title: lapsSwitch.title, default: lapsSwitch.default },
+      gap: {
+        title: gapChoice.title,
+        options: gapChoice.enum,
+        labels: gapChoice.gddOptions.labels,
+        default: gapChoice.default,
+      },
+      requiredFields: lowerStripManifest.schema.required,
+    };
+
+    // Assert: off and "Não mostrar" by default, pt-BR labels with an example each, and
+    // neither required, so an item saved before them still validates.
+    expect(choicesAsShown, 'the two choices as the item form shows them').toEqual({
+      laps: { type: 'boolean', title: 'Mostrar as voltas', default: false },
+      gap: {
+        title: 'Diferença para o líder',
+        options: ['none', 'laps', 'lapsAndTime', 'time'],
+        labels: {
+          none: 'Não mostrar',
+          laps: 'Só voltas (+2 voltas)',
+          lapsAndTime: 'Voltas e tempo (+2 voltas ou +12,3)',
+          time: 'Só tempo (+12,3)',
+        },
+        default: 'none',
+      },
+      requiredFields: [
+        'entries',
+        'clockMode',
+        'referenceTimeMs',
+        'referenceWallClockMs',
+        'running',
+      ],
+    });
+  });
+
+  it('declares the race clock’s clock fields (four with roles, and the optional flag) word for word', () => {
     // Arrange: the clock fields of both manifests.
     const clockFieldKeys = [
       'state',
@@ -186,14 +249,15 @@ describe('lower-strip.ograf.json settings', () => {
     const stripClockFields = clockFieldKeys.map((key) => lowerStripManifest.schema.properties[key]);
     const raceClockFields = clockFieldKeys.map((key) => raceClockManifest.schema.properties[key]);
 
-    // Assert: identical, roles and defaults included, and required on both.
+    // Assert: identical, roles and defaults included; the cars and the four clock fields
+    // required, the flag optional on both (BAJAOVRLAY-81).
     expect(stripClockFields, 'the strip’s clock is the race clock’s, field for field').toEqual(
       raceClockFields,
     );
-    expect(lowerStripManifest.schema.required, 'the cars and the clock are required').toEqual([
-      'entries',
-      ...clockFieldKeys,
-    ]);
+    expect(
+      lowerStripManifest.schema.required,
+      'the cars and the clock are required, the flag is not',
+    ).toEqual(['entries', 'clockMode', 'referenceTimeMs', 'referenceWallClockMs', 'running']);
   });
 
   it('starts the clock block switched on', () => {

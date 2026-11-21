@@ -8,9 +8,18 @@
 export const ptBR = {
   /** A car's position with the ordinal sign, as the strip writes it: "1º", "13º". */
   positionWithOrdinal: (position: number) => `${position}º`,
-  /** The accessible name of a car's pill. */
-  carPillName: (position: number, carNumber: number, schoolName: string) =>
-    `${position}º, carro ${carNumber}, ${schoolName}`,
+  /**
+   * The accessible name of a car's pill; the laps and the gap follow when the pill shows
+   * them (`extraTexts`, the cells' words, empty ones left out).
+   */
+  carPillName: (position: number, carNumber: number, schoolName: string, extraTexts: string[]) =>
+    [`${position}º`, `carro ${carNumber}`, schoolName, ...extraTexts].join(', '),
+  /** A car's laps (BAJAOVRLAY-81): lowercase here, the styles set the pill in caps. */
+  lapsCompleted: (laps: number) => (laps === 1 ? '1 volta' : `${laps} voltas`),
+  /** A gap in laps, as the tower writes it: "+1 volta", "+2 voltas". */
+  gapInLaps: (laps: number) => (laps === 1 ? '+1 volta' : `+${laps} voltas`),
+  /** A gap in seconds with no unit, as the tower writes it: the caps face has no "s". */
+  gapInSeconds: (secondsToTheTenth: string) => `+${secondsToTheTenth}`,
   /** The accessible name of the page cell: "página 1 de 6". */
   pageCellName: (pageNumber: number, pageCount: number) => `página ${pageNumber} de ${pageCount}`,
   /** The accessible name of the list of cars. */
@@ -42,6 +51,8 @@ export const ptBR = {
     clockOffButton: 'Sem relógio',
     swapLeadersButton: 'Trocar 1º e 2º',
     flagButton: (flagLabel: string) => `Bandeira: ${flagLabel}`,
+    /** Takes the flag away, as an item with "Bandeira" cleared does (BAJAOVRLAY-81). */
+    noFlagButton: 'Sem bandeira',
     unreadableAddressData: 'O parâmetro ?data= do endereço não é um JSON válido.',
     lastAnswer: (actionName: string, statusCode: number, statusMessage: string | undefined) => {
       const statusText = `${actionName}: ${statusCode}`;

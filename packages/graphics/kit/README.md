@@ -24,10 +24,10 @@ src/scrollingTextTimings.ts              its timings from the theme's --motion-t
 src/scrollingTextStyles.ts               the box that clips, the text that moves, the edge fade while it scrolls
 src/textPresence.ts                      whether an optional text has something to show (isTextGiven)
 src/clockTicker.ts                       the per-frame loop that redraws a running clock while on air
-src/raceClockReading.ts                  the clock's five fields (flag, mode, time, moment, running) and its H:MM:SS text
+src/raceClockReading.ts                  the clock's five fields (flag, optional; mode, time, moment, running) and its H:MM:SS text
 src/flagOnAir.ts                         a flag drawn on a band or a pill: state, word, name (checkered wordless)
 src/ptBRFlagWords.ts                     the on-air word of each flag, the kit's one pt-BR catalog
-src/clockBlock.ts                        the strip's and the ticker's clock block: markup, parts, writer
+src/clockBlock.ts                        the strip's and the ticker's clock block: markup, parts, writer (no flag, no pill)
 src/clockBlockStyles.ts                  the clock block's look (the time at 44 px, the flag pill)
 src/clockBlockOnBar.ts                   a bar's clock block run: frame loop, redraw at server time, the switch
 src/motionTimelineRunner.ts              one motion at a time: run, isRunning, finishEveryTimelineAtOnce

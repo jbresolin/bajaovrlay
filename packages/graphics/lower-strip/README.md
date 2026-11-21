@@ -7,22 +7,32 @@ flag pill, the kit's, the same text as the race clock's card), the running order
 `--motion-strip-hold` the page turns in place, the old pills lifting while the new rise (two
 lanes, the kit's `barMotion`); a live update redraws the page on air in place. A school name
 too long for its pill scrolls inside it (the kit's `scrollingTextWhenTooLong`, BAJAOVRLAY-55).
+Since BAJAOVRLAY-81 the flag is optional (none: the block shows the time alone, closed up), and
+an item may have each car show its laps ("Mostrar as voltas", "43 VOLTAS") and its gap to the
+leader ("Diferença para o líder": não mostrar, só voltas "+2 VOLTAS", voltas e tempo, só tempo
+"+12,3"; the leader shows none), read from the positions entry's own `laps`, `gapToLeaderLaps`
+and `gapToLeaderMs` (`stripCarTexts.ts`). Both are off by default; with one of them a page
+holds four cars, with both three, measured so the real field fits (`stripPages.ts`).
 Start reading at
 `src/lower-strip.ts` (lifecycle, motion, the page timer and the clock's frame loop); it wires
-`lowerStripModel.ts` (Zod data), `stripPages.ts` (six cars a page, with the measurement),
+`lowerStripModel.ts` (Zod data), `stripPages.ts` (cars a page, with the measurement),
 `lowerStripPageTurns.ts`, `lowerStripView.ts`, `lowerStripStyles.ts` and `ptBR.ts`.
 Preview: `pnpm --filter @bajaovrlay/lower-strip dev`, then http://localhost:5198/preview.html (the
-real 34-car field; add `?clock=off`, `?stage=grey|black` or `?data=<JSON>`). Unit tests:
+real 34-car field; add `?clock=off`, `?flag=off`, `?laps=on`, `?gap=laps|lapsAndTime|time`,
+`?stage=grey|black` or `?data=<JSON>`). Unit tests:
 `pnpm --filter @bajaovrlay/lower-strip test`; Playwright on the built `dist/` (lifecycle, every
 page of the real field fitting the bar, screenshots): `pnpm --filter @bajaovrlay/lower-strip test:e2e`.
 
 ## A typical item: the strip of the session on air
 
-| Field (form label)  | Value in the item editor                                            |
-| ------------------- | ------------------------------------------------------------------- |
-| Carros              | Fonte › the positions source › Lista completa, ao vivo (pre-filled) |
-| Tempo de referência | Relógio da fonte › the session source (fills the four clock fields) |
-| Bandeira            | Fonte › the session source › Bandeira, ao vivo                      |
-| Mostrar o relógio   | Valor digitado: on (off while the race clock card is up)            |
+| Field (form label)     | Value in the item editor                                            |
+| ---------------------- | ------------------------------------------------------------------- |
+| Carros                 | Fonte › the positions source › Lista completa, ao vivo (pre-filled) |
+| Tempo de referência    | Relógio da fonte › the session source (fills the four clock fields) |
+| Bandeira               | Fonte › the session source › Bandeira, ao vivo                      |
+| Mostrar o relógio      | Valor digitado: on (off while the race clock card is up)            |
+| Mostrar as voltas      | Valor digitado: off (on: four cars a page)                          |
+| Diferença para o líder | Valor digitado: Não mostrar (or Só voltas: four cars a page)        |
 
-Entre sessões sem fonte de sessão, deixe os campos do relógio como Valor digitado.
+Entre sessões sem fonte de sessão, deixe os campos do relógio como Valor digitado, e limpe a
+Bandeira se não houver bandeira a mostrar.

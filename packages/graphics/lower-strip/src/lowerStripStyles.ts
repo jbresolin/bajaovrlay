@@ -34,12 +34,17 @@ const lowerStripOwnStyles = css`
     list-style: none;
   }
 
-  /* A car pill: the position, the car chip and the school, as wide as its name. */
+  /* A car pill: the position, the car chip and the school, as wide as its name; then the
+     laps and the gap when the item shows them (BAJAOVRLAY-81), each in a column of its own
+     placed after the school (the column flow keeps them on the one row), as wide as its
+     words. A hidden cell takes no column, so a plain pill is exactly as before. */
   .car {
     flex: 1 1 auto;
     min-width: 0;
     display: grid;
     grid-template-columns: var(--column-pos) var(--chip-width) 1fr;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
     align-items: center;
     column-gap: var(--space-2);
     padding: 0 var(--space-3);
@@ -85,6 +90,31 @@ const lowerStripOwnStyles = css`
     color: var(--chip-car-text);
     font-weight: var(--weight-number);
     font-size: var(--size-strip);
+  }
+
+  /* The laps in the tower's laps green, the gap muted, both at the strip's size (the cars
+     a page drop instead, stripPages.ts, so no text is ever shrunk to fit), in the same
+     line box as the school's, so the three texts share one baseline. */
+  .laps,
+  .gap {
+    line-height: 1.3;
+    font-weight: var(--weight-number);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-row);
+    white-space: nowrap;
+  }
+
+  .laps {
+    color: var(--text-laps);
+  }
+
+  .gap {
+    color: var(--text-muted);
+  }
+
+  .laps[hidden],
+  .gap[hidden] {
+    display: none;
   }
 
   /* The school's short name, whole: six cars a page always fit (stripPages.ts). A name

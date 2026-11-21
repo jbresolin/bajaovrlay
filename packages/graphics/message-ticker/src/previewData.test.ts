@@ -4,12 +4,14 @@
  * What this module is for:
  *   preview.html shows the ticker as the design's message-ticker page does: "AVISO" and
  *   the enduro's three announcements, the clock an hour in, the block on. The address
- *   switches the block off (`?clock=off`), keeps one message (`?messages=1`) or gives the
- *   data itself (`?data=<JSON>`); on a screenshot stage the clock is held.
+ *   switches the block off (`?clock=off`), keeps one message (`?messages=1`), leaves the
+ *   flag out (`?flag=off`) or gives the data itself (`?data=<JSON>`); on a screenshot stage
+ *   the clock is held.
  *
  * What these tests prove:
  *   - Without a query: the three announcements, "AVISO", the clock running, the block on.
  *   - `?clock=off&messages=1&stage=grey`: no block, one message, the clock held.
+ *   - `?flag=off` leaves the flag out entirely (BAJAOVRLAY-81); without it, green.
  *   - `?data=` hands its JSON over as it is; JSON that cannot be read is a pt-BR problem.
  *
  * What these tests deliberately do not cover:
@@ -50,6 +52,18 @@ describe('choosePreviewData', () => {
       [data.showClockBlock, data.messages, data.running],
       'no block, one message, the clock held',
     ).toEqual([false, ['Largada do enduro às 10h00'], false]);
+  });
+
+  it('leaves the flag out with ?flag=off, and shows green without it (BAJAOVRLAY-81)', () => {
+    // Arrange: the address with and without the switch.
+
+    // Act: choose the data for both.
+    const withoutFlag = (choosePreviewData('?flag=off', pageOpenedAtMs) as { data: object }).data;
+    const everyday = (choosePreviewData('', pageOpenedAtMs) as { data: MessageTickerData }).data;
+
+    // Assert: no flag field at all; the everyday ticker keeps its green flag.
+    expect('state' in withoutFlag, 'the flag must be left out entirely').toBe(false);
+    expect(everyday.state, 'the everyday ticker is under green').toBe('green');
   });
 
   it('hands ?data= over as it is, and says in pt-BR when it cannot be read', () => {
