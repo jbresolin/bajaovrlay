@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
+import { useWhyTheRoleCannotSend } from '@/state/operatorSessionContext';
 
 import type { MoveToShortcutsChoice } from './moveToShortcutsChoices';
 
@@ -18,17 +19,23 @@ export type RundownRowMoreActionsMenuProps = {
   /** The "Mover para atalhos" entries, in tab order (moveToShortcutsChoices.ts). */
   moveToShortcutsChoices: MoveToShortcutsChoice[];
   onMoveToShortcutsChosen: (panelId: string) => void;
+  /** "Escolher carros" (BAJAOVRLAY-82), on an item with cars to pick; undefined lists nothing. */
+  onQuickCarPickChosen: (() => void) | undefined;
 };
 
 /**
  * The small "⋯" of a rundown row and its menu: "Mover para atalhos", one entry per
- * quick-fire panel when there are several. Like the quick-fire button's "⋯" it is off
+ * quick-fire panel when there are several, and "Escolher carros" on an item with cars to
+ * pick (BAJAOVRLAY-82). Like the quick-fire button's "⋯" it is off
  * while the page is disconnected, and when the menu closes the focus is NOT handed back to
  * "⋯" (Radix's habit): the shortcuts leave a key pressed inside an open menu alone, and a
  * focused "⋯" would otherwise keep the focus after the menu is gone.
  */
 export function RundownRowMoreActionsMenu(props: RundownRowMoreActionsMenuProps) {
   const isConnected = useIsConnectedToServer();
+  // "Escolher carros" ends in a take or a preview, so a role that may not take (Dados)
+  // sees it greyed out, as "Disparar" is.
+  const isQuickCarPickOffForTheRole = useWhyTheRoleCannotSend('takeItem') !== undefined;
   const texts = ptBR.rundown;
   return (
     <DropdownMenu open={props.isOpen} onOpenChange={props.onOpenChange}>
@@ -51,6 +58,14 @@ export function RundownRowMoreActionsMenu(props: RundownRowMoreActionsMenuProps)
             {choice.menuText}
           </DropdownMenuItem>
         ))}
+        {props.onQuickCarPickChosen === undefined ? null : (
+          <DropdownMenuItem
+            disabled={isQuickCarPickOffForTheRole}
+            onSelect={props.onQuickCarPickChosen}
+          >
+            {ptBR.quickCarPick.openAction}
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

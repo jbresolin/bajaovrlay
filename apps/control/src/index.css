@@ -23,7 +23,7 @@
  * space, the digits, "#" and "*" from it even with `sans-serif` before it (each space as
  * wide as an emoji), and boxes overflowed on that machine alone. Inter draws every Latin
  * character, so the page looks the same on every machine and the faces after it only draw
- * what it lacks: six symbols (← → ⋯ ▲ ▼ ☰, src/fonts/controlPageFontCoversPtBR.test.ts)
+ * what it lacks: seven symbols (← → ⋯ ▲ ▼ ▾ ☰, src/fonts/controlPageFontCoversPtBR.test.ts)
  * from the system faces, and an emoji from the emoji faces, kept last for that.
  *
  * `block`, not `swap`: the file is local and small, and the page should not draw first in

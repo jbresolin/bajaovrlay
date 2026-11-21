@@ -14,8 +14,7 @@ Uma folha para quem opera os gráficos da transmissão. Duas pessoas, duas mesas
 - O selo "Fontes" verde: os dados da prova chegam. Amarelo ou vermelho: veja a seção 8.
 - "OBS" com "Conectado" (ou "não configurado", como na foto, quando o controle do OBS não está ligado). Se disser "Sem conexão", avise o responsável técnico; os gráficos continuam saindo.
 - "Conectado" em preto: a página fala com o servidor. Seu papel e mesa aparecem ao lado, com "Sair".
-- Abra o "Menu" (☰) e clique em "Verificar servidor": deve dizer que o servidor está no ar e "Fontes ligadas: todas ok."
-- Nenhum aviso de relógio no cabeçalho.
+- Abra o "Menu" (☰) e clique em "Verificar servidor": deve dizer que o servidor está no ar e "Fontes ligadas: todas ok." Nenhum aviso de relógio no cabeçalho.
 
 ## 2. O console num relance
 
@@ -34,9 +33,9 @@ Uma folha para quem opera os gráficos da transmissão. Duas pessoas, duas mesas
 ![A linha da Prévia com Tomar e Descartar](imagens/previa.png)
 
 - **Barra de espaço:** põe no ar o item "Próximo" (ou a prévia dele, se ela estiver aberta) e passa para o seguinte. Com "Prévia automática" ligada (ela já vem ligada), a Prévia mostra o próximo item depois de cada tomada. As setas **←** **→** só movem o cursor.
+- **Carros da disputa:** a setinha ▾ do atalho (ou "Escolher carros" no "⋯"); digite os carros, ou use "Pela posição", e "No ar".
 - **Gráfico em passos** (pódio, chaveamento): "Próximo" na linha da camada mostra o passo seguinte.
-- **Tirar uma camada:** "Limpar" na linha dela, em "Camadas".
-- **Tirar tudo:** "Limpar tudo" (ou **Esc**) arma o botão; aperte de novo em até 3 segundos para confirmar.
+- **Tirar do ar:** "Limpar" na linha da camada, em "Camadas". Para tirar tudo: "Limpar tudo" (ou **Esc**) e aperte de novo em até 3 s.
 - **Errou?** **Ctrl+Z** ou "Desfazer última" devolve o que estava no ar antes da última troca do ar, feita por qualquer um (outra mesa, um evento que saiu sozinho). Olhe o Programa antes. "Desfazer" numa linha de Camadas faz o mesmo só naquela camada.
 
 ## 4. Eventos (penalidades, avisos, voltas mais rápidas)

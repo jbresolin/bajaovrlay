@@ -11,6 +11,7 @@ import { ptBRLayers } from './ptBRLayers';
 import { ptBRLogin } from './ptBRLogin';
 import { ptBRObs } from './ptBRObs';
 import { ptBROutputs } from './ptBROutputs';
+import { ptBRQuickCarPick } from './ptBRQuickCarPick';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
 import { ptBRQuickFire } from './ptBRQuickFire';
 import { ptBRServerClock } from './ptBRServerClock';
@@ -37,6 +38,8 @@ export const ptBR = {
   // One picker per car of a graphic in the item editor (BAJAOVRLAY-66), in ptBRCarGroups.ts.
   carGroups: ptBRCarGroups,
   quickFire: ptBRQuickFire,
+  // "Escolher carros" on a button or a row (BAJAOVRLAY-82), in ptBRQuickCarPick.ts.
+  quickCarPick: ptBRQuickCarPick,
   events: ptBREvents,
   // The "Histórico" page, #/historico (features/history), in ptBRHistory.ts.
   history: ptBRHistory,
