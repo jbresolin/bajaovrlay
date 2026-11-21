@@ -12,8 +12,9 @@
  * What these tests prove:
  *   - The same payloads pass or fail both checks: the everyday data; each of the six
  *     flag states; data without the leader's laps; the flag band switch on, off, left
- *     out or not a boolean; an unknown state, an unknown field, a fractional reading, a
- *     negative lap count and a missing required field.
+ *     out or not a boolean; data with no flag at all (optional since BAJAOVRLAY-81); an
+ *     unknown state, an unknown field, a fractional reading, a negative lap count and a
+ *     missing required field.
  *
  * What these tests deliberately do not cover:
  *   - The rest of the manifest (settings, titles, durations, the OGraf schema itself);
@@ -110,6 +111,12 @@ const dataAgreementScenarios = [
   {
     name: 'both accept the finished state',
     data: { ...createGreenFlagEnduroData(), state: 'finished' },
+    isValid: true,
+  },
+  // No flag at all (BAJAOVRLAY-81): "Bandeira" cleared, so the card shows no band.
+  {
+    name: 'both accept data with no flag',
+    data: { ...createGreenFlagEnduroData(), state: undefined },
     isValid: true,
   },
   // A state outside the six must fail both, or the form would offer a value the graphic refuses.

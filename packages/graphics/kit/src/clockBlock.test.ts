@@ -10,6 +10,8 @@
  *   - The block shows the kit's time text for the reading at the moment given, and the
  *     flag pill dressed as the flag (the checkered one wordless, but named).
  *   - A later frame changes the time in place, on the same elements.
+ *   - With no flag in the reading (BAJAOVRLAY-81) the pill is hidden, so the card closes
+ *     up around the time; a flag coming back shows the pill again.
  *
  * What these tests deliberately do not cover:
  *   - The look; the bars' screenshot tests show it on the grey and black stages.
@@ -75,5 +77,42 @@ describe('writeClockBlockAt', () => {
     expect(parts.time.textContent, 'the time moved on by a second').toBe('1:00:01');
     expect(parts.flagWord.textContent, 'the checkered pill shows no word').toBe('');
     expect(parts.flagPill.getAttribute('aria-label'), 'but is named').toBe('QUADRICULADA');
+  });
+});
+
+describe('writeClockBlockAt with no flag (BAJAOVRLAY-81)', () => {
+  it('hides the flag pill when the reading has no flag, and the time still shows', () => {
+    // Arrange: the block, drawn empty, and the enduro an hour in with its flag left out.
+    const parts = drawClockBlock();
+    const { state: flagLeftOut, ...readingWithoutFlag } = createEnduroOneHourInReading();
+
+    // Act: write that reading.
+    writeClockBlockAt(parts, readingWithoutFlag, twoInTheAfternoonMs);
+
+    // Assert: the time is there and the pill is hidden (hidden takes it out of the card's
+    // row, so the card closes up around the time).
+    expect(flagLeftOut, 'the reading we started from had a flag').toBe('green');
+    expect(parts.time.textContent, 'the time still shows').toBe('1:00:00');
+    expect(parts.flagPill.hidden, 'with no flag the pill must be hidden').toBe(true);
+  });
+
+  it('shows the pill again, dressed as the flag, when the flag comes back', () => {
+    // Arrange: the block showing a reading with no flag.
+    const parts = drawClockBlock();
+    const { state: flagLeftOut, ...readingWithoutFlag } = createEnduroOneHourInReading();
+    writeClockBlockAt(parts, readingWithoutFlag, twoInTheAfternoonMs);
+
+    // Act: the session source sends the yellow flag a second later.
+    writeClockBlockAt(
+      parts,
+      { ...readingWithoutFlag, state: 'yellow' },
+      twoInTheAfternoonMs + 1000,
+    );
+
+    // Assert: the pill is back, yellow, with its word.
+    expect(flagLeftOut, 'the reading we started from had a flag').toBe('green');
+    expect(parts.flagPill.hidden, 'with a flag the pill must show').toBe(false);
+    expect(parts.flagPill.dataset.flagState, 'the pill takes the yellow colours').toBe('yellow');
+    expect(parts.flagWord.textContent, 'the pill reads the yellow word').toBe('AMARELA');
   });
 });

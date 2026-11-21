@@ -77,12 +77,19 @@ export function readCarNumbersOnAir(lowerStrip: LowerStripGraphic): number[] {
   return [...(chips ?? [])].map((chip) => Number(chip.textContent));
 }
 
-/** The pills of the page on air, left to right, as a viewer reads each: "1º 51 FAHOR". */
+/**
+ * The pills of the page on air, left to right, as a viewer reads each: "1º 51 FAHOR", or
+ * "2º 10 UFSJ 42 voltas +1 volta" with the laps and gap. A hidden cell (no laps or gap to
+ * show) is not on screen, so it is not read.
+ */
 export function readCarPillsOnAir(lowerStrip: LowerStripGraphic): string[] {
   const pills = findLaneOnAir(lowerStrip)?.querySelectorAll('[data-testid="lower-strip-car"]');
-  return [...(pills ?? [])].map((pill) =>
-    [...pill.children].map((cell) => cell.textContent).join(' '),
-  );
+  return [...(pills ?? [])].map((pill) => {
+    const cellsOnScreen = [...pill.children].filter(
+      (cell) => !(cell instanceof HTMLElement && cell.hidden),
+    );
+    return cellsOnScreen.map((cell) => cell.textContent).join(' ');
+  });
 }
 
 /** The page cell's text: "1/6". */

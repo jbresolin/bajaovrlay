@@ -1,8 +1,8 @@
 /**
  * Chooses what preview.html shows: the JSON in `?data=` when there is one, or the
  * design's message-ticker page: "AVISO" and the enduro's three announcements, the race
- * clock an hour in under the green flag, the clock block unless the address says
- * `?clock=off`, and one message only with `?messages=1`. On a screenshot stage (`?stage=`)
+ * clock an hour in under the green flag (none with `?flag=off`, BAJAOVRLAY-81), the clock
+ * block unless the address says `?clock=off`, and one message only with `?messages=1`. On a screenshot stage (`?stage=`)
  * the clock is held, so a baseline never depends on time. Whether the data is valid is
  * left to the graphic's own load(), so the preview shows exactly the answer a renderer gets.
  */
@@ -28,17 +28,22 @@ export function createEnduroTickerSample(options: {
   messages: string[];
   isClockBlockShown: boolean;
   isClockRunning: boolean;
+  /** False for `?flag=off`: the ticker with no flag (BAJAOVRLAY-81). */
+  isFlagShown: boolean;
 }): MessageTickerData {
-  return {
+  const sample: MessageTickerData = {
     label: 'AVISO',
     messages: options.messages,
-    state: 'green',
     clockMode: 'elapsed',
     referenceTimeMs: 3_600_000,
     referenceWallClockMs: options.openedAtMs,
     running: options.isClockRunning,
     showClockBlock: options.isClockBlockShown,
   };
+  if (options.isFlagShown) {
+    sample.state = 'green';
+  }
+  return sample;
 }
 
 /** Reads the data from an address query string (location.search); never throws. */
@@ -53,6 +58,7 @@ export function choosePreviewData(addressQuery: string, openedAtMs: number): Pre
       messages: isOneMessage ? announcements.slice(0, 1) : announcements,
       isClockBlockShown: searchParameters.get('clock') !== 'off',
       isClockRunning: !searchParameters.has('stage'),
+      isFlagShown: searchParameters.get('flag') !== 'off',
     });
     return { isReadable: true, data };
   }

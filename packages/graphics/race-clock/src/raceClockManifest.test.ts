@@ -26,7 +26,8 @@
  *   - Every data field has a pt-BR title.
  *   - The text field (key sessionName) is titled "Título" and its description says it is
  *     the text above the clock, with two examples; the two optional fields say in their
- *     descriptions what happens when they are left out or switched off.
+ *     descriptions what happens when they are left out or switched off; the flag is
+ *     optional too (BAJAOVRLAY-81), "Pré-largada" in a new item.
  *
  * What these tests deliberately do not cover:
  *   - That the data schema and the graphic's Zod validation accept and refuse the same
@@ -259,12 +260,32 @@ describe('race-clock.ograf.json settings', () => {
       },
       requiredFields: [
         'sessionName',
-        'state',
         'clockMode',
         'referenceTimeMs',
         'referenceWallClockMs',
         'running',
       ],
+    });
+  });
+
+  it('describes the flag as optional, with the band left out when it is cleared (BAJAOVRLAY-81)', () => {
+    // Arrange: the flag field and the list of required fields.
+    const flagField = raceClockManifest.schema.properties.state;
+    const requiredFields: string[] = raceClockManifest.schema.required;
+
+    // Act: read what the form shows for the flag, and whether it is required.
+    const flagFieldAsShown = {
+      description: flagField.description,
+      default: flagField.default,
+      isRequired: requiredFields.includes('state'),
+    };
+
+    // Assert: not required (the form offers "Limpar"), still "Pré-largada" in a new item,
+    // and the description says what clearing it does.
+    expect(flagFieldAsShown, 'the flag must be optional and say what leaving it out does').toEqual({
+      description: 'Opcional; sem bandeira, nada da bandeira aparece e o espaço dela se fecha.',
+      default: 'pre',
+      isRequired: false,
     });
   });
 });

@@ -1,5 +1,6 @@
 /**
- * Message ticker screenshots, with and without the clock block, on two stages
+ * Message ticker screenshots, with and without the clock block and without the flag, on two
+ * stages
  * (packages/graphics/message-ticker, Playwright)
  *
  * What this module is for:
@@ -11,7 +12,8 @@
  *
  * What these tests prove:
  *   - The ticker with the clock block (the block, the label, the message, "1/3") and
- *     without it (the label starting the bar) draws like its baselines.
+ *     without it (the label starting the bar) draws like its baselines, and so does the
+ *     block with no flag (BAJAOVRLAY-81: the time alone, the block closed up).
  *
  * What these tests deliberately do not cover:
  *   - Motion and the other messages; messageTickerLifecycle.e2e.ts.
@@ -26,6 +28,8 @@ const variants = [
   { slug: 'com-relogio', query: '' },
   // Between sessions: the label starts the bar.
   { slug: 'sem-relogio', query: '&clock=off' },
+  // BAJAOVRLAY-81: "Bandeira" cleared, the block closes up around the time.
+  { slug: 'sem-bandeira', query: '&flag=off' },
 ];
 
 test.describe('the message ticker looks like its baseline', () => {

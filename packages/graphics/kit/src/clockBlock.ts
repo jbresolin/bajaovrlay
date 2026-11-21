@@ -8,12 +8,17 @@
  * block shows exactly what the race clock's card shows for the same reading at the same
  * moment. Nothing here rebuilds elements: a frame or an update writes only what changed.
  * The flag pill changes in place, with no crossfade: on a bar a flag change is read as a
- * state, as every number that changes on air is (motion.md).
+ * state, as every number that changes on air is (motion.md). A reading with no flag
+ * (BAJAOVRLAY-81) hides the pill, and the card closes up around the time.
  */
 import { html, type TemplateResult } from 'lit';
 
 import { dressElementAsFlag } from './flagOnAir.js';
-import { type RaceClockReading, writeRaceClockTimeTextAt } from './raceClockReading.js';
+import {
+  type FlagState,
+  type RaceClockReading,
+  writeRaceClockTimeTextAt,
+} from './raceClockReading.js';
 import { writeTextIfChanged } from './textInPlace.js';
 
 /** The elements of the block that change after the first render. */
@@ -62,5 +67,20 @@ export function writeClockBlockAt(
   nowWallClockMs: number,
 ): void {
   writeTextIfChanged(parts.time, writeRaceClockTimeTextAt(reading, nowWallClockMs));
-  dressElementAsFlag(parts.flagPill, parts.flagWord, reading.state);
+  writeFlagPill(parts, reading.state);
+}
+
+/**
+ * Shows the flag pill dressed as the flag, or hides it when there is no flag. Hidden, the
+ * pill leaves the card's row (clockBlockStyles), so no empty pill and no gap are left. The
+ * `hidden` property is set only when it differs, as everything written on every frame is.
+ */
+function writeFlagPill(parts: ClockBlockParts, flagState: FlagState | undefined): void {
+  const isFlagAbsent = flagState === undefined;
+  if (parts.flagPill.hidden !== isFlagAbsent) {
+    parts.flagPill.hidden = isFlagAbsent;
+  }
+  if (flagState !== undefined) {
+    dressElementAsFlag(parts.flagPill, parts.flagWord, flagState);
+  }
 }

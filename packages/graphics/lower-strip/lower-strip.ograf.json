@@ -3,7 +3,7 @@
   "id": "baja-lower-strip",
   "version": "0.1.0",
   "name": "Faixa de classificação",
-  "description": "Faixa ao longo da parte de baixo: o relógio e a bandeira, a ordem de corrida seis carros por página e a página.",
+  "description": "Faixa ao longo da parte de baixo: o relógio e a bandeira, a ordem de corrida seis carros por página (menos com as voltas ou a diferença) e a página.",
   "author": {
     "name": "BajaOvrLay"
   },
@@ -62,6 +62,7 @@
       "state": {
         "type": "string",
         "title": "Bandeira",
+        "description": "Opcional; sem bandeira, nada da bandeira aparece e o espaço dela se fecha.",
         "enum": ["pre", "green", "yellow", "red", "checkered", "finished"],
         "gddType": "select",
         "gddOptions": {
@@ -127,16 +128,31 @@
         "title": "Mostrar o relógio",
         "description": "Desligado, a faixa começa pelos carros, sem o bloco do tempo e da bandeira.",
         "default": true
+      },
+      "showLaps": {
+        "type": "boolean",
+        "title": "Mostrar as voltas",
+        "description": "Cada carro mostra as voltas que tem (da lista de posições); menos carros por página.",
+        "default": false
+      },
+      "gapDisplay": {
+        "type": "string",
+        "title": "Diferença para o líder",
+        "description": "Cada carro mostra a diferença para o líder (da lista de posições); o líder não mostra nada. Com ela, menos carros por página.",
+        "enum": ["none", "laps", "lapsAndTime", "time"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "none": "Não mostrar",
+            "laps": "Só voltas (+2 voltas)",
+            "lapsAndTime": "Voltas e tempo (+2 voltas ou +12,3)",
+            "time": "Só tempo (+12,3)"
+          }
+        },
+        "default": "none"
       }
     },
-    "required": [
-      "entries",
-      "state",
-      "clockMode",
-      "referenceTimeMs",
-      "referenceWallClockMs",
-      "running"
-    ],
+    "required": ["entries", "clockMode", "referenceTimeMs", "referenceWallClockMs", "running"],
     "additionalProperties": false
   }
 }

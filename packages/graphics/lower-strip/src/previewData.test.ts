@@ -11,6 +11,9 @@
  *   - Without a query: the 34 cars, green, 1:00:00 counting from the moment the page
  *     opened, the block on.
  *   - `?clock=off` switches the block off; `?stage=grey` holds the clock.
+ *   - `?flag=off` leaves the flag out, `?laps=on` shows each car's laps and `?gap=` picks
+ *     how the gap shows (BAJAOVRLAY-81); without them none of the three is in the data, so
+ *     the everyday preview is the one from before; an unknown `?gap=` is "none".
  *   - `?data=` hands its JSON over as it is; JSON that cannot be read is a pt-BR problem.
  *
  * What these tests deliberately do not cover:
@@ -73,6 +76,34 @@ describe('choosePreviewData', () => {
     // Assert: the block off; the clock held for the baseline.
     expect(withoutTheBlock.showClockBlock, 'the block is off').toBe(false);
     expect(onTheGreyStage.running, 'a screenshot stage holds the clock').toBe(false);
+  });
+
+  it('leaves the flag, the laps and the gap out of the everyday sample', () => {
+    // Arrange: an address with no query.
+
+    // Act: choose the data.
+    const data = readSampleOfQuery('');
+
+    // Assert: none of the three new settings is written, so the strip looks as before.
+    expect(
+      { showLaps: data.showLaps, gapDisplay: data.gapDisplay },
+      'no laps and no gap unless asked',
+    ).toEqual({ showLaps: undefined, gapDisplay: undefined });
+  });
+
+  it('takes the flag away with ?flag=off and shows laps and gap with ?laps=on&gap=', () => {
+    // Arrange: the three switches of BAJAOVRLAY-81.
+
+    // Act: choose the data for them, and for a gap display that does not exist.
+    const withoutFlag = readSampleOfQuery('?flag=off');
+    const withLapsAndGap = readSampleOfQuery('?laps=on&gap=lapsAndTime');
+    const withUnknownGap = readSampleOfQuery('?gap=azul');
+
+    // Assert: no flag; laps on and "laps and time"; an unknown gap shows none.
+    expect('state' in withoutFlag, 'the flag must be left out entirely').toBe(false);
+    expect(withLapsAndGap.showLaps, 'the laps are on').toBe(true);
+    expect(withLapsAndGap.gapDisplay, 'the gap shows laps and time').toBe('lapsAndTime');
+    expect(withUnknownGap.gapDisplay, 'an unknown gap display is not written').toBeUndefined();
   });
 
   it('hands the JSON of ?data= over as it is, and says in pt-BR when it cannot be read', () => {

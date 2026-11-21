@@ -29,18 +29,23 @@ export type ClockMode = (typeof clockModes)[number];
  * graphic's manifest uses. Spread into a graphic's `z.strictObject({...})`; the manifests
  * declare the same fields with their roles, and each graphic's ManifestDataAgreement test
  * keeps the two in step.
+ *
+ * The flag is optional (BAJAOVRLAY-81): with no flag, every clock draws none (the race
+ * clock no band, the strip's and the ticker's block no pill) and closes up. The four clock
+ * fields stay required, as before.
  */
 export const raceClockReadingFieldSchemas = {
-  state: z.enum(flagStates),
+  state: z.enum(flagStates).optional(),
   clockMode: z.enum(clockModes),
   referenceTimeMs: z.int().min(0),
   referenceWallClockMs: z.int().min(0),
   running: z.boolean(),
 };
 
-/** One reading of the session's clock, with its flag. */
+/** One reading of the session's clock, with its flag when there is one. */
 export type RaceClockReading = {
-  state: FlagState;
+  /** The flag; absent when the item shows none (BAJAOVRLAY-81). */
+  state?: FlagState | undefined;
   clockMode: ClockMode;
   referenceTimeMs: number;
   referenceWallClockMs: number;

@@ -13,7 +13,8 @@ import { ptBR } from './ptBR.js';
 
 // Strict: a field the graphic does not know (usually a typo) is refused, not ignored.
 // The five fields of the clock's reading (flag, mode, time, moment, running) are the kit's,
-// shared with the clock block of the lower strip and the message ticker (BAJAOVRLAY-23).
+// shared with the clock block of the lower strip and the message ticker (BAJAOVRLAY-23);
+// the flag among them is optional (BAJAOVRLAY-81), see isFlagBandDrawn.
 const raceClockDataSchema = z.strictObject({
   sessionName: z.string(),
   ...raceClockReadingFieldSchemas,
@@ -37,6 +38,14 @@ export type RaceClockDataCheck =
  */
 export function isFlagBandShown(data: RaceClockData): boolean {
   return data.showFlagBand ?? true;
+}
+
+/**
+ * Whether the band is drawn: switched on, and with a flag to show. The flag is optional
+ * (BAJAOVRLAY-81); with none the card closes up exactly as with the switch off.
+ */
+export function isFlagBandDrawn(data: RaceClockData): boolean {
+  return isFlagBandShown(data) && data.state !== undefined;
 }
 
 /** Checks the complete data `load` receives. Never throws; bad data gives a pt-BR problem. */

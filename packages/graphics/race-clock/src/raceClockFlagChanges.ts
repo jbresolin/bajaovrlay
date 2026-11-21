@@ -68,6 +68,17 @@ export class RaceClockFlagChanges {
   }
 
   /**
+   * Dresses the band in a flag at once, with no crossfade: for a flag that arrives while
+   * the band is not drawn (there was no flag, BAJAOVRLAY-81), so the band then grows in
+   * already showing it. A change on its way is settled first, so nothing tangles.
+   */
+  dressFlagStateAtOnce(flagState: FlagState): void {
+    const parts = this.options.readParts();
+    this.finishRunningFlagChange();
+    showFlagStateAtOnce(parts, flagState);
+  }
+
+  /**
    * Switches the band on or off: on air the card grows or shrinks by the band's height
    * while the band fades; off air the card is simply redrawn at its new height. The
    * heights come from the drawn card around the switch, so no pixel value lives here.

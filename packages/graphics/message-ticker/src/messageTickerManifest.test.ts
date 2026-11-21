@@ -196,7 +196,7 @@ describe('message-ticker.ograf.json settings', () => {
     });
   });
 
-  it('declares the race clock’s clock fields word for word, and the block off by default', () => {
+  it('declares the race clock’s clock fields word for word, the flag optional, and the block off by default', () => {
     // Arrange: the clock fields of both manifests.
     const clockFieldKeys = [
       'state',
@@ -213,12 +213,19 @@ describe('message-ticker.ograf.json settings', () => {
     const raceClockFields = clockFieldKeys.map((key) => raceClockManifest.schema.properties[key]);
     const clockBlockSwitch = messageTickerManifest.schema.properties.showClockBlock;
 
-    // Assert: identical clock fields, required; the block off unless switched on.
+    // Assert: identical clock fields; the words and the four clock fields required, the
+    // flag optional (BAJAOVRLAY-81) as on the race clock; the block off unless switched on.
     expect(tickerClockFields, 'the ticker’s clock is the race clock’s').toEqual(raceClockFields);
-    expect(messageTickerManifest.schema.required, 'the words and the clock are required').toEqual([
+    expect(
+      messageTickerManifest.schema.required,
+      'the words and the clock are required, the flag is not',
+    ).toEqual([
       'label',
       'messages',
-      ...clockFieldKeys,
+      'clockMode',
+      'referenceTimeMs',
+      'referenceWallClockMs',
+      'running',
     ]);
     expect(clockBlockSwitch.default, 'the block starts off').toBe(false);
   });

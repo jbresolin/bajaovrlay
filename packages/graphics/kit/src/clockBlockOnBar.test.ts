@@ -11,7 +11,8 @@
  *     cancels the pending frame, so nothing is left booked.
  *   - The switch marks the bar and hides the block; switched on while on air, the block is
  *     put in its place at once; switched on off air it is left for the play-in.
- *   - readClockReadingFrom keeps the five clock fields and drops the rest of the data.
+ *   - readClockReadingFrom keeps the five clock fields and drops the rest of the data; a
+ *     bar with no flag (BAJAOVRLAY-81) gives a reading with no flag.
  *
  * What these tests deliberately do not cover:
  *   - The block's markup and its writer; clockBlock.test.ts.
@@ -140,5 +141,19 @@ describe('readClockReadingFrom', () => {
 
     // Assert: exactly the reading.
     expect(reading, 'the five clock fields alone').toEqual(createEnduroOneHourInReading());
+  });
+
+  it('leaves the flag out when the bar’s data has none (BAJAOVRLAY-81)', () => {
+    // Arrange: a strip's data with "Bandeira" cleared, so no flag is sent.
+    const { state: flagLeftOut, ...readingWithoutFlag } = createEnduroOneHourInReading();
+    const stripDataWithoutFlag = { ...readingWithoutFlag, entries: [] };
+
+    // Act: read the clock out of it.
+    const reading = readClockReadingFrom(stripDataWithoutFlag);
+
+    // Assert: the four clock fields, and still no flag.
+    expect(flagLeftOut, 'the reading we started from had a flag').toBe('green');
+    expect(reading.state, 'no flag may appear from nowhere').toBeUndefined();
+    expect(reading.referenceTimeMs, 'the clock fields are kept').toBe(3_600_000);
   });
 });

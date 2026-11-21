@@ -1,8 +1,8 @@
 /**
  * The race clock OGraf graphic: the logo and session title, running race time, leader
- * laps and the optional flag band. This file owns the OGraf lifecycle (load, play,
- * update, stop, dispose) and only wires the pieces together; the rules live in named
- * modules: raceClockModel (data), raceClockView (the DOM, changed in place, never
+ * laps and the optional flag band (drawn when switched on and there is a flag to show).
+ * This file owns the OGraf lifecycle (load, play, update, stop, dispose) and only wires
+ * the pieces together; the rules live in named modules: raceClockModel (data), raceClockView (the DOM, changed in place, never
  * rebuilt), raceClockFlagChanges (the flag's crossfade and the band's switch), playSteps
  * (the OGraf step rule), the kit's clockTicker (the frame loop), the kit's scrolling text
  * clock (a session title too long for the card) and raceClockAnimations (GSAP timelines
@@ -46,7 +46,7 @@ import {
 } from './raceClockAnimations.js';
 import { RaceClockFlagChanges } from './raceClockFlagChanges.js';
 import {
-  isFlagBandShown,
+  isFlagBandDrawn,
   mergePartialUpdateIntoRaceClockData,
   parseCompleteRaceClockData,
   type RaceClockData,
@@ -143,8 +143,12 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     this.data = dataCheck.data;
     writeSessionCaptionAndLaps(parts, dataCheck.data);
     writeClockTimeAt(parts, dataCheck.data, readServerAlignedTimeMs());
-    showFlagStateAtOnce(parts, dataCheck.data.state);
-    showFlagBandAtOnce(parts, isFlagBandShown(dataCheck.data));
+    // With no flag (optional since BAJAOVRLAY-81) the band layer stays undressed; the band
+    // is not drawn, and a flag that arrives later dresses it before it shows.
+    if (dataCheck.data.state !== undefined) {
+      showFlagStateAtOnce(parts, dataCheck.data.state);
+    }
+    showFlagBandAtOnce(parts, isFlagBandDrawn(dataCheck.data));
     placePanelOffAir(parts);
     this.lifecycle = 'offAir';
     return okAnswer;
@@ -239,13 +243,23 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     writeSessionCaptionAndLaps(this.requireParts(), dataCheck.data);
     this.redrawClockTime();
     const skipAnimation = params.skipAnimation ?? false;
-    const isFlagChange = dataCheck.data.state !== dataBeforeUpdate.state;
-    const isBandChange = isFlagBandShown(dataCheck.data) !== isFlagBandShown(dataBeforeUpdate);
-    if (isFlagChange) {
-      await this.flagChanges.changeFlagState(dataCheck.data.state, skipAnimation);
+    const flagBefore = dataBeforeUpdate.state;
+    const flagAfter = dataCheck.data.state;
+    // Three ways the flag can change now that it is optional (BAJAOVRLAY-81): from one
+    // flag to another (the crossfade), from none to a flag (dressed at once, then the band
+    // grows in below), or to none (the band shrinks away still showing the last flag).
+    const isFlagReplaced =
+      flagBefore !== undefined && flagAfter !== undefined && flagAfter !== flagBefore;
+    const isFlagArriving = flagBefore === undefined && flagAfter !== undefined;
+    const isBandChange = isFlagBandDrawn(dataCheck.data) !== isFlagBandDrawn(dataBeforeUpdate);
+    if (isFlagArriving) {
+      this.flagChanges.dressFlagStateAtOnce(flagAfter);
+    }
+    if (isFlagReplaced) {
+      await this.flagChanges.changeFlagState(flagAfter, skipAnimation);
     }
     if (isBandChange) {
-      await this.flagChanges.changeFlagBand(isFlagBandShown(dataCheck.data), skipAnimation);
+      await this.flagChanges.changeFlagBand(isFlagBandDrawn(dataCheck.data), skipAnimation);
     }
     return okAnswer;
   }

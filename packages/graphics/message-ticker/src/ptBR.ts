@@ -35,6 +35,8 @@ export const ptBR = {
     oneMessageButton: 'Um aviso',
     threeMessagesButton: 'Três avisos',
     flagButton: (flagLabel: string) => `Bandeira: ${flagLabel}`,
+    /** Takes the flag away, as an item with "Bandeira" cleared does (BAJAOVRLAY-81). */
+    noFlagButton: 'Sem bandeira',
     unreadableAddressData: 'O parâmetro ?data= do endereço não é um JSON válido.',
     lastAnswer: (actionName: string, statusCode: number, statusMessage: string | undefined) => {
       const statusText = `${actionName}: ${statusCode}`;

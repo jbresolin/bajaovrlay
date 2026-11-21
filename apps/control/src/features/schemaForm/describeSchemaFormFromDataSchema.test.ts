@@ -227,8 +227,8 @@ describe('describeSchemaFormFromDataSchema, on the real race clock manifest', ()
     ).toEqual(['referenceWallClockMs']);
     expect(
       description.fields.filter((field) => !field.isRequired).map((field) => field.key),
-      'only the laps and the band switch are optional',
-    ).toEqual(['lapsCompletedByLeader', 'showFlagBand']);
+      'only the flag (since BAJAOVRLAY-81), the laps and the band switch are optional',
+    ).toEqual(['state', 'lapsCompletedByLeader', 'showFlagBand']);
   });
 });
 

@@ -13,9 +13,12 @@ fields, the time text), the frame loop and the flag's look are the kit's (`../ki
 block; the card's markup and styles stay here.
 Lifecycle: `load` once with complete data; `playAction` animates in, `stopAction` out;
 `updateAction` is accepted any time after load, on air or off, and refused only before it;
-every call answers a status code, never throws. Two fields are optional: `lapsCompletedByLeader`
-(absent, no laps line) and `showFlagBand` (absent or true, the band; false, the card is head and
-body only, 40 px lower; switched on air, the card grows or shrinks over `--motion-flag`).
+every call answers a status code, never throws. Three fields are optional: `lapsCompletedByLeader`
+(absent, no laps line), `showFlagBand` (absent or true, the band; false, the card is head and
+body only, 40 px lower; switched on air, the card grows or shrinks over `--motion-flag`) and,
+since BAJAOVRLAY-81, the flag `state` itself (absent, no band, the card as with the switch off;
+a flag arriving on air dresses the band at once and the card grows; preview `?data=` without
+`state`, or the "Sem bandeira" button).
 The look comes from the theme alone (`packages/theme`): every colour, size, corner and duration
 is a `var(--token)` of `ardosia/tokens.css` with no fallback, the motion from `readMotionTokens`,
 the face Bebas Neue registered on the page by the theme's `fonts.css` (the graphic ships no font

@@ -254,6 +254,9 @@ importers:
       '@bajaovrlay/logo-bug':
         specifier: workspace:*
         version: link:../../packages/graphics/logo-bug
+      '@bajaovrlay/lower-strip':
+        specifier: workspace:*
+        version: link:../../packages/graphics/lower-strip
       '@bajaovrlay/message-ticker':
         specifier: workspace:*
         version: link:../../packages/graphics/message-ticker
