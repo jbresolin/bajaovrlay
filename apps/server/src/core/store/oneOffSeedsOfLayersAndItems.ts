@@ -7,6 +7,7 @@ import {
   bracketMatchGraphicsSeedName,
 } from './seedBracketMatchGraphics.js';
 import { addChannelLogoLayerAndItemOnce, channelLogoSeedName } from './seedChannelLogo.js';
+import { addImageLayerOnce, imageLayerSeedName } from './seedImageLayer.js';
 
 /** What a seed of a layer, a panel and its items gives the boot. */
 type SeedOfLayersAndItemsOutcome = {
@@ -40,11 +41,15 @@ const logLinesOfEachSeed = {
     notSeeded:
       'the "Partida da chave" layer and the "Chave" panel were not seeded: a layer of the operator holds their height',
   },
+  imageLayer: {
+    seeded: 'seeded the "Imagem" layer',
+    notSeeded: 'the "Imagem" layer was not seeded: a layer of the operator holds its height',
+  },
 };
 
 /** Says in the log what one seed did, when it ran at this boot. */
 function logOneSeed(
-  outcome: SeedOfLayersAndItemsOutcome,
+  outcome: Pick<SeedOfLayersAndItemsOutcome, 'isSeedApplied' | 'zIndexTakenByTheOperator'>,
   logLines: { seeded: string; notSeeded: string },
   logger: ServerLogger,
 ): void {
@@ -61,9 +66,10 @@ function logOneSeed(
 /**
  * Runs the one-off seeds of a layer with its own quick-fire panel and items, each once per
  * database (`seeds_done`), in turn: the channel logo's (BAJAOVRLAY-63, seedChannelLogo.ts)
- * and the Super Prime's match graphics' (BAJAOVRLAY-65, seedBracketMatchGraphics.ts). Each
- * reads what the one before left, so the "Chave" panel comes after "Logo". The rows are
- * written when either seed ran (one of them may be unchanged, which costs one row); each
+ * and the Super Prime's match graphics' (BAJAOVRLAY-65, seedBracketMatchGraphics.ts), then
+ * the image graphic's layer alone (BAJAOVRLAY-84, seedImageLayer.ts). Each reads what the
+ * one before left, so the "Chave" panel comes after "Logo". The rows are written when any
+ * seed ran (one of them may be unchanged, which costs one row); each
  * seed says in the log what it did.
  */
 export function applyOneOffSeedsOfLayersAndItems(options: {
@@ -83,6 +89,11 @@ export function applyOneOffSeedsOfLayersAndItems(options: {
     items: channelLogoSeed.items,
   });
   logOneSeed(bracketMatchSeed, logLinesOfEachSeed.bracketMatchGraphics, options.logger);
+  const imageLayerSeed = addImageLayerOnce({
+    seedNamesDone: options.seedNamesDone,
+    layers: bracketMatchSeed.layers,
+  });
+  logOneSeed(imageLayerSeed, logLinesOfEachSeed.imageLayer, options.logger);
 
   const seedNamesApplied: string[] = [];
   if (channelLogoSeed.isSeedApplied) {
@@ -91,17 +102,20 @@ export function applyOneOffSeedsOfLayersAndItems(options: {
   if (bracketMatchSeed.isSeedApplied) {
     seedNamesApplied.push(bracketMatchGraphicsSeedName);
   }
+  if (imageLayerSeed.isSeedApplied) {
+    seedNamesApplied.push(imageLayerSeedName);
+  }
   const updatedAt = options.updatedAt;
   const rowsToWrite: SliceRow[] =
     seedNamesApplied.length === 0
       ? []
       : [
-          { name: 'layers', json: bracketMatchSeed.layers, updatedAt },
+          { name: 'layers', json: imageLayerSeed.layers, updatedAt },
           { name: 'quickFirePanels', json: bracketMatchSeed.quickFirePanels, updatedAt },
           { name: 'items', json: bracketMatchSeed.items, updatedAt },
         ];
   return {
-    layers: bracketMatchSeed.layers,
+    layers: imageLayerSeed.layers,
     quickFirePanels: bracketMatchSeed.quickFirePanels,
     items: bracketMatchSeed.items,
     rowsToWrite,
