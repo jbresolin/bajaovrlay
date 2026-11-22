@@ -99,6 +99,9 @@ test.describe('the results table looks like its baselines', () => {
           await turnToTheNextPage(page);
         }
         await hidePreviewControls(page);
+        const dumpName = `results-table-${name.replaceAll(' ', '-')}-${stage}.png`;
+        const dumpShot = await page.screenshot({ animations: 'disabled', caret: 'hide', scale: 'css' });
+        process.stdout.write(`PNGDUMP ${dumpName} ${dumpShot.toString('base64')}\n`);
 
         // Act: measure the board on the stage.
         const boardBox = await page.getByTestId('results-table').boundingBox();
