@@ -71,7 +71,7 @@ describe('the hello of a screen of one output', () => {
     ).toEqual(['legenda-pip']);
     expect(
       readLayerIds(slicesOfProgram),
-      "the program renderer gets program's ten layers, not the caption",
+      "the program renderer gets program's eleven layers, not the caption",
     ).toEqual([
       'bug',
       'sponsor-roll-plain',
@@ -83,6 +83,7 @@ describe('the hello of a screen of one output', () => {
       'lower-third',
       'notice',
       'fullscreen',
+      'image',
     ]);
     expect(
       readLayerIdsOfInstances(slicesOfProgram),

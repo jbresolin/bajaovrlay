@@ -1,0 +1,143 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-image",
+  "version": "0.1.0",
+  "name": "Imagem",
+  "description": "Uma imagem da biblioteca de mídia, no tamanho e na posição que o item escolhe, em qualquer ponto da tela.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "image.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "image",
+    "category": "brand"
+  },
+  "actionDurations": [
+    {
+      "type": "playAction",
+      "duration": 400
+    },
+    {
+      "type": "stopAction",
+      "duration": 250
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "imageUrl": {
+        "type": "string",
+        "title": "Imagem",
+        "description": "A imagem, escolhida na biblioteca de mídia dos cadastros.",
+        "minLength": 1,
+        "v_baja": {
+          "role": "imageUrl"
+        }
+      },
+      "widthPx": {
+        "type": "integer",
+        "title": "Largura (px)",
+        "description": "A largura da imagem na tela de 1920x1080; sem altura, a altura acompanha a proporção da imagem.",
+        "minimum": 16,
+        "maximum": 3840,
+        "default": 480
+      },
+      "heightPx": {
+        "type": "integer",
+        "title": "Altura (px)",
+        "description": "Opcional. Com largura e altura, a imagem cabe inteira dentro dessa caixa, sem esticar.",
+        "minimum": 16,
+        "maximum": 2160
+      },
+      "position": {
+        "type": "string",
+        "title": "Posição",
+        "description": "O ponto da tela onde a imagem se apoia; os deslocamentos a movem a partir dele.",
+        "enum": [
+          "top-left",
+          "top-center",
+          "top-right",
+          "middle-left",
+          "middle-center",
+          "middle-right",
+          "bottom-left",
+          "bottom-center",
+          "bottom-right"
+        ],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "top-left": "Superior esquerda",
+            "top-center": "Superior centro",
+            "top-right": "Superior direita",
+            "middle-left": "Meio esquerda",
+            "middle-center": "Centro",
+            "middle-right": "Meio direita",
+            "bottom-left": "Inferior esquerda",
+            "bottom-center": "Inferior centro",
+            "bottom-right": "Inferior direita"
+          }
+        },
+        "default": "middle-center"
+      },
+      "offsetXPx": {
+        "type": "integer",
+        "title": "Deslocamento X (px)",
+        "description": "Move a imagem para a direita (positivo) ou para a esquerda (negativo) a partir da posição.",
+        "minimum": -1920,
+        "maximum": 1920,
+        "default": 0
+      },
+      "offsetYPx": {
+        "type": "integer",
+        "title": "Deslocamento Y (px)",
+        "description": "Move a imagem para baixo (positivo) ou para cima (negativo) a partir da posição.",
+        "minimum": -1080,
+        "maximum": 1080,
+        "default": 0
+      },
+      "opacityPercent": {
+        "type": "integer",
+        "title": "Opacidade (%)",
+        "description": "100 é a imagem inteira; menos a deixa mais transparente.",
+        "minimum": 10,
+        "maximum": 100,
+        "default": 100
+      },
+      "entrance": {
+        "type": "string",
+        "title": "Entrada",
+        "description": "Como a imagem entra e sai do ar.",
+        "enum": ["fade", "none"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "fade": "Esmaecer (fade)",
+            "none": "Nenhuma (corte seco)"
+          }
+        },
+        "default": "fade"
+      },
+      "backgroundColor": {
+        "type": "string",
+        "title": "Fundo",
+        "description": "Opcional. Uma cor no formato #rrggbb, em minúsculas (ex.: #0a0a0a), que preenche a caixa da imagem, a margem incluída. Vazio: sem fundo, a imagem direto sobre o vídeo.",
+        "pattern": "^#[0-9a-f]{6}$",
+        "gddType": "color-rrggbb"
+      },
+      "marginPx": {
+        "type": "integer",
+        "title": "Margem (px)",
+        "description": "O espaço em volta da imagem, na cor do fundo.",
+        "minimum": 0,
+        "maximum": 200,
+        "default": 0
+      }
+    },
+    "required": ["imageUrl"],
+    "additionalProperties": false
+  }
+}

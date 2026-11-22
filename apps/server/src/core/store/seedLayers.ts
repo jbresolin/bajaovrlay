@@ -14,6 +14,9 @@ export const bracketMatchLayerId = 'bracket-match';
  */
 export const plainSponsorRollLayerId = 'sponsor-roll-plain';
 
+/** The image graphic's layer, "Imagem" (BAJAOVRLAY-84): the top layer, its default layer. */
+export const imageLayerId = 'image';
+
 /**
  * The layers seeded on the first boot, bottom to top, all on the program output; since
  * BAJAOVRLAY-49 the operator edits them on "Saídas e camadas". The z-indexes leave gaps of
@@ -25,7 +28,8 @@ export const plainSponsorRollLayerId = 'sponsor-roll-plain';
  * transient (each notice leaves after its rule's time). The channel logo (BAJAOVRLAY-63)
  * is the third, at 15, between the bug and the ticker, the match bug (BAJAOVRLAY-65)
  * the fourth, at 17, just above it, and the plain sponsor roll (BAJAOVRLAY-64) the fifth,
- * at 12, just above the bug; their reasons are written beside them.
+ * at 12, just above the bug, and the image (BAJAOVRLAY-84) the sixth, at 60, on top of
+ * everything; their reasons are written beside them.
  *
  * Every layer swaps graphics `out-then-in`, the safest policy: two graphics never
  * overlap on the same layer. The logo, the channel logo, the clock and the tower are
@@ -133,6 +137,20 @@ export const seededLayers: Layer[] = [
     outputId: programOutputId,
     name: ptBR.seededLayerNames.fullscreen,
     zIndex: 50,
+    replacePolicy: 'out-then-in',
+    persistent: false,
+  },
+  // The image graphic (BAJAOVRLAY-84) at 60, the top of the stack, above the fullscreen
+  // boards: the operator places it by hand, pixel by pixel, so it must show where it was
+  // put whatever else is on air (a sponsor's mark on the standings, a poster over the
+  // bars). Its own layer, so it never replaces another graphic; not persistent, since it
+  // is a one-off picture, not a fixture of the screen. Added once to a database that
+  // existed before it (seedImageLayer.ts).
+  {
+    id: imageLayerId,
+    outputId: programOutputId,
+    name: ptBR.seededLayerNames.image,
+    zIndex: 60,
     replacePolicy: 'out-then-in',
     persistent: false,
   },

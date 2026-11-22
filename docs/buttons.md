@@ -179,7 +179,7 @@ curl -s $BAJA/state | jq -r '.layers[] | "\(.id)  \(.outputId)  \(.name)"'
 ```
 
 A new database seeds the program output's layers as `bug`, `channel-logo`, `ticker`, `clock`,
-`tower`, `lower-third`, `notice` and `fullscreen`. An item's id never changes while the item exists; a
+`tower`, `lower-third`, `notice`, `fullscreen` and `image`. An item's id never changes while the item exists; a
 deleted and recreated item gets a new one, and its button must be edited.
 
 ## 6. Make the buttons

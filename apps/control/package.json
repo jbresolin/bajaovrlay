@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@bajaovrlay/battle-card": "workspace:*",
+    "@bajaovrlay/image": "workspace:*",
     "@bajaovrlay/logo-bug": "workspace:*",
     "@bajaovrlay/lower-strip": "workspace:*",
     "@bajaovrlay/message-ticker": "workspace:*",

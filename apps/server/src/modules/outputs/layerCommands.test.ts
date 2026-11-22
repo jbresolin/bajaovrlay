@@ -73,6 +73,7 @@ describe('createLayer', () => {
       'lower-third@program:40',
       'notice@program:45',
       'fullscreen@program:50',
+      'image@program:60',
     ]);
     expect(
       layersAfter.find((layer) => layer.id === 'placar-pip'),
