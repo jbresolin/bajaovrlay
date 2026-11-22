@@ -12,7 +12,9 @@ export type ListValueType =
   | 'standingsEntries'
   | 'standingsScoreParts'
   | 'bracketsRounds'
-  | 'incidentsEntries';
+  | 'incidentsEntries'
+  | 'resultsTableEntries'
+  | 'resultsTableColumnHeads';
 
 /** Every whole list, in the order the binding picker shows them. */
 export const listValueTypes: ListValueType[] = [
@@ -21,6 +23,8 @@ export const listValueTypes: ListValueType[] = [
   'standingsScoreParts',
   'bracketsRounds',
   'incidentsEntries',
+  'resultsTableEntries',
+  'resultsTableColumnHeads',
 ];
 
 /**
@@ -33,6 +37,10 @@ export const keysEveryItemOfTheListCarries: Record<ListValueType, string[]> = {
   standingsScoreParts: ['partId', 'label'],
   bracketsRounds: ['name', 'matches'],
   incidentsEntries: ['incidentId', 'carNumber', 'teamName', 'schoolName', 'kind', 'reason'],
+  // A results table's row; its rank is left out, as the site may give none.
+  resultsTableEntries: ['carNumber', 'teamName', 'schoolName', 'cells'],
+  // The heads are texts, not objects: there is no key to carry.
+  resultsTableColumnHeads: [],
 };
 
 /** Says whether a value read from a manifest is a plain object, so its fields can be read. */
@@ -63,11 +71,28 @@ export function doElementsCarryEveryKeyTheArrayFieldRequires(
   return keysRequired.every((key) => keysEveryElementCarries.includes(key));
 }
 
-/** Whether a whole list of a source fits one list field, by the rule above. */
+/** Whether a list field's elements are texts (`items.type` is "string"). */
+function isListOfTexts(arrayField: Record<string, unknown>): boolean {
+  const items = arrayField.items;
+  return isPlainObject(items) && items.type === 'string';
+}
+
+/**
+ * Whether a whole list of a source fits one list field, by the rule above. The one list of
+ * texts, a results table's column heads (BAJAOVRLAY-83), fits only a list field of texts:
+ * a field of objects that requires nothing would otherwise be offered it, and every head
+ * would fail the field's own item schema at the take.
+ */
 export function doesListFitArrayField(
   listType: ListValueType,
   arrayField: Record<string, unknown>,
 ): boolean {
+  if (listType === 'resultsTableColumnHeads') {
+    return isListOfTexts(arrayField);
+  }
+  if (isListOfTexts(arrayField)) {
+    return false;
+  }
   return doElementsCarryEveryKeyTheArrayFieldRequires(
     keysEveryItemOfTheListCarries[listType],
     arrayField,

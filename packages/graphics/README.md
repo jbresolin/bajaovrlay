@@ -24,6 +24,9 @@ field bound to "Chaves › Partida agora" or "Partida a seguir" of the match foc
 `countdown/`, `sessions-board/`, `sponsor-roll/` and `intermission-board/` (BAJAOVRLAY-46) are the
 narrow boards and cards that read whole lists from Cadastros ("Lista dos cadastros"); each README
 ends with a typical item, field by field.
+`results-table/` (BAJAOVRLAY-83) is "Tabela de resultado": any result page of the Baja app as the site
+shows it, its own columns and cells as text, the site's rank, in the standings board's look; the item
+picks the columns, a title and an order ("Ordenar por", "Sentido").
 `podium/` is the full-screen podium, three cards revealed one per step (3rd, 2nd, 1st), each
 crowned by its team's logo through the `withTeamLogos` binding transform.
 `bracket/` is the full-screen elimination bracket: round boards for the big rounds, the tree from

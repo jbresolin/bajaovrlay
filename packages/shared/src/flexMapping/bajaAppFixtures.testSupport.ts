@@ -13,6 +13,7 @@ export const bajaAppFixtureFiles = {
   enduroTableWithANullHeader26BR: 'resultado-26BR_END-null-header.made-up.json',
   enduroTableWithNoRankingColumn26BR: 'resultado-26BR_END-no-ranking-column.made-up.json',
   overallDuringSpoilers25SU: 'resultado-25SU_GER-spoilers.from-doc.json',
+  enduroQualifyingPage25SU: 'resultado-25SU_CLE-prova.made-up.json',
   superPrime26BR: 'torneio-26BR_SPR.json',
   superPrime25SU: 'torneio-25SU_SPR.json',
   superPrime25SUWithPendingSlots: 'torneio-25SU_SPR-pending.made-up.json',

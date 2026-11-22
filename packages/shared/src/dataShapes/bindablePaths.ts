@@ -14,6 +14,8 @@ import { ptBRDataShapes } from './ptBRDataShapes.js';
  *   list, for a tower, a standings table, a bracket or a board of penalties.
  * - `standingsScoreParts`: the standings' parts of the score (`{ partId, label }`), a
  *   whole list too, the columns of the standings table (BAJAOVRLAY-24).
+ * - `resultsTableEntries`, `resultsTableColumnHeads`: a results table's rows and its
+ *   columns' heads (BAJAOVRLAY-83), each a whole list.
  * - `clockGroup`: the whole session clock, which fills a graphic's four clock fields at
  *   once (the clock group, concept §5), so the clock never jumps between two of them.
  */
@@ -28,6 +30,8 @@ export const BindableValueTypeSchema = z.enum([
   'standingsScoreParts',
   'bracketsRounds',
   'incidentsEntries',
+  'resultsTableEntries',
+  'resultsTableColumnHeads',
   'clockGroup',
 ]);
 
@@ -157,6 +161,8 @@ function buildBindablePathsOfShape(shapeKey: DataShapeKey): BindablePath[] {
       // None, on purpose: a viewer's message reaches the air only as an event a person
       // approved (BAJAOVRLAY-35), never through a binding that would follow the chat live.
       return [];
+    case 'resultsTable':
+      return listResultsTablePaths();
   }
 }
 
@@ -359,6 +365,28 @@ function listIncidentsPaths(): BindablePath[] {
       'entries',
       [shapeName, ptBRDataShapes.wholeListLabel],
       'incidentsEntries',
+    ),
+  ];
+}
+
+/**
+ * A results table (BAJAOVRLAY-83): its name, its columns' heads and its rows, the last two
+ * whole lists. No row has paths of its own: a row means nothing outside its page.
+ */
+function listResultsTablePaths(): BindablePath[] {
+  const shapeName = ptBRDataShapes.shapeNames.resultsTable;
+  const fieldLabels = ptBRDataShapes.resultsTableFieldLabels;
+  return [
+    buildPathAtFixedPlace('tableName', [shapeName, fieldLabels.tableName], 'text'),
+    buildPathAtFixedPlace(
+      'columnHeads',
+      [shapeName, fieldLabels.columnHeads],
+      'resultsTableColumnHeads',
+    ),
+    buildPathAtFixedPlace(
+      'entries',
+      [shapeName, ptBRDataShapes.wholeListLabel],
+      'resultsTableEntries',
     ),
   ];
 }

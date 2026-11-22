@@ -110,6 +110,11 @@ export const ptBRFlexMapping = {
       'As partes da pontuação vêm de colunas ou de uma lista por equipe, não das duas.',
     headerTwiceInScoreParts: (header: string) =>
       `A coluna "${header}" aparece duas vezes nas partes da pontuação.`,
+    cellsAsTextOnlyInResultsTable:
+      'As células como texto, coluna por coluna, só existem na Tabela de resultado.',
+    resultsTableNeedsCellsAsText:
+      'A Tabela de resultado precisa das células como texto, coluna por coluna ("cellsAsTextFromColumns").',
+    cellsAsTextNeedTable: 'As células como texto precisam de onde estão as colunas da tabela.',
     gapsOnlyInPositions: 'Calcular as diferenças pelas voltas só existe nas Posições.',
     lastPassWithoutGaps: (fieldLabel: string) =>
       `"${fieldLabel}" só serve para calcular as diferenças pelas voltas; ligue essa opção ou deixe o campo sem mapear.`,
@@ -171,6 +176,12 @@ export const ptBRFlexMapping = {
       `${shapeName}: não há resposta da requisição "${requestId}"`,
     noListAtPath: (shapeName: string, entriesPath: string, requestId: string) =>
       `${shapeName}: não há uma lista em "${entriesPath}" na resposta de ${requestId}`,
+  },
+
+  /** How a cell holding a yes or a no is written as text in a results table. */
+  cellTexts: {
+    yes: 'SIM',
+    no: 'NÃO',
   },
 
   /** The poll error: the first problem, then how many more there are. */

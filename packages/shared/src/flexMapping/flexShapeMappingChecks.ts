@@ -129,6 +129,7 @@ function checkOptionsSitOnTheirShape(mapping: FlexShapeMapping, context: z.Refin
       context.addIssue({ code: 'custom', path: ['scorePartsFromColumns'], message });
     }
   }
+  checkCellsAsTextSitOnTheResultsTable(mapping, context);
   if (mapping.workOutGapsFromLaps === true && mapping.shapeKey !== 'positions') {
     context.addIssue({
       code: 'custom',
@@ -142,6 +143,30 @@ function checkOptionsSitOnTheirShape(mapping: FlexShapeMapping, context: z.Refin
       path: ['entryIsIncompleteWhen'],
       message: reasons.incompleteEntriesOnlyInBrackets,
     });
+  }
+}
+
+/**
+ * The cells as text belong to the results table, which needs them (its heads and cells
+ * come from nowhere else) and needs the table layout they read (BAJAOVRLAY-83).
+ */
+function checkCellsAsTextSitOnTheResultsTable(
+  mapping: FlexShapeMapping,
+  context: z.RefinementCtx,
+): void {
+  const reasons = ptBRFlexMapping.configReasons;
+  const isTheResultsTable = mapping.shapeKey === 'resultsTable';
+  const hasCellsAsText = mapping.cellsAsTextFromColumns !== undefined;
+  let message: string | undefined;
+  if (hasCellsAsText && !isTheResultsTable) {
+    message = reasons.cellsAsTextOnlyInResultsTable;
+  } else if (isTheResultsTable && !hasCellsAsText) {
+    message = reasons.resultsTableNeedsCellsAsText;
+  } else if (hasCellsAsText && mapping.table === undefined) {
+    message = reasons.cellsAsTextNeedTable;
+  }
+  if (message !== undefined) {
+    context.addIssue({ code: 'custom', path: ['cellsAsTextFromColumns'], message });
   }
 }
 

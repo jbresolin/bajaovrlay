@@ -16,7 +16,9 @@
  *     standings' scoreParts), and no list of teams or cars.
  *   - The standings' teams fit the standings' entries but not the tower's, which asks for
  *     a position, laps and a status; the positions fit the tower's.
- *   - A list field that asks for nothing takes any whole list.
+ *   - A list field that asks for nothing takes any whole list of objects.
+ *   - A results table's column heads, a list of texts (BAJAOVRLAY-83), fit only a list
+ *     field of texts, and its rows fit the results table's own field.
  *
  * What these tests deliberately do not cover:
  *   - The other value types and the clock group; bindingFitsGraphicField.test.ts.
@@ -27,6 +29,7 @@ import { z } from 'zod';
 import { BracketRoundSchema } from '../dataShapes/bracketsShape.js';
 import { IncidentEntrySchema } from '../dataShapes/incidentsShape.js';
 import { PositionEntrySchema } from '../dataShapes/positionsShape.js';
+import { ResultsTableEntrySchema } from '../dataShapes/resultsTableShape.js';
 import { StandingsEntrySchema, StandingsScorePartSchema } from '../dataShapes/standingsShape.js';
 import { doesListFitArrayField, keysEveryItemOfTheListCarries } from './listItemKeys.js';
 
@@ -53,6 +56,15 @@ const standingsEntriesField = {
   items: { type: 'object', required: ['carNumber', 'teamName', 'schoolName', 'points'] },
 };
 
+/** The results table's rows, as its manifest declares them (BAJAOVRLAY-83). */
+const resultsTableEntriesField = {
+  type: 'array',
+  items: { type: 'object', required: ['carNumber', 'teamName', 'schoolName', 'cells'] },
+};
+
+/** The results table's column heads: a list of texts. */
+const resultsTableColumnHeadsField = { type: 'array', items: { type: 'string' } };
+
 /** The standings' list of score parts, as its manifest declares it. */
 const standingsScorePartsField = {
   type: 'array',
@@ -71,6 +83,8 @@ describe('keysEveryItemOfTheListCarries', () => {
     { listType: 'bracketsRounds' as const, itemSchema: BracketRoundSchema },
     // An incident.
     { listType: 'incidentsEntries' as const, itemSchema: IncidentEntrySchema },
+    // A row of a results table: its rank is not among them, the site may give none.
+    { listType: 'resultsTableEntries' as const, itemSchema: ResultsTableEntrySchema },
   ];
 
   it.each(listScenarios)('lists exactly what $listType requires', ({ listType, itemSchema }) => {
@@ -143,6 +157,34 @@ describe('doesListFitArrayField', () => {
       listType: 'bracketsRounds' as const,
       field: { type: 'array' },
       fits: true,
+    },
+    // A results table's rows fit their own field.
+    {
+      name: 'the results table’s rows fit the results table’s rows',
+      listType: 'resultsTableEntries' as const,
+      field: resultsTableEntriesField,
+      fits: true,
+    },
+    // The heads are texts: they fit a list field of texts…
+    {
+      name: 'the column heads fit a list field of texts',
+      listType: 'resultsTableColumnHeads' as const,
+      field: resultsTableColumnHeadsField,
+      fits: true,
+    },
+    // …and never a list field of objects, even one that asks for nothing.
+    {
+      name: 'the column heads do not fit a list field that asks for nothing',
+      listType: 'resultsTableColumnHeads' as const,
+      field: { type: 'array' },
+      fits: false,
+    },
+    // Nor do the rows fit the column heads' field.
+    {
+      name: 'the results table’s rows do not fit the column heads’ field',
+      listType: 'resultsTableEntries' as const,
+      field: resultsTableColumnHeadsField,
+      fits: false,
     },
   ];
 

@@ -48,6 +48,17 @@ export const ptBRBajaAppSource = {
     'Para testes e ensaios: sem isto, uma corrida que o app marca como simulação é recusada.',
   // A table chosen: its columns are read before "Continuar".
   readingTable: 'Lendo as colunas da tabela…',
+  /** How a chosen table is read (BAJAOVRLAY-83): as standings, or as the site shows it. */
+  tableReadingWayTitle: 'Ler a tabela como',
+  tableReadingWays: {
+    standings: 'Classificação (quadro "Classificação")',
+    page: 'Tabela como no site (gráfico "Tabela de resultado")',
+  },
+  tableReadingWayHint:
+    'Como no site: as colunas da página, cada célula como está escrita, a posição do próprio site; lê também tabelas que não classificam ninguém e, se você quiser, tabelas com spoilers.',
+  refuseDuringSpoilers: 'Recusar durante spoilers',
+  refuseDuringSpoilersHint:
+    'Desmarcado (o normal), a tabela com spoilers vai ao ar com "SPOILERS" escrito nas células escondidas.',
   pointsColumn: (header: string) => `Pontos: coluna "${header}"`,
   partsTitle: 'Partes da pontuação',
   partsHint: 'As colunas mostradas como partes; a proposta é a da tabela geral.',

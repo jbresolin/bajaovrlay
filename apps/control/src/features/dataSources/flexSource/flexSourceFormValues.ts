@@ -26,7 +26,7 @@ import {
 
 /**
  * The shapes the form offers, every canonical shape (brackets too since BAJAOVRLAY-25), in
- * the order of its "+ Sessão / + Posições / + Pontuação / + Incidentes / + Chaves".
+ * the order of its "+ Sessão / + Posições / + Pontuação / + Incidentes / + Chaves / + Tabela de resultado".
  */
 export const mappableShapeKeys: readonly DataShapeKey[] = [
   'session',
@@ -34,6 +34,7 @@ export const mappableShapeKeys: readonly DataShapeKey[] = [
   'standings',
   'incidents',
   'brackets',
+  'resultsTable',
 ];
 
 /** Whether a header or parameter's value is typed here or read from a server variable. */

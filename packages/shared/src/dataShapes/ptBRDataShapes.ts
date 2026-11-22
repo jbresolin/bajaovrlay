@@ -16,6 +16,7 @@ export const ptBRDataShapes = {
     brackets: 'Chaves',
     incidents: 'Incidentes',
     superChats: 'Super Chats',
+    resultsTable: 'Tabela de resultado',
   },
 
   /** "1º colocado", "10º colocado": positions, where every car has a place of its own. */
@@ -94,6 +95,21 @@ export const ptBRDataShapes = {
     schoolName: 'Escola',
     points: 'Pontos',
     isDisqualified: 'Desclassificada',
+  },
+
+  /** The results table fields a binding may point at (BAJAOVRLAY-83). */
+  resultsTableFieldLabels: {
+    tableName: 'Nome da tabela',
+    /** The page's own value columns, in order ("Voltas", "Pontos"). */
+    columnHeads: 'Colunas da tabela',
+  },
+
+  /** The fields of one row of a results table. */
+  resultsTableEntryFieldLabels: {
+    carNumber: 'Carro',
+    teamName: 'Equipe',
+    schoolName: 'Escola',
+    rank: 'Posição no site',
   },
 
   /** The brackets fields a binding may point at. */
@@ -215,5 +231,7 @@ export const ptBRDataShapes = {
       `o incidente ${incidentId} aparece mais de uma vez`,
     superChatListedTwice: (messageId: string) =>
       `o Super Chat ${messageId} aparece mais de uma vez`,
+    cellCountNotHeadCount: (headCount: number) =>
+      `cada linha tem uma célula por coluna da tabela, aqui ${headCount}`,
   },
 };

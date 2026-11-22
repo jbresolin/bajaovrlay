@@ -12,6 +12,7 @@ import { type HttpJsonConfig, HttpJsonConfigSchema } from '../../../dataSources/
 import { fillPresetPlaceholders, type PresetParameterValues } from '../presetPlaceholders.js';
 import racePreset from './corrida.preset.json' with { type: 'json' };
 import resultsTablePreset from './resultado.preset.json' with { type: 'json' };
+import resultsPagePreset from './resultado-tabela.preset.json' with { type: 'json' };
 import tournamentPreset from './torneio.preset.json' with { type: 'json' };
 
 /** The Baja app's public results API, the address the presets read unless told otherwise. */
@@ -59,6 +60,14 @@ export type BajaAppResultsTableParameters = BajaAppAddressParameters & {
   partHeaders: readonly string[];
   /** What the standings add up: "overall" for the overall table. */
   standingsScope: StandingsScope;
+};
+
+/** The results page preset's parameters (BAJAOVRLAY-83). */
+export type BajaAppResultsPageParameters = BajaAppAddressParameters & {
+  /** Any result page with columns: "25SU_GER", "26BR_END", "26BR_SGE". */
+  resultadoId: string;
+  /** Refuse the page while its organisers hide results (spoilers); off unless asked. */
+  refusesDuringSpoilers: boolean;
 };
 
 /** The tournament preset's parameters. */
@@ -127,6 +136,35 @@ export function buildBajaAppResultsTableSourceConfig(
     };
   });
   return HttpJsonConfigSchema.parse({ ...config, mappings: mappingsWithThePartsPicked });
+}
+
+/**
+ * Any result page (resultado.php) as the site shows it, as a results table (BAJAOVRLAY-83):
+ * the page's own value columns with every cell as text (`display`, else `raw`), the rank,
+ * car and team columns left out since each row carries them, the site's rank as it comes
+ * and names joined from the teams. Unlike the standings preset, a page during spoilers is
+ * read too ("SPOILERS" goes on air as written) unless `refusesDuringSpoilers`.
+ */
+export function buildBajaAppResultsPageSourceConfig(
+  parameters: BajaAppResultsPageParameters,
+): HttpJsonConfig {
+  const filledPreset = fillPresetPlaceholders(resultsPagePreset, {
+    apiAddress: writeAddressWithoutTheLastSlash(parameters.apiAddress),
+    eventId: parameters.eventId,
+    resultadoId: parameters.resultadoId,
+  });
+  const config = HttpJsonConfigSchema.parse(filledPreset);
+  if (parameters.refusesDuringSpoilers) {
+    return config;
+  }
+  // The preset file keeps the refusal so its sentence is written once, beside the rest;
+  // off by default, it is taken off here.
+  const mappingsWithoutTheSpoilersRefusal = config.mappings.map((mapping) => {
+    const mappingWithoutTheRefusal = { ...mapping };
+    delete mappingWithoutTheRefusal.refuseWhen;
+    return mappingWithoutTheRefusal;
+  });
+  return HttpJsonConfigSchema.parse({ ...config, mappings: mappingsWithoutTheSpoilersRefusal });
 }
 
 /**

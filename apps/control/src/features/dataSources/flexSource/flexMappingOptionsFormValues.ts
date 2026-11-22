@@ -4,7 +4,8 @@ import { writeTypedValueText } from './typedValueText';
 
 /**
  * What a mapping block holds beside its rows (BAJAOVRLAY-53): the list inside each item,
- * the lookups, the table's layout, standings' parts by column, the refusal flag, the gaps
+ * the lookups, the table's layout, standings' parts by column, a results table's cells as
+ * text (BAJAOVRLAY-83), the refusal flag, the gaps
  * switch and the incomplete-match conditions; and how they are filled from a mapping.
  * Every field is text as an input holds it, and an option left empty is left out of the
  * config, so a mapping that uses none of them reads and exports exactly as before.
@@ -52,6 +53,15 @@ export type MappingOptionsFormValues = {
   scorePartHeadersText: string;
   /** The path inside each part's cell ("raw"); empty reads the whole cell. */
   scorePartValuePath: string;
+  /**
+   * The results table's cells as text (BAJAOVRLAY-83): the paths tried in each cell,
+   * separated by commas ("display, raw"); empty means the option is not used.
+   */
+  cellValuePathsText: string;
+  /** The path on each column that leaves it out ("kind"); empty leaves none out. */
+  leaveOutColumnsPath: string;
+  /** The values at that path that leave a column out, typed, separated by commas. */
+  leaveOutColumnsValuesText: string;
   refuseWhen: RefusalFormValues;
   workOutGapsFromLaps: boolean;
   incompleteConditions: IncompleteConditionFormValues[];
@@ -75,6 +85,9 @@ export function buildEmptyMappingOptionsFormValues(): MappingOptionsFormValues {
     table: { columnsPath: '', headerPath: '', cellsPath: '' },
     scorePartHeadersText: '',
     scorePartValuePath: '',
+    cellValuePathsText: '',
+    leaveOutColumnsPath: '',
+    leaveOutColumnsValuesText: '',
     refuseWhen: { path: '', equalsText: '', notOneOfText: '', message: '' },
     workOutGapsFromLaps: false,
     incompleteConditions: [],
@@ -108,6 +121,11 @@ export function buildMappingOptionsFormValues(mapping: FlexShapeMapping): Mappin
     table,
     scorePartHeadersText: (mapping.scorePartsFromColumns?.headers ?? []).join('\n'),
     scorePartValuePath: mapping.scorePartsFromColumns?.valuePath ?? '',
+    cellValuePathsText: (mapping.cellsAsTextFromColumns?.valuePaths ?? []).join(', '),
+    leaveOutColumnsPath: mapping.cellsAsTextFromColumns?.leaveOutColumnsWhen?.path ?? '',
+    leaveOutColumnsValuesText: (mapping.cellsAsTextFromColumns?.leaveOutColumnsWhen?.isOneOf ?? [])
+      .map(writeTypedValueText)
+      .join(', '),
     refuseWhen,
     workOutGapsFromLaps: mapping.workOutGapsFromLaps === true,
     incompleteConditions,

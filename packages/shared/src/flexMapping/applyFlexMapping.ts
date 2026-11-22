@@ -31,6 +31,7 @@ import {
 } from './flexTableColumns.js';
 import { addGapsWorkedOutFromLaps } from './gapsFromLaps.js';
 import { ptBRFlexMapping } from './ptBRFlexMapping.js';
+import { listColumnsReadAsText } from './resultsTableCellsFromColumns.js';
 import { listScorePartsOfLabelsMet } from './standingsScorePartLists.js';
 
 /**
@@ -149,7 +150,8 @@ type EntriesInput = {
 
 /**
  * Builds a list shape's entries and puts them in the shape: lists the elements (a nested
- * list too), indexes the lookups and reads the table's columns once, maps every element,
+ * list too), indexes the lookups and reads the table's columns once (for a results table,
+ * its heads as text too, BAJAOVRLAY-83), maps every element,
  * then places the entries (brackets grouped into rounds, gaps worked out for positions,
  * standings' parts listed).
  */
@@ -177,6 +179,16 @@ function mapEntriesIntoShape(
     addProblemLine(problems, lines.atLookup(shapeName, lookupName, detail));
   }
   const columnPlaceByHeader = readColumnsOfTable(mapping, input.response, problems);
+  // A results table's columns read as text (BAJAOVRLAY-83); a missing columns list was
+  // just named by readColumnsOfTable, so here it simply gives no column.
+  const columnsReadAsText =
+    mapping.table === undefined || mapping.cellsAsTextFromColumns === undefined
+      ? []
+      : (listColumnsReadAsText(mapping.table, mapping.cellsAsTextFromColumns, input.response) ??
+        []);
+  if (mapping.shapeKey === 'resultsTable') {
+    shape.columnHeads = columnsReadAsText.map((column) => column.head);
+  }
 
   const context: EntryMappingContext = {
     mapping,
@@ -184,6 +196,7 @@ function mapEntriesIntoShape(
     indexedLookups: lookupIndexing.indexedLookups,
     columnPlaceByHeader,
     scorePartLabelsMet: [],
+    columnsReadAsText,
   };
   const mappedEntries = listing.entryElements.map((entryElement, elementIndex) =>
     mapOneEntry(entryElement, elementIndex, context),

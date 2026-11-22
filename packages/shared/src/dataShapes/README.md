@@ -12,7 +12,9 @@ what a source gives (gate 2 of PR #16). Brackets (`bracketsShape.ts`, BAJAOVRLAY
 best of N (`bestOf`, `wins`), W.O. (`walkover`), byes (no `carB`) and one third-place round,
 checked by `bracketMatchRules.ts` and `bracketRoundsRules.ts` (a round is listed whole);
 `samples/brackets.super-prime.json` is the real Super Prime of the 30ª Competição.
-Standings carry the score's parts as the source names them (`scoreParts`, `pointsByPart`) and
+The results table (`resultsTableShape.ts`, BAJAOVRLAY-83) is one result page as the site shows
+it: its value columns' heads, and per row the site's rank (or none), the team and one text cell
+per head. Standings carry the score's parts as the source names them (`scoreParts`, `pointsByPart`) and
 keep disqualified teams, unranked, at the end (`isDisqualified`, BAJAOVRLAY-24).
 
 `validateDataShape.ts` checks a payload (pt-BR error naming the path); `bindablePaths.ts`

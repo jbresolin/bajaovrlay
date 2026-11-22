@@ -34,6 +34,7 @@ export const browserTestPorts = [
   // CI job of its own), so it is left as it is.
   { port: 5231, file: 'packages/graphics/sponsor-roll-plain/playwright.config.ts' },
   { port: 5241, file: 'packages/graphics/image/playwright.config.ts' },
+  { port: 5239, file: 'packages/graphics/results-table/playwright.config.ts' },
 
   // The control page's browser tests and the servers they start.
   { port: 5181, file: 'apps/control/e2e/loginServerOfTheBrowserTests.ts' },

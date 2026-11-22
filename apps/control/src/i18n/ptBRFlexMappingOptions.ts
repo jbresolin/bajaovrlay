@@ -36,6 +36,15 @@ export const ptBRFlexMappingOptions = {
   scorePartHeaders: 'Cabeçalhos das partes (um por linha)',
   scorePartValuePath: 'Caminho do valor em cada célula',
 
+  cellsAsTextTitle: 'Células como texto, coluna por coluna',
+  cellsAsTextHint:
+    'Tabela de resultado: cada coluna vira uma coluna do gráfico e cada célula é lida como texto, pelo primeiro caminho que tiver valor.',
+  cellsAsTextFields: {
+    valuePaths: 'Caminhos do valor em cada célula (separados por vírgula)',
+    leaveOutPath: 'Deixar de fora as colunas em que o caminho',
+    leaveOutValues: 'vale um destes (separados por vírgula)',
+  },
+
   refusalTitle: 'Recusar a resposta quando',
   refusalHint:
     'Se o valor no caminho for igual ao "Valor que recusa", ou não for nenhum dos "Valores conhecidos" (use um dos dois), a leitura falha com a mensagem e o último dado bom fica no ar. {valor} na mensagem mostra o valor lido.',

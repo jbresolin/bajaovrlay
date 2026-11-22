@@ -38,6 +38,57 @@ export function BajaAppRaceOptions(props: {
   );
 }
 
+/** How a chosen table is read: as standings, or as the site shows it (BAJAOVRLAY-83). */
+export type TableReadingWay = 'standings' | 'page';
+
+/**
+ * Under a chosen table, first (BAJAOVRLAY-83): read it as standings (the parts below), or
+ * as the site shows it for "Tabela de resultado", with "Recusar durante spoilers", off
+ * unless ticked.
+ */
+export function BajaAppTableReadingWayOptions(props: {
+  readingWay: TableReadingWay;
+  refusesDuringSpoilers: boolean;
+  onReadingWayChange: (readingWay: TableReadingWay) => void;
+  onRefusesDuringSpoilersChange: (refusesDuringSpoilers: boolean) => void;
+}) {
+  const readingWays: TableReadingWay[] = ['standings', 'page'];
+  return (
+    <div className="flex flex-col gap-2">
+      <fieldset className="flex flex-col gap-1">
+        <legend className="text-sm font-medium">{texts.tableReadingWayTitle}</legend>
+        {readingWays.map((readingWay) => (
+          <label key={readingWay} className="flex items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="baja-app-table-reading-way"
+              className="size-4 accent-primary"
+              checked={props.readingWay === readingWay}
+              onChange={() => props.onReadingWayChange(readingWay)}
+            />
+            <span>{texts.tableReadingWays[readingWay]}</span>
+          </label>
+        ))}
+        <p className="text-xs text-muted-foreground">{texts.tableReadingWayHint}</p>
+      </fieldset>
+      {props.readingWay === 'page' && (
+        <div className="flex flex-col gap-1">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="size-4 accent-primary"
+              checked={props.refusesDuringSpoilers}
+              onChange={(event) => props.onRefusesDuringSpoilersChange(event.target.checked)}
+            />
+            <span>{texts.refuseDuringSpoilers}</span>
+          </label>
+          <p className="text-xs text-muted-foreground">{texts.refuseDuringSpoilersHint}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * Under a chosen table: its columns being read, the reason they could not be, or the
  * column it ranks by (the points) and a box per column that may be a part of the score,

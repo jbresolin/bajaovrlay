@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { BracketsShapeSchema } from '../dataShapes/bracketsShape.js';
 import { IncidentsShapeSchema } from '../dataShapes/incidentsShape.js';
 import { PositionsShapeSchema } from '../dataShapes/positionsShape.js';
+import { ResultsTableShapeSchema } from '../dataShapes/resultsTableShape.js';
 import { SessionShapeSchema } from '../dataShapes/sessionShape.js';
 import { StandingsShapeSchema } from '../dataShapes/standingsShape.js';
 import { SuperChatsShapeSchema } from '../dataShapes/superChatsShape.js';
@@ -15,6 +16,7 @@ export const DataSnapshotShapesSchema = z.object({
   brackets: BracketsShapeSchema.optional(),
   incidents: IncidentsShapeSchema.optional(),
   superChats: SuperChatsShapeSchema.optional(),
+  resultsTable: ResultsTableShapeSchema.optional(),
 });
 
 /** The shapes of a snapshot, each one valid. */

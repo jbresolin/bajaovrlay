@@ -68,10 +68,10 @@ describe('listValueTypesThatFitGraphicField', () => {
       expectedTypes: ['boolean'],
     },
     // A list field that requires nothing of its elements (this stand-in's) takes any of
-    // the whole lists; one with items.required takes only those that carry them
+    // the whole lists of objects, never the column heads, which are texts; one with items.required takes only those that carry them
     // (listItemKeys.test.ts).
     {
-      name: 'a list field that requires nothing takes the five whole lists',
+      name: 'a list field of objects that requires nothing takes the six whole lists of objects',
       graphic: buildPositionsTowerGraphic(),
       fieldKey: 'entries',
       expectedTypes: [
@@ -80,6 +80,7 @@ describe('listValueTypesThatFitGraphicField', () => {
         'standingsScoreParts',
         'bracketsRounds',
         'incidentsEntries',
+        'resultsTableEntries',
       ],
     },
     // A decimal number takes a whole number too: 400 points is a number.
