@@ -21,7 +21,8 @@
  *     room and leaves no empty frame. These rows name no position (Esquerda), so their
  *     baselines are the ones from before "Posição" existed (BAJAOVRLAY-85).
  *   - The captain on Direita and on Centro (BAJAOVRLAY-85): the pills mirrored to the
- *     right, and centred; e2e/lowerThirdPositions.e2e.ts measures where.
+ *     right, and centred; e2e/lowerThirdPositions.e2e.ts measures where. With Esquerda
+ *     chosen in the item she matches the baseline of an item that names no position.
  *
  * What these tests deliberately do not cover:
  *   - Motion; the screenshots show the end of the play-in only (lowerThirdLifecycle.e2e.ts
@@ -95,9 +96,22 @@ const layoutScenarios = [
   },
 ];
 
-// BAJAOVRLAY-85: the same captain in the two other places of "Posição". The rows above
-// name no position, so their baselines (Esquerda) are the ones from before the setting.
+// BAJAOVRLAY-85: the same captain with "Posição" chosen. The rows above name no position,
+// so their baselines (Esquerda) are the ones from before the setting; an explicit Esquerda
+// reuses the first of them.
 const otherPositionScenarios = [
+  {
+    // Esquerda chosen on purpose: it must look exactly like an item that names no
+    // position, so this row is compared with that row's baseline, not a new one.
+    layout: 'with role and team line, on Esquerda chosen in the item',
+    lowerThirdData: {
+      name: 'Mariana Costa',
+      role: 'Capitã da equipe',
+      teamLine: 'Baja UFMG · UFMG',
+      position: 'left',
+    },
+    screenshotName: 'lower-third-with-role-and-team-line',
+  },
   {
     // Direita: the pills' right edges at 1920 − 96, the name pill lined up on the right.
     layout: 'with role and team line, on Direita',
@@ -157,7 +171,7 @@ test.describe('the lower third looks like its baseline', () => {
   }
 });
 
-test.describe('the lower third in the other positions looks like its baseline', () => {
+test.describe('the lower third with a position chosen looks like its baseline', () => {
   for (const stage of stages) {
     for (const scenario of otherPositionScenarios) {
       test(`${scenario.layout}, on the ${stage} stage`, async ({ page }) => {

@@ -1,22 +1,15 @@
 # lower-third (`@bajaovrlay/lower-third`)
 
-The lower third ("Tarja") OGraf graphic in Ardósia (design: `docs/design/directions/ardosia/lower-third.html`):
-a 64 px name pill bottom-left at x 96, and under it a 40 px role pill with the role, a dot and the
-muted team line, the lower pill ending at y 940, on the `lower-third` layer. Only `name` is required;
-without `role` and `teamLine` the role pill is left out and the name pill stands alone at the bottom.
-The design's car chip in the role pill is not drawn (this task gives the graphic no car number).
-Each pill stops at `--lower-third-max-width` (1300 px, left of the tower); past it the name, the role
-or the team line scrolls inside its box (the kit's `scrollingTextWhenTooLong`, BAJAOVRLAY-55).
-"Posição" (`position`, BAJAOVRLAY-85) places it along the bottom: Esquerda (`left`, the default and
-every item that names none, pixel for pixel as before), Centro (`center`, both pills centred on
-x 960) or Direita (`right`, the pills' right edges at 1824, the role pill lined up right); the text
-in each pill reads left to right in all three, and the rise-and-fade motion is the same everywhere.
-Start reading at `src/lower-third.ts` (the OGraf lifecycle, same as the notice's); it wires
-`lowerThirdModel.ts`, `lowerThirdView.ts`, `lowerThirdStyles.ts`, `lowerThirdAnimations.ts`, `ptBR.ts`.
-Typical item, in the item editor: "Nome" ← Cadastro, Pessoa, "Nome"; "Função" ← the same person,
-"Função"; "Equipe" typed (`BAJA UFPR · UFPR`), or ← Cadastro, Equipe of car N, "Nome da equipe".
+The lower third ("Tarja") in Ardósia (design: `docs/design/directions/ardosia/lower-third.html`), on the `lower-third` layer:
+a 64 px name pill over a 40 px role pill (the role, a dot, the muted team line), the lower pill ending at y 940.
+Only `name` is required; without `role` and `teamLine` the name pill stands alone at the bottom. No car chip (no car number field).
+Each pill stops at `--lower-third-max-width` (1300 px); past it its text scrolls inside (the kit's `scrollingTextWhenTooLong`, BAJAOVRLAY-55).
+"Posição" (`position`, BAJAOVRLAY-85): Esquerda (`left`, the default, pixel for pixel as before: x 96), Centro (`center`, centred on
+x 960) or Direita (`right`, right edges at 1824, lined up right); text reads left to right and the rise-and-fade motion is the same in all.
+Start reading at `src/lower-third.ts` (the OGraf lifecycle); it wires `lowerThirdModel.ts`, `lowerThirdView.ts`,
+`lowerThirdStyles.ts`, `lowerThirdAnimations.ts` and `ptBR.ts`.
+Typical item: "Nome" and "Função" ← Cadastro, Pessoa; "Equipe" typed (`BAJA UFPR · UFPR`) or ← Cadastro, Equipe of car N.
 Preview: `pnpm --filter @bajaovrlay/lower-third dev`, then http://localhost:5190/preview.html
-(add `?data=<url-encoded JSON>` and `&stage=grey` or `&stage=black`; a `"position"` in the data
-shows Centro or Direita). Unit tests:
-`pnpm --filter @bajaovrlay/lower-third test`; Playwright on the built `dist/`:
-`pnpm --filter @bajaovrlay/lower-third test:e2e` (after a deliberate visual change add `--update-snapshots`).
+(`?data=<url-encoded JSON>`, with a `"position"` for Centro or Direita, and `&stage=grey` or `&stage=black`).
+Tests: `pnpm --filter @bajaovrlay/lower-third test`; Playwright on the built `dist/`: `... test:e2e`
+(after a deliberate visual change add `--update-snapshots`).

@@ -17,6 +17,8 @@
  *     is set left to right.
  *   - A name too long for its pill stops the pill at 1300 px and scrolls inside it in
  *     Centro and in Direita too, the pill keeping its place.
+ *   - A lower third on air on Esquerda moved to Direita by an update (the operator
+ *     changing "Posição" on air) lands with both right edges at x 1824, still visible.
  *
  * What these tests deliberately do not cover:
  *   - How the pills look; e2e/lowerThirdScreenshots.e2e.ts pins Centro and Direita on
@@ -194,4 +196,39 @@ test.describe('a name too long for its pill, away from the left', () => {
       expectTextEndShowing(namePlace);
     });
   }
+});
+
+test.describe('changing the position on air', () => {
+  test('moves a lower third on air from Esquerda to Direita, both pills still visible', async ({
+    page,
+  }) => {
+    // Arrange: the captain on air on Esquerda, the item naming no position.
+    await openLowerThirdOnAir(page, teamCaptainData);
+
+    // Act: send the update a renderer sends when the operator picks "Direita" on air,
+    // straight to the graphic on the preview page, and note its answer.
+    const updateAnswer = await page.evaluate(async () => {
+      type OGrafGraphic = HTMLElement & {
+        updateAction: (params: object) => Promise<{ statusCode: number }>;
+      };
+      const graphic = document.querySelector('baja-lower-third') as OGrafGraphic;
+      return graphic.updateAction({ data: { position: 'right' } });
+    });
+    const namePill = await measureOnTheStage(page, 'lower-third-name-pill');
+    const rolePill = await measureOnTheStage(page, 'lower-third-role-pill');
+
+    // Assert: the update was taken, both pills now end at x 1824, and both are still
+    // on air (an update never takes them out).
+    expect(updateAnswer.statusCode, 'the move must be taken with 200').toBe(200);
+    expect(namePill.right, 'the name pill must now end at x 1824').toBeCloseTo(1824, 0);
+    expect(rolePill.right, 'the role pill must now end at x 1824').toBeCloseTo(1824, 0);
+    await expect(
+      page.getByTestId('lower-third-name-pill'),
+      'the name pill must still be on air after the move',
+    ).toHaveCSS('opacity', '1');
+    await expect(
+      page.getByTestId('lower-third-role-pill'),
+      'the role pill must still be on air after the move',
+    ).toHaveCSS('opacity', '1');
+  });
 });

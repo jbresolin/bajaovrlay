@@ -71,7 +71,16 @@ describe('the lower third’s data with and without "Posição"', () => {
     expect(problem, 'a name alone must pass').toBeUndefined();
   });
 
-  it.each(['left', 'center', 'right'])('accepts the position "%s"', (position) => {
+  const acceptedPositionScenarios = [
+    // Esquerda chosen on purpose: the default, now also written in the item.
+    { name: 'accepts the position "left" (Esquerda)', position: 'left' },
+    // Centro: both pills centred on x 960.
+    { name: 'accepts the position "center" (Centro)', position: 'center' },
+    // Direita: the mirror of the left, at x 1824.
+    { name: 'accepts the position "right" (Direita)', position: 'right' },
+  ];
+
+  it.each(acceptedPositionScenarios)('$name', ({ position }) => {
     // Arrange: the captain's data with this position.
     const graphic = buildLowerThirdGraphicFromItsPackage();
     const data = { ...createCaptainDataSavedBeforeThePosition(), position };
