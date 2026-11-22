@@ -38,6 +38,10 @@ export function buildMappingOptionsFromFormValues(
   if (shapeKey === 'standings' && scorePartsFromColumns !== undefined) {
     mappingKeys.scorePartsFromColumns = scorePartsFromColumns;
   }
+  const cellsAsTextFromColumns = buildCellsAsTextFromColumns(options);
+  if (shapeKey === 'resultsTable' && cellsAsTextFromColumns !== undefined) {
+    mappingKeys.cellsAsTextFromColumns = cellsAsTextFromColumns;
+  }
   const refuseWhen = buildRefusal(options);
   if (refuseWhen !== undefined) {
     mappingKeys.refuseWhen = refuseWhen;
@@ -76,6 +80,33 @@ function buildScorePartsFromColumns(options: MappingOptionsFormValues) {
   }
   const valuePath = options.scorePartValuePath.trim();
   return valuePath === '' ? { headers } : { headers, valuePath };
+}
+
+/**
+ * A results table's cells as text (BAJAOVRLAY-83), or undefined when its fields are all
+ * empty; the columns left out only when a path is typed.
+ */
+function buildCellsAsTextFromColumns(options: MappingOptionsFormValues) {
+  const valuePaths = options.cellValuePathsText
+    .split(',')
+    .map((path) => path.trim())
+    .filter((path) => path !== '');
+  const leaveOutPath = options.leaveOutColumnsPath.trim();
+  const isEveryFieldEmpty =
+    valuePaths.length === 0 &&
+    leaveOutPath === '' &&
+    options.leaveOutColumnsValuesText.trim() === '';
+  if (isEveryFieldEmpty) {
+    return undefined;
+  }
+  if (leaveOutPath === '') {
+    return { valuePaths };
+  }
+  const leaveOutColumnsWhen = {
+    path: leaveOutPath,
+    isOneOf: readCommaSeparatedValues(options.leaveOutColumnsValuesText),
+  };
+  return { valuePaths, leaveOutColumnsWhen };
 }
 
 /**

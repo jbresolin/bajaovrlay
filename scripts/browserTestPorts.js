@@ -33,6 +33,7 @@ export const browserTestPorts = [
   // They never run at the same time (the chaos suite runs last in `pnpm verify` and in a
   // CI job of its own), so it is left as it is.
   { port: 5231, file: 'packages/graphics/sponsor-roll-plain/playwright.config.ts' },
+  { port: 5239, file: 'packages/graphics/results-table/playwright.config.ts' },
 
   // The control page's browser tests and the servers they start.
   { port: 5181, file: 'apps/control/e2e/loginServerOfTheBrowserTests.ts' },

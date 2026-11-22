@@ -36,6 +36,7 @@
     "@bajaovrlay/notice": "workspace:*",
     "@bajaovrlay/qr-card": "workspace:*",
     "@bajaovrlay/race-clock": "workspace:*",
+    "@bajaovrlay/results-table": "workspace:*",
     "@bajaovrlay/team-card": "workspace:*",
     "@bajaovrlay/theme": "workspace:*",
     "@playwright/test": "catalog:",

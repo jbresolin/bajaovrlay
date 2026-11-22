@@ -114,7 +114,7 @@ describe('listBindingPathChoicesOfField', () => {
     });
   });
 
-  it('lists the five whole lists for a list field, with topN on the positions', () => {
+  it('lists the six whole lists of objects for a list field, with topN on the positions', () => {
     // Arrange: the tower's list of cars.
     const choices = listBindingPathChoicesOfField(towerDataSchema, 'entries');
 
@@ -122,14 +122,16 @@ describe('listBindingPathChoicesOfField', () => {
     const pathKeys = choices.map((choice) => choice.pathKey);
     const positions = choices.find((choice) => choice.pathKey === 'positions:entries');
 
-    // Assert: positions, standings, the standings' score parts (BAJAOVRLAY-24), rounds and
-    // incidents, and topN and withTeamLogos (BAJAOVRLAY-47) offered on the positions.
-    expect(pathKeys, 'the five whole lists').toEqual([
+    // Assert: positions, standings, the standings' score parts (BAJAOVRLAY-24), rounds,
+    // incidents and a results table's rows (BAJAOVRLAY-83; never its heads, a list of
+    // texts), and topN and withTeamLogos (BAJAOVRLAY-47) offered on the positions.
+    expect(pathKeys, 'the six whole lists of objects').toEqual([
       'positions:entries',
       'standings:entries',
       'standings:scoreParts',
       'brackets:rounds',
       'incidents:entries',
+      'resultsTable:entries',
     ]);
     expect(positions?.transformIdsThatFit, 'the first N cars, or the cars with logos').toEqual([
       'topN',

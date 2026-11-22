@@ -1,0 +1,345 @@
+/**
+ * The results table OGraf graphic (BAJAOVRLAY-83): any result page of the Baja app as the
+ * site shows it, its own columns and cells, the site's rank, 20 rows a page, on the
+ * fullscreen layer in the standings' Ardósia look. This file owns the OGraf lifecycle (load,
+ * play, update, stop, dispose) and the motion, the standings' own, and wires the rest:
+ * resultsTableModel (data and defaults), resultsTablePageTurns (the page shown, a turn and
+ * what arrived during it), resultsTableView (the DOM, rows reused by slot),
+ * resultsTableAnimations (GSAP timelines from the theme's motion tokens), the kit's
+ * pageHold, pageTurner, playSteps and timelinePlayback, and ptBR.
+ *
+ * A live update on air draws the current page again in place: the rows keep their slots,
+ * nothing re-enters. An update during a page turn is drawn once the turn ends, and one
+ * during the stop-out once the rows have faded out (on page 1, for the next take).
+ *
+ * The renderer, not this module, picks the tag name and calls customElements.define, as
+ * OGraf v1 expects of a graphic's default export.
+ */
+import type {
+  OGrafCustomActionParams,
+  OGrafGraphic,
+  OGrafLoadParams,
+  OGrafPlayActionParams,
+  OGrafPlayActionReturnPayload,
+  OGrafReturnPayload,
+  OGrafStopActionParams,
+  OGrafUpdateActionParams,
+} from '@bajaovrlay/graphics-kit/ografGraphicTypes';
+import {
+  boardHoldMsWhenTokenMissing,
+  readHoldMsOrFallback,
+} from '@bajaovrlay/graphics-kit/pageHold';
+import { createPageTurner, type PageTurner } from '@bajaovrlay/graphics-kit/pageTurner';
+import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+import {
+  finishTimelineAtOnce,
+  playTimelineToTheEnd,
+} from '@bajaovrlay/graphics-kit/timelinePlayback';
+import { wideBoardHeadStyles } from '@bajaovrlay/graphics-kit/wideBoardHeadStyles';
+import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
+import { LitElement } from 'lit';
+
+import { ptBR } from './ptBR.js';
+import {
+  buildLiftOutTogetherTimeline,
+  buildPlayInTimeline,
+  placePiecesOffAir,
+  type ResultsTableTimeline,
+} from './resultsTableAnimations.js';
+import {
+  mergePartialUpdateIntoResultsTableData,
+  parseCompleteResultsTableData,
+  type ResultsTableData,
+} from './resultsTableModel.js';
+import { ResultsTablePageTurns } from './resultsTablePageTurns.js';
+import { resultsTableStyles } from './resultsTableStyles.js';
+import {
+  findResultsTableParts,
+  listPiecesTopToBottom,
+  renderResultsTableTemplate,
+  type ResultsTableParts,
+} from './resultsTableView.js';
+
+/** Must match "stepCount" in results-table.ograf.json: play shows the board, stop hides it. */
+const resultsTableStepCount = 1;
+
+type LifecycleStage = 'unloaded' | 'loading' | 'offAir' | 'onAir' | 'disposed';
+
+const okAnswer: OGrafReturnPayload = { statusCode: 200 };
+
+/** Builds a 4xx answer with a pt-BR message; OGraf actions answer errors, never throw. */
+function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafReturnPayload {
+  return { statusCode, statusMessage };
+}
+
+/** The results table graphic; the default export a renderer registers as a custom element. */
+export default class ResultsTableGraphic extends LitElement implements OGrafGraphic {
+  static override styles = [scrollingTextStyles, wideBoardHeadStyles, resultsTableStyles];
+
+  private lifecycle: LifecycleStage = 'unloaded';
+  private currentStep: number | undefined = undefined;
+  private data: ResultsTableData | undefined = undefined;
+  private parts: ResultsTableParts | undefined = undefined;
+  private runningMotionTimeline: ResultsTableTimeline | undefined = undefined;
+  private readonly runningTimelines = new Set<ResultsTableTimeline>();
+  /**
+   * The one cycle of the texts too long for their box, every row and the event line on it
+   * (BAJAOVRLAY-55). Made at load: the shadow root it watches exists only once Lit rendered.
+   */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
+  private readonly pageTurner: PageTurner = createPageTurner({
+    onTurn: () => this.turnToTheNextPageNow(),
+    readHoldMs: () => readHoldMsOrFallback(this, 'boardHoldMs', boardHoldMsWhenTokenMissing),
+    setTimer: (callback, delayMs) => window.setTimeout(callback, delayMs),
+    clearTimer: (timerId) => window.clearTimeout(timerId),
+  });
+  private readonly pageTurns = new ResultsTablePageTurns({
+    isOnAir: () => this.lifecycle === 'onAir',
+    isOffAir: () => this.lifecycle === 'offAir',
+    isMotionRunning: () => this.runningMotionTimeline !== undefined,
+    readParts: () => this.requireParts(),
+    readData: () => this.requireData(),
+    runMotionTimeline: (timeline) => this.runMotionTimeline(timeline, false),
+  });
+
+  override render() {
+    return renderResultsTableTemplate();
+  }
+
+  /**
+   * OGraf load: checks the data, waits for the first render and the theme's font, draws
+   * page 1 off air. Loaded once; a second load answers 409. Bad data leaves it unloaded.
+   */
+  async load(params: OGrafLoadParams): Promise<OGrafReturnPayload> {
+    if (this.lifecycle === 'disposed') {
+      return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
+    }
+    if (this.lifecycle !== 'unloaded') {
+      return buildRefusalAnswer(409, ptBR.actionProblems.alreadyLoaded);
+    }
+    const dataCheck = parseCompleteResultsTableData(params.data);
+    if (!dataCheck.isValid) {
+      return buildRefusalAnswer(400, dataCheck.problem);
+    }
+    this.lifecycle = 'loading';
+
+    // Lit renders only connected elements: a load on an element not yet in the page
+    // waits here until it is added.
+    await this.updateComplete;
+    await waitForThemeFontsToBeReady(this);
+    // A dispose that came while load was waiting must win.
+    if (this.readLifecycleNow() === 'disposed') {
+      return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
+    }
+
+    const parts = findResultsTableParts(this.renderRoot, this);
+    this.parts = parts;
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
+    this.data = dataCheck.data;
+    placePiecesOffAir(parts.tokensSource, [parts.head]);
+    this.pageTurns.drawCurrentPage('offAir');
+    this.lifecycle = 'offAir';
+    return okAnswer;
+  }
+
+  /** OGraf playAction: animates the board in (step 0); a step past it means stop. */
+  async playAction(params: OGrafPlayActionParams): Promise<OGrafPlayActionReturnPayload> {
+    const refusal = this.refuseUnlessLoaded();
+    if (refusal !== undefined) {
+      return refusal;
+    }
+    const skipAnimation = params.skipAnimation ?? false;
+    const target = choosePlayActionTarget({
+      currentStep: this.currentStep,
+      stepCount: resultsTableStepCount,
+      goto: params.goto,
+      delta: params.delta,
+    });
+    if (target.outcome === 'invalidStep') {
+      return buildRefusalAnswer(400, ptBR.actionProblems.invalidPlayStep);
+    }
+    if (target.outcome === 'goToEnd') {
+      const stopAnswer = await this.stopAction({ skipAnimation });
+      return { ...stopAnswer, currentStep: undefined };
+    }
+    if (this.lifecycle === 'onAir') {
+      return { statusCode: 200, currentStep: target.step };
+    }
+
+    this.lifecycle = 'onAir';
+    this.currentStep = target.step;
+    const parts = this.requireParts();
+    const playIn = buildPlayInTimeline(
+      parts.tokensSource,
+      parts.head,
+      listPiecesTopToBottom(parts),
+    );
+    await this.runMotionTimeline(playIn, skipAnimation);
+
+    if (this.readLifecycleNow() === 'disposed') {
+      return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
+    }
+    // A stop during the play-in took the board off again: report no step on air.
+    if (this.readLifecycleNow() !== 'onAir') {
+      return { statusCode: 200, currentStep: this.currentStep };
+    }
+    this.startPageTurnerWhenThereArePages();
+    this.scrollingTextClock?.start();
+    return { statusCode: 200, currentStep: target.step };
+  }
+
+  /**
+   * OGraf stopAction: stops the page timer, animates everything out together, resolves
+   * once off screen, and leaves page 1 drawn off air so the next take starts at the top.
+   */
+  async stopAction(params: OGrafStopActionParams): Promise<OGrafReturnPayload> {
+    const refusal = this.refuseUnlessLoaded();
+    if (refusal !== undefined) {
+      return refusal;
+    }
+    if (this.lifecycle === 'offAir') {
+      return okAnswer;
+    }
+
+    this.lifecycle = 'offAir';
+    this.currentStep = undefined;
+    this.pageTurner.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
+    const parts = this.requireParts();
+    const everyPiece = [parts.head, ...listPiecesTopToBottom(parts)];
+    const stopOut = buildLiftOutTogetherTimeline(parts.tokensSource, everyPiece);
+    await this.runMotionTimeline(stopOut, params.skipAnimation ?? false);
+    this.scrollingTextClock?.stopAfterThePlayOut();
+    this.pageTurns.restOnPageOneOnceSettledOffAir();
+    return okAnswer;
+  }
+
+  /**
+   * OGraf updateAction: merges partial data in at any time after load (the live binding
+   * sends new rows every few seconds). On air the current page is drawn again in place,
+   * with no re-entry; off air it is simply drawn, ready for play. During a page turn or
+   * the stop-out the data is stored and drawn once that motion has ended.
+   */
+  async updateAction(params: OGrafUpdateActionParams): Promise<OGrafReturnPayload> {
+    const refusal = this.refuseUnlessLoaded();
+    if (refusal !== undefined) {
+      return refusal;
+    }
+    const dataCheck = mergePartialUpdateIntoResultsTableData(this.requireData(), params.data);
+    if (!dataCheck.isValid) {
+      return buildRefusalAnswer(400, dataCheck.problem);
+    }
+
+    this.data = dataCheck.data;
+    this.pageTurns.drawUpdatedData();
+    // A field taken on one page and grown past it must start turning; starting a running
+    // timer does nothing.
+    this.startPageTurnerWhenThereArePages();
+    return okAnswer;
+  }
+
+  /**
+   * Lit's hook for the element leaving the page: the page timer stops, so a layer a
+   * renderer removed without dispose never goes on turning pages. Not restarted if the
+   * element comes back: a renderer loads a new element for a new layer.
+   */
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.pageTurner.stop();
+    this.scrollingTextClock?.stop();
+  }
+
+  /** OGraf customAction: the results table has none, so every id is unknown. */
+  async customAction(params: OGrafCustomActionParams): Promise<OGrafReturnPayload> {
+    return buildRefusalAnswer(404, ptBR.actionProblems.unknownCustomAction(params.id));
+  }
+
+  /** OGraf dispose: stops the page timer and ends every timeline; pending actions resolve. */
+  async dispose(): Promise<OGrafReturnPayload> {
+    this.lifecycle = 'disposed';
+    this.pageTurner.stop();
+    this.scrollingTextClock?.stop();
+    for (const timeline of [...this.runningTimelines]) {
+      finishTimelineAtOnce(timeline);
+    }
+    this.runningTimelines.clear();
+    return okAnswer;
+  }
+
+  /**
+   * Turns to the next page now: what the page timer calls after its hold, and what the
+   * preview's "Próxima página" button and the tests call (not an OGraf action). Nothing
+   * happens before load, off air (the board rests on page 1 for the next take), during
+   * another turn, or with a single page.
+   */
+  async turnToTheNextPageNow(): Promise<void> {
+    if (this.lifecycle !== 'onAir') {
+      return;
+    }
+    await this.pageTurns.turnToTheNextPage();
+  }
+
+  /** Starts the page timer, only on air and with more than one page. */
+  private startPageTurnerWhenThereArePages(): void {
+    if (this.lifecycle === 'onAir' && this.pageTurns.countPages() > 1) {
+      this.pageTurner.start();
+    }
+  }
+
+  /** Reads the lifecycle after an await, which stop or dispose may have changed meanwhile. */
+  private readLifecycleNow(): LifecycleStage {
+    return this.lifecycle;
+  }
+
+  private refuseUnlessLoaded(): OGrafReturnPayload | undefined {
+    if (this.lifecycle === 'unloaded' || this.lifecycle === 'loading') {
+      return buildRefusalAnswer(409, ptBR.actionProblems.notLoadedYet);
+    }
+    if (this.lifecycle === 'disposed') {
+      return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
+    }
+    return undefined;
+  }
+
+  private requireParts(): ResultsTableParts {
+    if (this.parts === undefined) {
+      throw new Error('the parts are found only at load; a bug in resultsTable.ts');
+    }
+    return this.parts;
+  }
+
+  private requireData(): ResultsTableData {
+    if (this.data === undefined) {
+      throw new Error('data is read only after load; a bug in resultsTable.ts');
+    }
+    return this.data;
+  }
+
+  /**
+   * Runs an in, out or page motion; one still running is finished at once first, so a
+   * stop during the play-in or a turn ends that motion and the stop-out starts settled.
+   */
+  private async runMotionTimeline(
+    timeline: ResultsTableTimeline,
+    skipAnimation: boolean,
+  ): Promise<void> {
+    if (this.runningMotionTimeline !== undefined) {
+      finishTimelineAtOnce(this.runningMotionTimeline);
+    }
+    this.runningMotionTimeline = timeline;
+    this.runningTimelines.add(timeline);
+    await playTimelineToTheEnd(timeline, { skipAnimation });
+    this.runningTimelines.delete(timeline);
+    if (this.runningMotionTimeline === timeline) {
+      this.runningMotionTimeline = undefined;
+    }
+  }
+}

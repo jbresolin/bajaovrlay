@@ -81,6 +81,31 @@ export const FlexScorePartsFromColumnsSchema = z.strictObject({
 /** Score parts from columns after they have passed FlexScorePartsFromColumnsSchema. */
 export type FlexScorePartsFromColumns = z.infer<typeof FlexScorePartsFromColumnsSchema>;
 
+/**
+ * A column the mapping leaves out of `cellsAsTextFromColumns` when the value at `path` (on
+ * the column) is one of `isOneOf`, strictly equal: the rank, car and team columns, which
+ * every row already carries as fields of their own.
+ */
+export const FlexColumnLeftOutConditionSchema = z.strictObject({
+  path: pathFieldOfOption(),
+  isOneOf: z.array(z.union([z.string(), z.number(), z.boolean()])).min(1),
+});
+
+/**
+ * Every column of a table read as text, for the results table (BAJAOVRLAY-83): the heads
+ * of the columns kept, in order, become the shape's `columnHeads`, and each entry gets one
+ * text cell per column kept. In each cell `valuePaths` are tried in order and the first
+ * value found and not null is written as text (`display`, then `raw`). A cell is never
+ * refused for not being a number. Needs the mapping's table layout.
+ */
+export const FlexCellsAsTextFromColumnsSchema = z.strictObject({
+  valuePaths: z.array(pathFieldOfOption()).min(1),
+  leaveOutColumnsWhen: FlexColumnLeftOutConditionSchema.optional(),
+});
+
+/** Cells as text from columns after they have passed FlexCellsAsTextFromColumnsSchema. */
+export type FlexCellsAsTextFromColumns = z.infer<typeof FlexCellsAsTextFromColumnsSchema>;
+
 /** A value a refusal compares with, strictly: text, a number, a boolean or null. */
 const RefusalValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 

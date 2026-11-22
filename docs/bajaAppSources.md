@@ -41,11 +41,12 @@ segue como nas listas. Uma tabela lida assim entra como "outra", nunca como a Ge
 
 ### O que cada fonte alimenta
 
-| Lista                           | Vira              | Alimenta                                                             | Lida a cada |
-| ------------------------------- | ----------------- | -------------------------------------------------------------------- | ----------- |
-| Corridas com contagem de voltas | sessão e posições | relógio de prova, bandeira, torre de posições e tudo que lê posições | 2 s         |
-| Tabelas de resultado            | classificação     | quadro de classificação                                              | 5 s         |
-| Chaveamentos                    | chaves            | chaveamento (Super Prime)                                            | 5 s         |
+| Lista                              | Vira                | Alimenta                                                             | Lida a cada |
+| ---------------------------------- | ------------------- | -------------------------------------------------------------------- | ----------- |
+| Corridas com contagem de voltas    | sessão e posições   | relógio de prova, bandeira, torre de posições e tudo que lê posições | 2 s         |
+| Tabelas de resultado               | classificação       | quadro de classificação                                              | 5 s         |
+| Tabelas de resultado, como no site | tabela de resultado | gráfico "Tabela de resultado"                                        | 5 s         |
+| Chaveamentos                       | chaves              | chaveamento (Super Prime)                                            | 5 s         |
 
 - **Corrida.** As equipes e escolas aparecem pelo nome curto da lista de equipes do evento
   (lida de novo a cada 10 minutos); sem nome curto, pelo nome que a corrida traz. As
@@ -60,6 +61,17 @@ segue como nas listas. Uma tabela lida assim entra como "outra", nunca como a Ge
   que pode virar **parte da pontuação**; vêm marcadas as partes da tabela Geral (Penalidade,
   Segurança, Projeto, Dinâmicas, Enduro). A Geral soma tudo; qualquer outra tabela entra como
   "outra". Equipes desclassificadas ficam no fim, sem posição.
+- **Tabela como no site** (gráfico "Tabela de resultado"). Ao escolher a tabela, marque
+  "Tabela como no site" em "Ler a tabela como". As colunas são as da página, cada célula como
+  está escrita no site ("SPOILERS", "SIM", "–"), e a posição é a do próprio site (sem posição,
+  aparece "–"). Serve para qualquer tabela, também as que não classificam ninguém. Com
+  spoilers ligados a tabela vai ao ar normalmente, com "SPOILERS" nas células escondidas; marque
+  "Recusar durante spoilers" para que ela fique atrasada nesse período, como a classificação.
+  No item do gráfico: "Colunas mostradas" (os cabeçalhos do site separados por vírgula, por
+  exemplo `Voltas, Melhor volta, Pontos`; vazio mostra todas), "Título" (vazio usa o nome da
+  tabela), "Ordenar por" (o cabeçalho de uma coluna, como no site; vazio ou "Ordem do site"
+  mantém a ordem do site) e "Sentido" (crescente ou decrescente). Células sem número vão sempre
+  para o fim; a posição mostrada continua sendo a do site.
 - **Chaveamento.** As equipes aparecem pelo nome curto da lista de equipes, senão pelo do
   chaveamento, senão pelo nome completo (num evento sem nomes curtos, como 26SE). Um "bye"
   de qualquer lado é vitória por W.O. Só entram as fases completas: uma fase com um lado ainda "a definir" fica

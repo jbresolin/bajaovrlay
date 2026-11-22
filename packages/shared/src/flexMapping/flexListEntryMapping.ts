@@ -19,6 +19,7 @@ import { findLookupMatchesOfEntry, type IndexedLookup } from './flexLookups.js';
 import type { FlexFieldRule, FlexShapeMapping } from './flexMappingConfig.js';
 import { readCellsOfEntry } from './flexTableColumns.js';
 import { ptBRFlexMapping } from './ptBRFlexMapping.js';
+import { type ColumnReadAsText, readCellsOfEntryAsText } from './resultsTableCellsFromColumns.js';
 import {
   readScorePartListIntoPointsByPart,
   readScorePartsFromColumns,
@@ -33,6 +34,8 @@ export type EntryMappingContext = {
   columnPlaceByHeader: ReadonlyMap<string, number>;
   /** Filled with every score part label the entries' lists name, in the order met. */
   scorePartLabelsMet: string[];
+  /** The columns a results table reads as text (BAJAOVRLAY-83); empty for any other shape. */
+  columnsReadAsText: readonly ColumnReadAsText[];
 };
 
 /** A problem of one entry's field, before the entry is labelled for its problem line. */
@@ -110,6 +113,13 @@ export function mapOneEntry(
         detail: partsReading.reason,
       });
     }
+  }
+  if (mapping.cellsAsTextFromColumns !== undefined) {
+    entry.cells = readCellsOfEntryAsText(
+      cellsOfEntry,
+      context.columnsReadAsText,
+      mapping.cellsAsTextFromColumns,
+    );
   }
   const problemsKept = dropTheRankOfADisqualifiedTeam(shapeKey, entry, problemsOfEntry);
 

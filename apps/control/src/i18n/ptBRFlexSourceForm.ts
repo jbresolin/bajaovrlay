@@ -55,6 +55,7 @@ export const ptBRFlexSourceForm = {
     standings: 'Pontuação',
     incidents: 'Incidentes',
     brackets: 'Chaves',
+    resultsTable: 'Tabela de resultado',
     // Never offered (mappableShapeKeys leaves it out, the shared schema refuses it): only
     // the YouTube source reads Super Chats (BAJAOVRLAY-35). Named so every key has a name.
     superChats: 'Super Chats',

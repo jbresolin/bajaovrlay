@@ -8,7 +8,8 @@ their checks in `flexShapeMappingChecks.ts`), `flexListEntryMapping.ts` (one ent
 `valuePath.ts` (the hand-written path parser), `mappableFields.ts` and `ptBRFlexMapping.ts`
 (every text). `examples/` holds a fictional preset and fixture, and `examples/bajaApp/` the
 Baja app's real answers (BAJAOVRLAY-53). `presets/bajaApp/` holds the Baja app presets
-(BAJAOVRLAY-54): one JSON per kind of answer, `{{name}}` where a parameter goes
+(BAJAOVRLAY-54): one JSON per kind of answer (and `resultado-tabela.preset.json`, any result
+page as the site shows it, BAJAOVRLAY-83), `{{name}}` where a parameter goes
 (`presets/presetPlaceholders.ts`), filled in and checked by `bajaAppPresets.ts`.
 
 What a mapping can do, generic on purpose (no source's word is written in this code):
@@ -16,7 +17,8 @@ What a mapping can do, generic on purpose (no source's word is written in this c
 **lookups** (a list from another request joined by key, one level, strict equality;
 `flexLookups.ts`); **nested lists** (`nestedEntriesPath`, rules read the outer element with
 `fromParent`; `flexEntryElements.ts`); **table columns** (a cell read by its column's header,
-standings' parts from picked headers; `flexTableColumns.ts`); **refusal by a flag**
+standings' parts from picked headers; `flexTableColumns.ts`; for the results table every
+column as text, `cellsAsTextFromColumns`, `resultsTableCellsFromColumns.ts`); **refusal by a flag**
 (`refuseWhen`: a value equal to `equals`, or found and none of `notOneOf`; the poll fails
 with the operator's sentence, `{valor}` in it the value read, and the last snapshot stays;
 `flexRefusalFlag.ts`); **gaps from laps** (`workOutGapsFromLaps` with `lastPassAtMs`; the gaps

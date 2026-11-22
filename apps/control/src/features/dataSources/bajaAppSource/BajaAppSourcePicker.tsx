@@ -18,7 +18,9 @@ import {
 import {
   BajaAppRaceOptions,
   BajaAppTableOptions,
+  BajaAppTableReadingWayOptions,
   type TableColumnsState,
+  type TableReadingWay,
 } from './BajaAppChoiceOptions';
 import { type BajaAppChoiceKey, BajaAppEventChoices } from './BajaAppEventChoices';
 import { BajaAppOtherResultOption, type OtherResultState } from './BajaAppOtherResultOption';
@@ -52,7 +54,8 @@ export type BajaAppSourcePickerProps = {
  * only for a local copy, the API's address), the page reads the event through the
  * server's sample route and lists what it offers (BajaAppEventChoices.tsx), and a result
  * the menu leaves out may be typed by its id (BajaAppOtherResultOption.tsx). A race may
- * accept a simulation; a table is read too, for its points column and its parts.
+ * accept a simulation; a table is read too, for its points column and its parts, or read
+ * "como no site" for "Tabela de resultado" (BAJAOVRLAY-83).
  * "Continuar" hands the chosen preset, filled in, to the page, which opens the ordinary
  * flex form with it: nothing is saved here.
  */
@@ -69,6 +72,8 @@ export function BajaAppSourcePicker(props: BajaAppSourcePickerProps) {
   const [acceptsSimulatedRace, setAcceptsSimulatedRace] = useState(false);
   const [tableColumns, setTableColumns] = useState<TableColumnsState | null>(null);
   const [otherResult, setOtherResult] = useState<OtherResultState>({ phase: 'notRead' });
+  const [tableReadingWay, setTableReadingWay] = useState<TableReadingWay>('standings');
+  const [refusesDuringSpoilers, setRefusesDuringSpoilers] = useState(false);
 
   async function readTheEvent(): Promise<void> {
     const where = { apiAddress: apiAddress.trim(), eventId: eventId.trim() };
@@ -158,8 +163,14 @@ export function BajaAppSourcePicker(props: BajaAppSourcePickerProps) {
     return table === undefined ? undefined : buildChoiceOfTable(table);
   }
 
-  /** A table chosen, once its columns are read: its points and the parts left ticked. */
+  /**
+   * A table chosen: as the site shows it at once (any table reads so, BAJAOVRLAY-83), or
+   * as standings once its columns are read, with its points and the parts left ticked.
+   */
   function buildChoiceOfTable(table: BajaAppTableChoice): BajaAppChoice | undefined {
+    if (tableReadingWay === 'page') {
+      return { kind: 'resultsPage', table, refusesDuringSpoilers };
+    }
     const areItsColumnsRead =
       tableColumns?.phase === 'read' && tableColumns.resultadoId === table.resultadoId;
     if (!areItsColumnsRead) {
@@ -217,14 +228,38 @@ export function BajaAppSourcePicker(props: BajaAppSourcePickerProps) {
     return drawTableOptions();
   }
 
-  /** A table's columns being read, refused, or read with its parts to tick. */
+  /**
+   * How a chosen table is read, then, read as standings, its columns being read, refused,
+   * or read with its parts to tick.
+   */
   function drawTableOptions() {
     if (tableColumns === null) {
       return null;
     }
+    const readingWayOptions = (
+      <BajaAppTableReadingWayOptions
+        readingWay={tableReadingWay}
+        refusesDuringSpoilers={refusesDuringSpoilers}
+        onReadingWayChange={setTableReadingWay}
+        onRefusesDuringSpoilersChange={setRefusesDuringSpoilers}
+      />
+    );
+    if (tableReadingWay === 'page') {
+      return readingWayOptions;
+    }
+    return (
+      <div className="flex flex-col gap-3">
+        {readingWayOptions}
+        {drawStandingsTableOptions(tableColumns)}
+      </div>
+    );
+  }
+
+  /** A table read as standings: its columns being read, refused, or read with its parts. */
+  function drawStandingsTableOptions(columns: TableColumnsState) {
     return (
       <BajaAppTableOptions
-        columns={tableColumns}
+        columns={columns}
         onTickedPartHeadersChange={(tickedPartHeaders) =>
           setTableColumns((current) =>
             current?.phase === 'read' ? { ...current, tickedPartHeaders } : current,

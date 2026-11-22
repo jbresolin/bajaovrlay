@@ -16,6 +16,8 @@ preset in a few clicks. Start at `BajaAppSourcePicker.tsx`. The operator's guide
 - `bajaAppResultById.ts` — "Outro resultado (digite o id)": a result read as a table, or as a
   tournament when the API answers `wrong_type`.
 - `BajaAppEventChoices.tsx`, `BajaAppChoiceOptions.tsx`, `BajaAppOtherResultOption.tsx` — the
-  lists, the "Aceitar corrida simulada" box, a table's parts and the id to type.
+  lists, the "Aceitar corrida simulada" box, how a table is read (as standings, or "como no site"
+  for "Tabela de resultado", with "Recusar durante spoilers"; BAJAOVRLAY-83), a table's parts and
+  the id to type.
 - `bajaAppSourceOfChoice.ts` — the choice as a filled-in preset, a name and a read interval,
   which the page opens in the ordinary flex form (`flexSource/`); "Salvar fonte" saves it.

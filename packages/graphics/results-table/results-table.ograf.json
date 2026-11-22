@@ -1,0 +1,109 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-results-table",
+  "version": "0.1.0",
+  "name": "Tabela de resultado",
+  "description": "Qualquer tabela de resultado do app Baja como o site mostra: as colunas da própria página, cada célula como está escrita (SPOILERS, SIM, –) e a posição do site, 20 equipes por página.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "results-table.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "fullscreen",
+    "category": "standings"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 1100 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "entries": {
+        "type": "array",
+        "title": "Linhas",
+        "description": "As linhas da tabela, normalmente lidas da fonte (Tabela de resultado › Lista completa), na ordem do site.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "rank": { "type": "integer", "minimum": 1 },
+            "carNumber": { "type": "integer", "minimum": 1 },
+            "teamName": { "type": "string" },
+            "schoolName": { "type": "string" },
+            "cells": { "type": "array", "items": { "type": "string" } }
+          },
+          "required": ["carNumber", "teamName", "schoolName", "cells"],
+          "additionalProperties": true
+        },
+        "v_baja": {
+          "suggestedBinding": { "shapeKey": "resultsTable", "path": "entries", "isLive": true }
+        }
+      },
+      "columnHeads": {
+        "type": "array",
+        "title": "Colunas da tabela",
+        "description": "Os cabeçalhos das colunas da página, normalmente lidos da fonte (Tabela de resultado › Colunas da tabela).",
+        "items": { "type": "string" },
+        "v_baja": {
+          "suggestedBinding": {
+            "shapeKey": "resultsTable",
+            "path": "columnHeads",
+            "isLive": true
+          }
+        }
+      },
+      "tableName": {
+        "type": "string",
+        "title": "Nome da tabela",
+        "description": "O nome da página no site (\"Geral\", \"Enduro\"), normalmente lido da fonte; é o título quando o item não dá outro.",
+        "gddType": "single-line",
+        "v_baja": {
+          "suggestedBinding": { "shapeKey": "resultsTable", "path": "tableName", "isLive": true }
+        }
+      },
+      "title": {
+        "type": "string",
+        "title": "Título",
+        "description": "O título na cabeça do quadro; vazio usa o nome da tabela.",
+        "gddType": "single-line"
+      },
+      "eventLine": {
+        "type": "string",
+        "title": "Evento",
+        "description": "A linha ao lado do título, por exemplo \"ETAPA SUL 2025\".",
+        "gddType": "single-line"
+      },
+      "columnsShown": {
+        "type": "string",
+        "title": "Colunas mostradas",
+        "description": "Os cabeçalhos da página que entram, separados por vírgula, como no site: \"Voltas, Melhor volta, Pontos\". Vazio mostra todas. Posição, número e equipe aparecem sempre.",
+        "gddType": "single-line"
+      },
+      "sortByColumn": {
+        "type": "string",
+        "title": "Ordenar por",
+        "description": "Vazio ou \"Ordem do site\": as linhas como o site manda. Ou o cabeçalho de uma coluna da página, como no site (\"Pontos\", \"Melhor volta\", \"Pos\", \"#\", \"Equipe\"). A posição mostrada é sempre a do site.",
+        "gddType": "single-line"
+      },
+      "sortDirection": {
+        "type": "string",
+        "title": "Sentido",
+        "description": "Crescente (menor primeiro) ou decrescente; células sem número (SPOILERS, –, SIM) vão sempre por último.",
+        "enum": ["ascending", "descending"],
+        "default": "ascending",
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "ascending": "Crescente",
+            "descending": "Decrescente"
+          }
+        }
+      }
+    },
+    "required": ["entries", "columnHeads"],
+    "additionalProperties": false
+  }
+}

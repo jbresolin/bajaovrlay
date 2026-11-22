@@ -46,15 +46,18 @@ export { applyFlexMapping, type FlexMappingResult } from './applyFlexMapping.js'
 export { mostProblemLinesListed } from './flexMappingProblems.js';
 // How every text a source sends is cleaned up: entities decoded, spaces collapsed, trimmed.
 export { cleanUpTextFromASource } from './sourceTextCleanup.js';
-// The Baja app presets (BAJAOVRLAY-54): race, results table and tournament, filled in.
+// The Baja app presets (BAJAOVRLAY-54): race, results table and tournament, filled in;
+// and any result page as the site shows it (BAJAOVRLAY-83).
 export {
   bajaAppApiAddress,
   type BajaAppBracketParameters,
   type BajaAppRaceParameters,
+  type BajaAppResultsPageParameters,
   type BajaAppResultsTableParameters,
   buildBajaAppBracketSourceConfig,
   buildBajaAppEndpointAddress,
   buildBajaAppRaceSourceConfig,
+  buildBajaAppResultsPageSourceConfig,
   buildBajaAppResultsTableSourceConfig,
   proposedScorePartHeaders,
   simulatedRaceRefusalMessage,

@@ -6,6 +6,7 @@ import { checkTransformParameters } from '../transforms/checkTransformParameters
 import { ptBRTransforms } from '../transforms/ptBRTransforms.js';
 import { findTransform } from '../transforms/transformRegistry.js';
 import {
+  FlexCellsAsTextFromColumnsSchema,
   FlexIncompleteEntryConditionSchema,
   FlexLookupSchema,
   FlexRefusalFlagSchema,
@@ -82,7 +83,7 @@ export type FlexFieldRule = z.infer<typeof FlexFieldRuleSchema>;
  *   list is the matches, each naming its round (BAJAOVRLAY-25);
  * - `nestedEntriesPath`: the list inside each element of that list, each inner element
  *   being one entry, so rounds holding matches are read as matches (BAJAOVRLAY-53);
- * - `lookups`, `table`, `scorePartsFromColumns`, `refuseWhen`, `workOutGapsFromLaps` and
+ * - `lookups`, `table`, `scorePartsFromColumns`, `cellsAsTextFromColumns`, `refuseWhen`, `workOutGapsFromLaps` and
  *   `entryIsIncompleteWhen`: see flexMappingListOptions.ts and the README.
  * Which shape may declare what is checked by flexShapeMappingChecks.ts.
  */
@@ -99,6 +100,7 @@ export const FlexShapeMappingSchema = z
       lookups: z.array(FlexLookupSchema).optional(),
       table: FlexTableLayoutSchema.optional(),
       scorePartsFromColumns: FlexScorePartsFromColumnsSchema.optional(),
+      cellsAsTextFromColumns: FlexCellsAsTextFromColumnsSchema.optional(),
       refuseWhen: FlexRefusalFlagSchema.optional(),
       workOutGapsFromLaps: z.boolean().optional(),
       entryIsIncompleteWhen: z.array(FlexIncompleteEntryConditionSchema).min(1).optional(),

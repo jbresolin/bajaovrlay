@@ -2,8 +2,8 @@
 // package's own index.ts re-exports this file with one line; other packages import from
 // '@bajaovrlay/shared', never from here.
 
-// The six shape names (session, positions, standings, brackets, incidents, superChats) and the kinds
-// of session.
+// The seven shape names (session, positions, standings, brackets, incidents, superChats,
+// resultsTable) and the kinds of session.
 export {
   type DataShapeKey,
   DataShapeKeySchema,
@@ -67,6 +67,14 @@ export {
   type SuperChatsShape,
   SuperChatsShapeSchema,
 } from './superChatsShape.js';
+// The results table shape (BAJAOVRLAY-83): one result page with its own columns, each
+// cell as the site writes it, and the site's own rank.
+export {
+  type ResultsTableEntry,
+  ResultsTableEntrySchema,
+  type ResultsTableShape,
+  ResultsTableShapeSchema,
+} from './resultsTableShape.js';
 // Validates a payload for one shape; on failure, a pt-BR sentence naming the path.
 export {
   type DataShape,
