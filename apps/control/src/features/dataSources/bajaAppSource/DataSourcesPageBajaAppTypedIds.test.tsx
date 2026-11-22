@@ -17,6 +17,8 @@
  *   - "Outro resultado (digite o id)": a tournament's id is read from resultado.php, whose
  *     `wrong_type` sends the page to torneio.php, and is saved as the tournament preset; a
  *     table's id is read and saved as the table preset with its points and scope "other";
+ *     a table's id that ranks nobody says why it gives no standings and can still be saved
+ *     "como no site" as the results page preset (BAJAOVRLAY-83);
  *     an id the event does not have shows the route's sentence; an id of another event or
  *     of the wrong form is refused under its field before anything is read.
  *
@@ -29,6 +31,7 @@
 import {
   bajaAppApiAddress,
   buildBajaAppBracketSourceConfig,
+  buildBajaAppResultsPageSourceConfig,
   buildBajaAppResultsTableSourceConfig,
 } from '@bajaovrlay/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
@@ -193,6 +196,53 @@ describe('"Outro resultado (digite o id)"', () => {
             pointsHeader: 'Pontos',
             partHeaders: [],
             standingsScope: 'other',
+          }),
+          pollIntervalMs: 5_000,
+        },
+      ]);
+    });
+  });
+
+  it('reads a table’s id that ranks nobody and saves it "como no site"', async () => {
+    // Arrange: the event, and resultado.php answering 26BR's static safety table, which
+    // ranks nobody, so it has no points to give standings.
+    vi.stubGlobal(
+      'fetch',
+      createSampleRouteAnswering({
+        'evento.php': bajaAppAnswers.event26BR,
+        'resultado.php?id=26BR_SGE': bajaAppAnswers.staticSafetyTableRankingNobody26BR,
+      }),
+    );
+    const { fakeServer } = renderPageWithSources();
+    openTheBajaAppPicker();
+    await readTheEvent('26BR', eventNameOf26BR);
+
+    // Act: type its id, read it, then read it as the site shows it, continue and save.
+    readAnotherResult('26BR_SGE');
+    const reasonAsStandings = await screen.findByText(
+      'A tabela não diz por qual coluna classifica.',
+    );
+    // Read before the switch: the standings' options, the reason among them, then go away.
+    const wasTheReasonShown = reasonAsStandings.isConnected;
+    fireEvent.click(
+      screen.getByRole('radio', { name: 'Tabela como no site (gráfico "Tabela de resultado")' }),
+    );
+    pressButton('Continuar');
+    pressButton('Salvar fonte');
+
+    // Assert: the reason was shown for standings, and the results page preset is saved.
+    expect(wasTheReasonShown, 'why it gives no standings must be shown first').toBe(true);
+    await waitFor(() => {
+      expect(fakeServer.listCommandsReceived(), 'the results page preset').toEqual([
+        {
+          type: 'createDataSource',
+          label: 'App Baja — 26BR — Segurança Estática',
+          kind: 'httpJson',
+          config: buildBajaAppResultsPageSourceConfig({
+            apiAddress: bajaAppApiAddress,
+            eventId: '26BR',
+            resultadoId: '26BR_SGE',
+            refusesDuringSpoilers: false,
           }),
           pollIntervalMs: 5_000,
         },

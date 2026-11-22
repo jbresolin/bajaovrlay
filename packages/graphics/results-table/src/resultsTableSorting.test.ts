@@ -13,7 +13,8 @@
  *     "-" or an empty cell.
  *   - Rows ordered by a column, each scenario named for the rule it proves: numbers either
  *     way, cells with no number last either way, two of them as pt-BR text, ties in the
- *     site's order, the fixed columns (Pos, #, Equipe), names compared without case, and
+ *     site's order, the fixed columns (Pos, #, Equipe), names compared without case or
+ *     accents and found by their start, and
  *     the site's order for nothing typed, "Ordem do site" or a column the page lacks.
  *   - The list given is left as it was, ranks included.
  *
@@ -163,6 +164,20 @@ describe('orderRowsByColumn', () => {
       sortBy: '  % DA MÉDIA ',
       direction: 'descending' as const,
       expectedCars: [12, 2, 5, 7, 1],
+    },
+    // No accent and a start, as for "Colunas mostradas": "% da media" means "% da média".
+    {
+      name: 'orders by "% da media" typed without the accent',
+      sortBy: '% da media',
+      direction: 'ascending' as const,
+      expectedCars: [7, 5, 2, 12, 1],
+    },
+    // The start of a long head, which one head alone has.
+    {
+      name: 'orders by "classificado", the start of one head',
+      sortBy: 'classificado',
+      direction: 'ascending' as const,
+      expectedCars: [12, 7, 5, 2, 1],
     },
     // Ordinals read as numbers; the two hyphens have no number, last, as pt-BR text tie.
     {

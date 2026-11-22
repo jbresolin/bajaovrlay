@@ -129,8 +129,19 @@ export function BajaAppSourcePicker(props: BajaAppSourcePickerProps) {
       setOtherResult({ phase: 'tournament', tournament: reading.tournament });
       return;
     }
+    // A table whose columns give no points (it ranks nobody) is still a table: its reason
+    // shows under the standings' options, and "Tabela como no site" stays possible.
     setOtherResult({ phase: 'table', table: reading.table });
-    setTableColumns(buildColumnsRead(resultadoId, reading.pointsHeader, reading.partHeaderChoices));
+    const columnsReading = reading.columnsReading;
+    setTableColumns(
+      columnsReading.isRead
+        ? buildColumnsRead(
+            resultadoId,
+            columnsReading.pointsHeader,
+            columnsReading.partHeaderChoices,
+          )
+        : { phase: 'failed', resultadoId, reason: columnsReading.reason },
+    );
   }
 
   function choose(choiceKey: BajaAppChoiceKey): void {

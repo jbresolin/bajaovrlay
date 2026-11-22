@@ -69,5 +69,40 @@ export function readRowTexts(resultsTable: ResultsTableGraphic, rowIndex: number
   return [...(pill?.children ?? [])].map((cell) => cell.textContent ?? '');
 }
 
+/**
+ * Resolves as soon as the head's page line reads `pageLine`: the moment a turn has drawn
+ * the next page and starts cascading it in (a MutationObserver fires before any timer).
+ */
+export function waitUntilThePageLineReads(
+  resultsTable: ResultsTableGraphic,
+  pageLine: string,
+): Promise<void> {
+  const pageLineElement = listPartsOfResultsTable(resultsTable, 'results-table-page-line')[0];
+  if (pageLineElement === undefined) {
+    throw new Error('the board has no page line; load it first');
+  }
+  return new Promise((resolve) => {
+    const watcher = new MutationObserver(() => {
+      if (pageLineElement.textContent === pageLine) {
+        watcher.disconnect();
+        resolve();
+      }
+    });
+    watcher.observe(pageLineElement, { childList: true, characterData: true, subtree: true });
+  });
+}
+
+/** Ardósia's motion made brief: a cascade of about 300 ms, a fade out of 250 ms. */
+export const briefArdosiaMotionTokens: Record<string, string> = {
+  '--motion-in': '200ms',
+  '--motion-out': '250ms',
+  '--motion-row-stagger': '5ms',
+  '--motion-lead': '100ms',
+  '--motion-board-hold': '10000ms',
+  '--motion-in-offset': '20',
+  '--ease-out': 'cubic-bezier(0.16, 1, 0.3, 1)',
+  '--ease-in': 'cubic-bezier(0.7, 0, 0.84, 0)',
+};
+
 /** Puts tokens on :root for one test (the kit's, shared by every graphic's tests). */
 export { placeTokensOnTheRoot } from '@bajaovrlay/graphics-kit/themeTokensOnThePage.testSupport';

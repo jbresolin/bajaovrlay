@@ -10,10 +10,13 @@
  * What these tests prove:
  *   - The rank is the site's, "–" when it gives none; ranks 1 to 3 are on the chip, the
  *     4th and an unranked team are not.
- *   - A cell shows as written ("SPOILERS", "SIM", "–", "102.5%"), the first of two values
- *     ("55.6 / 54.9" shows "55.6"), and empty when the row lacks it.
- *   - "Colunas mostradas" keeps the columns named, in the page's order, compared without
- *     case; nothing typed, or only names the page lacks, shows every column.
+ *   - A cell shows as written ("SPOILERS", "SIM", "–", "102.5%"), the first of two numbers
+ *     ("55.6 / 54.9" shows "55.6") but two words whole ("Aprovado / Pendente"), and empty
+ *     when the row lacks it.
+ *   - A typed name finds its head without case or accents ("% da media", "bonus 4x4"), or
+ *     the one head that starts with it ("classificado"); a start two heads share finds none.
+ *   - "Colunas mostradas" keeps the columns named, in the page's order; nothing typed, or
+ *     only names the page lacks, shows every column.
  *
  * What these tests deliberately do not cover:
  *   - Drawing the cells: resultsTable.test.ts and the e2e tests.
@@ -22,6 +25,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   chooseShownColumns,
+  findColumnNamed,
   isOnTheMedalChip,
   writeCellText,
   writeRankText,
@@ -71,6 +75,12 @@ describe('writeCellText', () => {
     { name: 'shows 102.5% as written', cellText: '102.5%', shown: '102.5%' },
     // Two timed laps: the first, so the column stays one value wide.
     { name: 'shows the first of two laps', cellText: '55.6 / 54.9', shown: '55.6' },
+    // Two words around the separator are one text: cutting would lose half of it.
+    {
+      name: 'keeps two words whole',
+      cellText: 'Aprovado / Pendente',
+      shown: 'Aprovado / Pendente',
+    },
     // A row shorter than the heads: an empty cell, never "undefined".
     { name: 'shows nothing for a cell the row lacks', cellText: undefined, shown: '' },
   ];
@@ -83,6 +93,50 @@ describe('writeCellText', () => {
 
     // Assert: as the row says.
     expect(textShown, 'the cell must show what the row says').toBe(shown);
+  });
+});
+
+/** Heads of a page with accents, a long head and two heads that start alike. */
+const headsWithAccentsAndLongNames = [
+  'Melhor volta',
+  'Melhor tempo',
+  '% da média',
+  'Classificado (≤115%)',
+  'Bônus 4x4',
+];
+
+describe('findColumnNamed', () => {
+  const nameScenarios = [
+    // Typed without the accent: the operator's keyboard may have none.
+    { name: 'finds "% da média" typed as "% da media"', typed: '% da media', expectedPlace: 2 },
+    // Typed without the accent and in lower case.
+    { name: 'finds "Bônus 4x4" typed as "bonus 4x4"', typed: 'bonus 4x4', expectedPlace: 4 },
+    // The start of a long head, which one head alone has.
+    {
+      name: 'finds "Classificado (≤115%)" by its start, "classificado"',
+      typed: 'classificado',
+      expectedPlace: 3,
+    },
+    // A start two heads share: neither, rather than a guess.
+    {
+      name: 'finds nothing for "melhor", the start of two heads',
+      typed: 'melhor',
+      expectedPlace: -1,
+    },
+    // A whole name wins over a start: "Melhor volta" typed in full.
+    { name: 'finds "melhor volta" typed in full', typed: 'MELHOR VOLTA', expectedPlace: 0 },
+    // Nothing typed finds nothing.
+    { name: 'finds nothing for a blank name', typed: '  ', expectedPlace: -1 },
+  ];
+
+  it.each(nameScenarios)('$name', ({ typed, expectedPlace }) => {
+    // Arrange: the heads with accents and long names.
+
+    // Act: find the head the typed name means.
+    const place = findColumnNamed(headsWithAccentsAndLongNames, typed);
+
+    // Assert: the place the row expects (-1 for none).
+    expect(place, 'the head found must be the row’s').toBe(expectedPlace);
   });
 });
 
@@ -105,6 +159,12 @@ describe('chooseShownColumns', () => {
       name: 'ignores a name the page does not have',
       typed: 'Pontos, Penalidades',
       expectedHeads: ['Pontos'],
+    },
+    // No accents and a start: the operator types as they can.
+    {
+      name: 'keeps the columns named without accents or by their start',
+      typed: '% da media, larga',
+      expectedHeads: ['% da média', 'Larga em'],
     },
     // Only typos: every column, never the team alone.
     {

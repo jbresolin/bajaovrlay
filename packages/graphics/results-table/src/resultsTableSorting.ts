@@ -11,9 +11,10 @@
  *   in either direction; two of them are compared as pt-BR text, in the direction chosen;
  * - a tie keeps the site's order.
  */
+import { readNumberFromValueText } from './cellNumbers.js';
 import { ptBR } from './ptBR.js';
 import type { ResultsTableEntry, SortDirection } from './resultsTableModel.js';
-import { normalizeColumnName, writeCellText } from './resultsTableText.js';
+import { findColumnNamed, normalizeColumnName, writeCellText } from './resultsTableText.js';
 
 /** What a row is ordered by: one of its three fixed columns, or a cell of the page. */
 type SortColumn =
@@ -22,30 +23,12 @@ type SortColumn =
 /** One row's value in the column ordered by: a number, or text when none can be read. */
 type SortValue = { kind: 'number'; value: number } | { kind: 'text'; value: string };
 
-// "57.3", "-15", "−15" (a typographic minus): a whole or decimal number, the point as decimal.
-const plainNumberPattern = /^[-−]?\d+(\.\d+)?$/;
-// "1:02.3": minutes and seconds, as a lap over a minute is written.
-const minutesAndSecondsPattern = /^(\d+):(\d{1,2}(\.\d+)?)$/;
-// The marks after a number that do not change it: a percentage and an ordinal ("6º", "1ª").
-const trailingMarksPattern = /[%ºª°]$/;
-
 /**
- * The number a cell's text holds, or undefined when it holds none. Reads the first of two
- * values, drops a trailing "%" or "º", and reads minutes and seconds as seconds.
+ * The number a cell's text holds, or undefined when it holds none: the number of the value
+ * the cell shows (the first of "55.6 / 54.9"), read by cellNumbers.ts.
  */
 export function readNumberFromCellText(cellText: string): number | undefined {
-  const firstValue = writeCellText(cellText).trim();
-  const withoutTrailingMark = firstValue.replace(trailingMarksPattern, '').trim();
-  if (plainNumberPattern.test(withoutTrailingMark)) {
-    return Number(withoutTrailingMark.replace('−', '-'));
-  }
-  const minutesAndSeconds = minutesAndSecondsPattern.exec(withoutTrailingMark);
-  if (minutesAndSeconds !== null) {
-    const minutes = Number(minutesAndSeconds[1]);
-    const seconds = Number(minutesAndSeconds[2]);
-    return minutes * 60 + seconds;
-  }
-  return undefined;
+  return readNumberFromValueText(writeCellText(cellText));
 }
 
 /**
@@ -92,21 +75,26 @@ function findSortColumn(
     return undefined;
   }
   // The page's own heads first: a page column named "Pos" would be the one meant.
-  const cellIndex = columnHeads.findIndex((head) => normalizeColumnName(head) === nameTyped);
+  const cellIndex = findColumnNamed(columnHeads, sortByColumnText);
   if (cellIndex !== -1) {
     return { kind: 'cell', cellIndex };
   }
   const names = ptBR.fixedColumnNames;
-  if ((names.rank as readonly string[]).includes(nameTyped)) {
+  if (isOneOfTheNames(nameTyped, names.rank)) {
     return { kind: 'rank' };
   }
-  if ((names.car as readonly string[]).includes(nameTyped)) {
+  if (isOneOfTheNames(nameTyped, names.car)) {
     return { kind: 'car' };
   }
-  if ((names.team as readonly string[]).includes(nameTyped)) {
+  if (isOneOfTheNames(nameTyped, names.team)) {
     return { kind: 'team' };
   }
   return undefined;
+}
+
+/** Whether a normalized name is one of the catalog's names, compared the same way. */
+function isOneOfTheNames(nameTyped: string, names: readonly string[]): boolean {
+  return names.some((name) => normalizeColumnName(name) === nameTyped);
 }
 
 /** One row's value in the column: the rank and car as numbers, the team and cells as read. */
