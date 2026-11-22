@@ -22,6 +22,9 @@
  *     is static JSON, must promise a renderer the same numbers.
  *   - Only the name is required; every data field has a pt-BR title, and each optional
  *     field's description says what happens when it is left out.
+ *   - "Posição" (BAJAOVRLAY-85) is a dropdown of left, center and right labelled
+ *     Esquerda, Centro and Direita, starting on Esquerda, with the same three values the
+ *     graphic's own lowerThirdPositions knows.
  *
  * What these tests deliberately do not cover:
  *   - That the data schema and the graphic's Zod validation accept and refuse the same
@@ -42,6 +45,7 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import lowerThirdManifest from '../lower-third.ograf.json';
+import { lowerThirdPositions } from './lowerThirdModel.js';
 
 /**
  * The text of packages/theme/ardosia/tokens.css, found through the theme package's own
@@ -184,22 +188,59 @@ describe('lower-third.ograf.json settings', () => {
       name: 'Nome',
       role: 'Função',
       teamLine: 'Equipe',
+      position: 'Posição',
     });
   });
 
   it('says in each optional field’s pt-BR description what happens when it is left out', () => {
-    // Arrange: the two optional fields of the form.
-    const { role, teamLine } = lowerThirdManifest.schema.properties;
+    // Arrange: the three optional fields of the form.
+    const { role, teamLine, position } = lowerThirdManifest.schema.properties;
 
     // Act: read their help texts.
-    const descriptions = [role.description, teamLine.description];
+    const descriptions = [role.description, teamLine.description, position.description];
 
-    // Assert: both start by saying the field is optional and say what is shown without it.
+    // Assert: each starts by saying the field is optional and say what is shown without it.
     for (const description of descriptions) {
       expect(description, 'an optional field’s help must say it is optional').toMatch(/^Opcional;/);
       expect(description, 'an optional field’s help must say what happens when absent').toMatch(
         /Ausente,/,
       );
     }
+  });
+});
+
+describe('the "Posição" field of lower-third.ograf.json', () => {
+  it('is a dropdown of the three places, labelled in pt-BR, starting on Esquerda', () => {
+    // Arrange: the position field as the manifest describes it.
+    const positionField = lowerThirdManifest.schema.properties.position;
+
+    // Act: pick out what the item editor reads to draw the dropdown.
+    const dropdownAsDeclared = {
+      values: positionField.enum,
+      control: positionField.gddType,
+      labels: positionField.gddOptions.labels,
+      startingValue: positionField.default,
+    };
+
+    // Assert: the three values, their pt-BR words, and the left for a new item.
+    expect(dropdownAsDeclared, 'the position must be a dropdown of the three places').toEqual({
+      values: ['left', 'center', 'right'],
+      control: 'select',
+      labels: { left: 'Esquerda', center: 'Centro', right: 'Direita' },
+      startingValue: 'left',
+    });
+  });
+
+  it('offers exactly the places the graphic knows, in the same order', () => {
+    // Arrange: the values of the manifest's dropdown.
+    const valuesInTheManifest = lowerThirdManifest.schema.properties.position.enum;
+
+    // Act: read the places the graphic's own model knows.
+    const valuesInTheGraphic = [...lowerThirdPositions];
+
+    // Assert: the same list, so the form never offers a place the graphic refuses.
+    expect(valuesInTheManifest, 'the manifest and the graphic must know the same places').toEqual(
+      valuesInTheGraphic,
+    );
   });
 });

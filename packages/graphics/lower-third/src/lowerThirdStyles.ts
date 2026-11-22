@@ -12,12 +12,18 @@
  * Each pill is as wide as what it holds, up to `--lower-third-max-width` (the safe width
  * left of the tower, BAJAOVRLAY-55): past it the name, the role or the team line scrolls
  * inside its box (the kit's scrollingTextStyles), the pill keeping its width.
+ *
+ * The place along the bottom ("Posição", BAJAOVRLAY-85) is the box's `data-position`:
+ * `left` is the design's own place and the rule below as it always was; `right` mirrors
+ * it at the title-safe right edge, the pills lined up by their right edges; `center`
+ * stretches the box across the whole stage and centres each pill on x 960. Only the
+ * pills' places change: the text inside each pill reads left to right in all three.
  */
 import { css } from 'lit';
 
 export const lowerThirdStyles = css`
   :host {
-    /* The graphic covers the whole 1920x1080 stage and places the pills bottom-left. */
+    /* The graphic covers the whole 1920x1080 stage and places the pills along its bottom. */
     position: absolute;
     inset: 0;
     display: block;
@@ -30,7 +36,8 @@ export const lowerThirdStyles = css`
     display: none !important;
   }
 
-  /* Bottom-left, its bottom at y 940, above the room the strip and the ticker use. */
+  /* Bottom-left (Esquerda, and every item that names no position), its bottom at y 940,
+     above the room the strip and the ticker use. The bottom is the same in all three places. */
   .lower-third {
     position: absolute;
     left: var(--bug-left);
@@ -45,6 +52,23 @@ export const lowerThirdStyles = css`
        through the theme's token for names, so a theme with a mixed-case face can change it. */
     text-transform: var(--case-names);
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* Direita: the mirror of the left, the pills' right edges at 1920 − 96 = 1824, the
+     shorter pill lined up under the longer one by its right edge. */
+  .lower-third[data-position='right'] {
+    left: auto;
+    right: var(--stage-safe-side);
+    align-items: flex-end;
+  }
+
+  /* Centro: the box spans the whole stage, so each pill is centred on x 960. A box of its
+     own width moved left by half would be held to the 960 px right of its left edge, and
+     a long pill could not reach --lower-third-max-width. */
+  .lower-third[data-position='center'] {
+    left: 0;
+    right: 0;
+    align-items: center;
   }
 
   .pill {

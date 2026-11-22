@@ -32,6 +32,7 @@
     "@bajaovrlay/battle-card": "workspace:*",
     "@bajaovrlay/logo-bug": "workspace:*",
     "@bajaovrlay/lower-strip": "workspace:*",
+    "@bajaovrlay/lower-third": "workspace:*",
     "@bajaovrlay/message-ticker": "workspace:*",
     "@bajaovrlay/notice": "workspace:*",
     "@bajaovrlay/qr-card": "workspace:*",
