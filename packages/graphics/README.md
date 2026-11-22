@@ -89,9 +89,9 @@ On each property of `schema.properties` (`type` picks the control: `string` text
 - `title` — the field's label (missing: the property key). `description` — the help text.
 - `enum` — makes a `string` a select; option labels come from `gddOptions.labels`
   (missing: the enum value itself).
-- `gddType: "color-rrggbb"` on a `string` — a colour, typed as text and checked by the form
-  as `#rrggbb` in lower case (the pattern the OGraf GDD fixes, which the manifest must
-  carry as `pattern: "^#[0-9a-f]{6}$"`); cleared, it is not sent (no colour). The image's
+- `gddType: "color-rrggbb"` on a `string` — a colour, typed as text, saved in lower case
+  and checked by the form as `#rrggbb` (the pattern the OGraf GDD fixes, which the
+  manifest must carry as `pattern: "^#[0-9a-f]{6}$"`); cleared, it is not sent (no colour). The image's
   "Fundo" (BAJAOVRLAY-84).
 - `default` — the value a new form starts with.
 - `minimum` / `maximum` — the limits of a number field.

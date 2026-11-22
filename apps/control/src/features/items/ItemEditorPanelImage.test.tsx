@@ -13,9 +13,10 @@
  *     values: width, position, offsets (a negative one), opacity, entrance and margin;
  *     the height and the background empty, as an item that leaves them to the file and
  *     to no colour.
- *   - A background typed in capitals ("#0A0A0A", which the OGraf GDD's pattern refuses)
- *     is refused under the field in pt-BR, and nothing is sent.
- *   - A background typed as "#0a0a0a" is saved as a literal.
+ *   - A background that is not a colour ("preto") is refused under the field in pt-BR,
+ *     and nothing is sent.
+ *   - A background typed in capitals, "#0A0A0A", is saved as "#0a0a0a": the lower case
+ *     the OGraf GDD's pattern takes.
  *
  * What these tests deliberately do not cover:
  *   - Picking the file in the media library; ImageUrlFieldControl's own tests.
@@ -140,38 +141,38 @@ describe('an "Imagem" item in the item editor', () => {
     ).toBeInTheDocument();
   });
 
-  it('refuses a background in capitals under the field, in pt-BR, and sends nothing', async () => {
+  it('refuses a background that is not a colour under the field, in pt-BR, and sends nothing', async () => {
     // Arrange: the editor open on the poster item.
     const { fakeServer, onClose } = renderEditorOnTheEventPoster();
 
-    // Act: type the colour in capitals and press "Salvar item".
-    typeIntoField('Fundo', '#0A0A0A');
+    // Act: type a colour's name instead of its code and press "Salvar item".
+    typeIntoField('Fundo', 'preto');
     fireEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
 
     // Assert: the pattern's message names the field, nothing was sent, the panel stays.
     expect(
       await screen.findByText(
-        'Use uma cor no formato #rrggbb, em minúsculas, em "Fundo", por exemplo #0a0a0a; deixe vazio para não ter cor.',
+        'Use uma cor no formato #rrggbb em "Fundo", por exemplo #0a0a0a; deixe vazio para não ter cor.',
       ),
-      'a colour the GDD pattern refuses must be explained under the field',
+      'a text that is not a colour must be explained under the field',
     ).toBeInTheDocument();
     expect(fakeServer.listCommandsReceived(), 'a refused colour must not be sent').toEqual([]);
     expect(onClose, 'the panel must stay open so the colour can be fixed').not.toHaveBeenCalled();
   });
 
-  it('saves a background typed as #rrggbb', async () => {
+  it('saves a background typed in capitals as #0a0a0a, in lower case', async () => {
     // Arrange: the editor open on the poster item.
     const { fakeServer } = renderEditorOnTheEventPoster();
 
-    // Act: type a dark plate's colour and save.
-    typeIntoField('Fundo', '#0a0a0a');
+    // Act: type a dark plate's colour in capitals, as a design tool copies it, and save.
+    typeIntoField('Fundo', '#0A0A0A');
     await pressSaveAndWaitForCommand(1, fakeServer);
 
-    // Assert: one change of the item's fields, the colour stored as a literal (the editor
-    // sends only the fields that changed).
+    // Assert: one change of the item's fields, the colour stored as a literal in lower
+    // case, the only case the GDD's pattern takes (the editor sends only what changed).
     expect(
       fakeServer.listCommandsReceived()[0],
-      'the background must be saved as the colour typed',
+      'the background must be saved in lower case',
     ).toMatchObject({
       type: 'updateItemFields',
       fields: { backgroundColor: { kind: 'literal', value: '#0a0a0a' } },

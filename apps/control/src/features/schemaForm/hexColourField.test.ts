@@ -4,16 +4,18 @@
  * What this module is for:
  *   The image graphic's "Fundo" (BAJAOVRLAY-84) is a text marked with the OGraf GDD's
  *   `color-rrggbb`, whose pattern the GDD fixes as "#" and six lower-case hex digits. The
- *   item editor has no colour picker, so it stays a text field, and the form checks the
- *   colour itself (describeSchemaFormFromDataSchema.ts marks the field, and
- *   zodSchemaFromDataSchema.ts adds the rule) so the operator reads why under the field
- *   instead of a refusal from the server.
+ *   item editor has no colour picker, so it stays a text field: the form reads what was
+ *   typed in lower case (fieldValueConversion.ts) and checks the colour itself
+ *   (describeSchemaFormFromDataSchema.ts marks the field, zodSchemaFromDataSchema.ts adds
+ *   the rule), so the operator reads why under the field instead of a refusal from the
+ *   server.
  *
  * What these tests prove:
  *   - Only a text with `gddType: "color-rrggbb"` is read as a colour; a plain text with a
  *     pattern of its own (the lower third's "\S") is not.
- *   - "#0a0a0a" passes; capitals, three digits, no "#" and a colour name are refused with
- *     one pt-BR message naming the field and showing an example.
+ *   - "#0a0a0a" passes as typed, and "#0A0A0A" passes and is saved as "#0a0a0a"; three
+ *     digits, no "#" and a colour name are refused with one pt-BR message naming the
+ *     field and showing an example.
  *   - Left out, the optional colour passes: no background.
  *
  * What these tests deliberately do not cover:
@@ -23,6 +25,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { describeSchemaFormFromDataSchema } from './describeSchemaFormFromDataSchema';
+import { readDataValueFromFormValue } from './fieldValueConversion';
 import { buildZodSchemaFromDataSchema } from './zodSchemaFromDataSchema';
 
 /** The data schema of an image item's two text fields, as image.ograf.json writes them. */
@@ -44,7 +47,7 @@ function buildBackgroundFieldDataSchema() {
 }
 
 const theColourMessage =
-  'Use uma cor no formato #rrggbb, em minúsculas, em "Fundo", por exemplo #0a0a0a; deixe vazio para não ter cor.';
+  'Use uma cor no formato #rrggbb em "Fundo", por exemplo #0a0a0a; deixe vazio para não ter cor.';
 
 describe('reading a colour field', () => {
   it('marks only the color-rrggbb text as a colour', () => {
@@ -67,32 +70,45 @@ describe('reading a colour field', () => {
 });
 
 const colourScenarios = [
-  // A dark plate, as the GDD writes it.
-  { name: 'accepts #0a0a0a', colour: '#0a0a0a', isAccepted: true },
-  // The GDD's pattern has no capitals, and the server would refuse them.
-  { name: 'refuses #0A0A0A in capitals', colour: '#0A0A0A', isAccepted: false },
+  // A dark plate, as the GDD writes it: saved as typed.
+  { name: 'accepts #0a0a0a', typed: '#0a0a0a', saved: '#0a0a0a' },
+  // Capitals, as a design tool copies a colour: lowered, so the GDD's pattern takes it.
+  { name: 'accepts #0A0A0A and saves it as #0a0a0a', typed: '#0A0A0A', saved: '#0a0a0a' },
   // CSS shorthand.
-  { name: 'refuses the three-digit #000', colour: '#000', isAccepted: false },
+  { name: 'refuses the three-digit #000', typed: '#000', saved: undefined },
   // The hash forgotten.
-  { name: 'refuses 0a0a0a without the #', colour: '0a0a0a', isAccepted: false },
+  { name: 'refuses 0a0a0a without the #', typed: '0a0a0a', saved: undefined },
   // A colour's name.
-  { name: 'refuses the word "preto"', colour: 'preto', isAccepted: false },
+  { name: 'refuses the word "preto"', typed: 'preto', saved: undefined },
 ];
 
 describe('checking a colour field', () => {
-  it.each(colourScenarios)('$name', ({ colour, isAccepted }) => {
-    // Arrange: the form's rules, and an image item with this row's background.
+  it.each(colourScenarios)('$name', ({ typed, saved }) => {
+    // Arrange: the form's rules and its reading of the "Fundo" field.
+    const description = describeSchemaFormFromDataSchema(buildBackgroundFieldDataSchema());
+    const backgroundField = description.fields.find((field) => field.key === 'backgroundColor');
     const rules = buildZodSchemaFromDataSchema(buildBackgroundFieldDataSchema());
-    const data = { imageUrl: '/media/4e2a91c7-cartaz-enduro-piracicaba', backgroundColor: colour };
+    if (backgroundField === undefined) {
+      throw new Error('the schema above has a backgroundColor field; this test is broken');
+    }
 
-    // Act: check the data.
-    const check = rules.safeParse(data);
+    // Act: read what was typed, as the form does before checking, then check the data.
+    const readValue = readDataValueFromFormValue(backgroundField, typed);
+    const valueToSave = readValue.status === 'value' ? readValue.value : undefined;
+    const check = rules.safeParse({
+      imageUrl: '/media/4e2a91c7-cartaz-enduro-piracicaba',
+      backgroundColor: valueToSave,
+    });
 
-    // Assert: accepted, or refused with the one pt-BR message.
+    // Assert: saved as the row says, or refused with the one pt-BR message.
     const messages = check.success ? [] : check.error.issues.map((issue) => issue.message);
+    const isAccepted = saved !== undefined;
     expect(messages, 'the colour must be accepted or refused as the row says').toEqual(
       isAccepted ? [] : [theColourMessage],
     );
+    if (isAccepted) {
+      expect(valueToSave, 'the colour must be saved in lower case').toBe(saved);
+    }
   });
 
   it('accepts an item with no background at all', () => {

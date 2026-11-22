@@ -296,7 +296,7 @@ export const ptBR = {
         `O campo "${fieldLabel}" precisa estar ligado ou desligado.`,
       // A `gddType: "color-rrggbb"` field (BAJAOVRLAY-84); empty, with "limpar", is no colour.
       notAHexColour: (fieldLabel: string) =>
-        `Use uma cor no formato #rrggbb, em minúsculas, em "${fieldLabel}", por exemplo #0a0a0a; deixe vazio para não ter cor.`,
+        `Use uma cor no formato #rrggbb em "${fieldLabel}", por exemplo #0a0a0a; deixe vazio para não ter cor.`,
     },
   },
   // The rundown column (features/rundown): the list of prepared items and its buttons.

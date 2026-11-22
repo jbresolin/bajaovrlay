@@ -7,8 +7,9 @@
  * covers the shapes the form can edit and nothing else. The two disagree in both
  * directions. This one is more lenient where it ignores `additionalProperties`,
  * `pattern` (but for the GDD's `color-rrggbb`, whose pattern the GDD fixes), every
- * `format` except `date-time` and every property the form shows as unsupported; the server then refuses the command with INVALID_GRAPHIC_DATA. It is
- * stricter in three places: it checks `date-time` (the server enforces no format), it
+ * `format` except `date-time` and every property the form shows as unsupported; the
+ * server then refuses the command with INVALID_GRAPHIC_DATA. It is stricter in three
+ * places: it checks `date-time` (the server enforces no format), it
  * refuses a required text left empty, and it refuses a whole number outside JavaScript's
  * safe range. String length is counted in code points by both.
  *
@@ -67,8 +68,9 @@ function chooseMessageForMissingOrWrongType(
 }
 
 /**
- * A colour as the OGraf GDD's `color-rrggbb` writes it: "#" and six hex digits in lower
- * case (the GDD fixes that very pattern on every such field).
+ * A colour as the OGraf GDD's `color-rrggbb` writes it: "#" and six hex digits (the GDD
+ * fixes the pattern in lower case; fieldValueConversion.ts lowers what was typed before
+ * this rule reads it, so capitals typed by the operator pass and are saved in lower case).
  */
 const hexColourPattern = /^#[0-9a-f]{6}$/;
 

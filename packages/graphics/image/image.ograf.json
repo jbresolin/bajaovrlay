@@ -124,7 +124,7 @@
       "backgroundColor": {
         "type": "string",
         "title": "Fundo",
-        "description": "Opcional. Uma cor no formato #rrggbb, em minúsculas (ex.: #0a0a0a), que preenche a caixa da imagem, a margem incluída. Vazio: sem fundo, a imagem direto sobre o vídeo.",
+        "description": "Opcional. Uma cor no formato #rrggbb (ex.: #0a0a0a) que preenche a caixa da imagem, a margem incluída. Vazio: sem fundo, a imagem direto sobre o vídeo.",
         "pattern": "^#[0-9a-f]{6}$",
         "gddType": "color-rrggbb"
       },

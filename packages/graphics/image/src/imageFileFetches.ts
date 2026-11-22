@@ -9,8 +9,8 @@
  * that fetched a file is the one shown once it arrives, never a second one loading it again.
  *
  * Deliberate: a copy of logo-bug's logoImageFetches.ts with its names changed, not a kit
- * part shared by both, so this PR leaves the logo bug untouched. Moving it into the kit is
- * a follow-up once a third graphic needs the same rule.
+ * part shared by both, so this PR leaves the logo bug untouched. Moving it into
+ * graphics-kit, for both graphics, is BAJAOVRLAY-86.
  */
 import { longestWaitForImagesMs } from '@bajaovrlay/graphics-kit/waitForImagesToSettle';
 

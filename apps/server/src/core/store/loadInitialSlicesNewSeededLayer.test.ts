@@ -18,8 +18,9 @@
  * in temporary folders):
  *   - A database whose layers row has the five layers of a server before the tower
  *     boots with eleven, the tower between the clock and the lower third exactly as the
- *     seed defines it (and the notice, the channel logo and the image layer seeded since); the row is rewritten,
- *     stamped with this boot, and an info line names the layers added.
+ *     seed defines it (and the notice, the channel logo and the image layer seeded
+ *     since); the row is rewritten, stamped with this boot, and an info line names the
+ *     layers added.
  *   - A database of a server before the notice (six layers) gains the notice at 45,
  *     exactly as the seed defines it, and the layers seeded since (the channel logo's,
  *     BAJAOVRLAY-63, to the image's, BAJAOVRLAY-84), nothing else.

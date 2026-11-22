@@ -130,7 +130,7 @@ const dataAgreementScenarios = [
     data: { ...createEventPosterData(), marginPx: 201 },
     isValid: false,
   },
-  // CSS shorthand is not "#RRGGBB".
+  // CSS shorthand is not "#rrggbb".
   {
     name: 'both refuse the background #000',
     data: { ...createEventPosterData(), backgroundColor: '#000' },
