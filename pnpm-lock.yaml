@@ -257,6 +257,9 @@ importers:
       '@bajaovrlay/lower-strip':
         specifier: workspace:*
         version: link:../../packages/graphics/lower-strip
+      '@bajaovrlay/lower-third':
+        specifier: workspace:*
+        version: link:../../packages/graphics/lower-third
       '@bajaovrlay/message-ticker':
         specifier: workspace:*
         version: link:../../packages/graphics/message-ticker

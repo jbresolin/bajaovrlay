@@ -13,7 +13,8 @@
  *   - The same payloads pass or fail both checks: a complete lower third, a name with a
  *     role, a name with a team line, the bare minimum (a name); a missing name, an empty
  *     name, a name of blanks, a role that is not text, a team line that is not text and
- *     an unknown field.
+ *     an unknown field; and, for "Posição" (BAJAOVRLAY-85), each of left, center and
+ *     right, and a position that is not one of them.
  *
  * What these tests deliberately do not cover:
  *   - The rest of the manifest (settings, titles, durations, the OGraf schema itself);
@@ -69,6 +70,28 @@ const dataAgreementScenarios = [
   {
     name: 'both refuse a team line that is not text',
     data: { name: 'Mariana Costa', teamLine: 2 },
+    isValid: false,
+  },
+  // Each of the three places of "Posição" must pass both.
+  {
+    name: 'both accept the position left',
+    data: { ...createTeamCaptainData(), position: 'left' },
+    isValid: true,
+  },
+  {
+    name: 'both accept the position center',
+    data: { ...createTeamCaptainData(), position: 'center' },
+    isValid: true,
+  },
+  {
+    name: 'both accept the position right',
+    data: { ...createTeamCaptainData(), position: 'right' },
+    isValid: true,
+  },
+  // A place in Portuguese (or any other word) fails both: the values are the enum's.
+  {
+    name: 'both refuse a position that is not one of the three',
+    data: { ...createTeamCaptainData(), position: 'direita' },
     isValid: false,
   },
   // A typo'd field name must fail both.

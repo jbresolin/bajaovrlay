@@ -7,11 +7,16 @@ without `role` and `teamLine` the role pill is left out and the name pill stands
 The design's car chip in the role pill is not drawn (this task gives the graphic no car number).
 Each pill stops at `--lower-third-max-width` (1300 px, left of the tower); past it the name, the role
 or the team line scrolls inside its box (the kit's `scrollingTextWhenTooLong`, BAJAOVRLAY-55).
+"Posição" (`position`, BAJAOVRLAY-85) places it along the bottom: Esquerda (`left`, the default and
+every item that names none, pixel for pixel as before), Centro (`center`, both pills centred on
+x 960) or Direita (`right`, the pills' right edges at 1824, the role pill lined up right); the text
+in each pill reads left to right in all three, and the rise-and-fade motion is the same everywhere.
 Start reading at `src/lower-third.ts` (the OGraf lifecycle, same as the notice's); it wires
 `lowerThirdModel.ts`, `lowerThirdView.ts`, `lowerThirdStyles.ts`, `lowerThirdAnimations.ts`, `ptBR.ts`.
 Typical item, in the item editor: "Nome" ← Cadastro, Pessoa, "Nome"; "Função" ← the same person,
 "Função"; "Equipe" typed (`BAJA UFPR · UFPR`), or ← Cadastro, Equipe of car N, "Nome da equipe".
 Preview: `pnpm --filter @bajaovrlay/lower-third dev`, then http://localhost:5190/preview.html
-(add `?data=<url-encoded JSON>` and `&stage=grey` or `&stage=black`). Unit tests:
+(add `?data=<url-encoded JSON>` and `&stage=grey` or `&stage=black`; a `"position"` in the data
+shows Centro or Direita). Unit tests:
 `pnpm --filter @bajaovrlay/lower-third test`; Playwright on the built `dist/`:
 `pnpm --filter @bajaovrlay/lower-third test:e2e` (after a deliberate visual change add `--update-snapshots`).
