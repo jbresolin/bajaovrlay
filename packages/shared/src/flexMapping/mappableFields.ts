@@ -37,6 +37,8 @@ export function listMappableFieldsOfShape(shapeKey: DataShapeKey): MappableField
     case 'superChats':
       // None: a flex mapping may not name this shape (flexMappingConfig.ts).
       return [];
+    case 'resultsTable':
+      return listResultsTableFields();
   }
 }
 
@@ -192,5 +194,24 @@ function listIncidentsFields(): MappableField[] {
     entryField('penaltyText', incidentLabels.penaltyText, false),
     entryField('lap', incidentLabels.lap, false),
     entryField('atMs', incidentLabels.atMs, false),
+  ];
+}
+
+/**
+ * A results table's own fields, then the fields of each row (BAJAOVRLAY-83). The column
+ * heads and each row's cells are not fields of their own: the mapping's
+ * `cellsAsTextFromColumns` reads them from the table, every column at once
+ * (resultsTableCellsFromColumns.ts). The rank is optional: the site may give none.
+ */
+function listResultsTableFields(): MappableField[] {
+  const rowLabels = ptBRDataShapes.resultsTableEntryFieldLabels;
+  const extraLabels = ptBRFlexMapping.extraFieldLabels;
+  return [
+    topLevelField('updatedAtMs', extraLabels.updatedAtMs, true),
+    topLevelField('tableName', ptBRDataShapes.resultsTableFieldLabels.tableName, false),
+    entryField('carNumber', rowLabels.carNumber, true),
+    entryField('teamName', rowLabels.teamName, true),
+    entryField('schoolName', rowLabels.schoolName, true),
+    entryField('rank', rowLabels.rank, false),
   ];
 }

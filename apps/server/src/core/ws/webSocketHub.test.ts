@@ -56,7 +56,7 @@ describe('connecting to /ws', () => {
     const client = await connectWebSocketTestClient(runningServer.port);
     const hello = await client.waitForMessage('hello', (message) => message.type === 'hello');
 
-    // Assert: hello carries the very slices the store holds, ten layers among them,
+    // Assert: hello carries the very slices the store holds, eleven layers among them,
     // the time the server's clock showed, and the console id handed to this page
     // (BAJAOVRLAY-69; webSocketHubConsoleId.test.ts checks its value).
     expect(hello, 'hello must carry every slice the store holds and the server clock').toEqual({
@@ -69,7 +69,7 @@ describe('connecting to /ws', () => {
     expect(
       hello.type === 'hello' ? hello.slices.layers.length : 0,
       'the seeded layers must be in hello',
-    ).toBe(10);
+    ).toBe(11);
   });
 });
 

@@ -3,7 +3,7 @@
   "id": "baja-lower-third",
   "version": "0.1.0",
   "name": "Tarja",
-  "description": "Tarja no canto inferior esquerdo: o nome de uma pessoa e, embaixo, a função e a equipe.",
+  "description": "Tarja na parte de baixo da tela, à esquerda, no centro ou à direita: o nome de uma pessoa e, embaixo, a função e a equipe.",
   "author": {
     "name": "BajaOvrLay"
   },
@@ -40,6 +40,21 @@
         "title": "Equipe",
         "description": "Opcional; ex.: BAJA UFPR · UFPR, depois da função. Ausente, a linha de baixo mostra só a função, ou some se também não houver função.",
         "gddType": "single-line"
+      },
+      "position": {
+        "type": "string",
+        "title": "Posição",
+        "description": "Opcional; onde a tarja fica na parte de baixo da tela. Ausente, à esquerda, como sempre foi.",
+        "enum": ["left", "center", "right"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "left": "Esquerda",
+            "center": "Centro",
+            "right": "Direita"
+          }
+        },
+        "default": "left"
       }
     },
     "required": ["name"],

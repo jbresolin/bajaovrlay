@@ -221,7 +221,9 @@ export function readDataValueFromFormValue(
   }
   switch (field.control) {
     case 'text':
-      return { status: 'value', value: typedText };
+      // A colour (`gddType: "color-rrggbb"`) is saved in lower case, the only case the
+      // OGraf GDD's pattern takes, so "#0A0A0A" typed by the operator is kept as "#0a0a0a".
+      return { status: 'value', value: field.isHexColour ? typedText.toLowerCase() : typedText };
     case 'number': {
       if (!plainNumberPattern.test(typedText)) {
         return { status: 'unreadable', problem: 'notANumber' };

@@ -18,7 +18,8 @@ const texts = ptBR.dataSources.flexForm.mappingOptions;
 /**
  * The options of one mapping block beside its rows (BAJAOVRLAY-53), each on the shapes it
  * is for: the list inside each item, the lookups and the table's layout on every list;
- * the parts by column on the standings; the gaps switch on the positions; the
+ * the parts by column on the standings; the cells as text on the results table
+ * (BAJAOVRLAY-83); the gaps switch on the positions; the
  * incomplete-match conditions on the brackets; the refusal flag on every shape. An option
  * left empty is left out of the config.
  */
@@ -97,6 +98,26 @@ export function FlexMappingOptions(props: {
             />
           </FormFieldRow>
           {renderOptionInput(`${mappingPath}.scorePartValuePath`, texts.scorePartValuePath)}
+        </div>
+      )}
+      {shapeKey === 'resultsTable' && (
+        <div role="group" aria-label={texts.cellsAsTextTitle} className="flex flex-col gap-2">
+          <span className="text-sm font-medium">{texts.cellsAsTextTitle}</span>
+          <p className="text-xs text-muted-foreground">{texts.cellsAsTextHint}</p>
+          <div className="grid gap-2 md:grid-cols-3">
+            {renderOptionInput(
+              `${mappingPath}.cellValuePathsText`,
+              texts.cellsAsTextFields.valuePaths,
+            )}
+            {renderOptionInput(
+              `${mappingPath}.leaveOutColumnsPath`,
+              texts.cellsAsTextFields.leaveOutPath,
+            )}
+            {renderOptionInput(
+              `${mappingPath}.leaveOutColumnsValuesText`,
+              texts.cellsAsTextFields.leaveOutValues,
+            )}
+          </div>
         </div>
       )}
       {shapeKey === 'positions' && (

@@ -6,18 +6,22 @@
  * missing part leaves no empty box and the pills shrink to what they hold. The name, the
  * role and the team line are the kit's scrolling boxes (BAJAOVRLAY-55): written through
  * writeScrollingTextIfChanged, which makes each a box at its first write, so a text too
- * long for the pill's `--lower-third-max-width` scrolls inside it.
+ * long for the pill's `--lower-third-max-width` scrolls inside it. The place along the
+ * bottom ("Posição", BAJAOVRLAY-85) is the `data-position` attribute of the box holding
+ * both pills; lowerThirdStyles.ts places the box and lines the pills up from it.
  */
 import { writeScrollingTextIfChanged } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { isTextGiven } from '@bajaovrlay/graphics-kit/textPresence';
 import { html, type TemplateResult } from 'lit';
 
 import type { LowerThirdAnimatedElements } from './lowerThirdAnimations.js';
-import type { LowerThirdData } from './lowerThirdModel.js';
+import { choosePositionOfLowerThird, type LowerThirdData } from './lowerThirdModel.js';
 import { ptBR } from './ptBR.js';
 
 /** The elements whose text or attributes change after the first render. */
 export type LowerThirdParts = LowerThirdAnimatedElements & {
+  /** The box holding both pills; its `data-position` says where along the bottom it sits. */
+  pillsBox: HTMLElement;
   name: HTMLElement;
   role: HTMLElement;
   separator: HTMLElement;
@@ -54,6 +58,7 @@ export function findLowerThirdParts(renderRoot: ParentNode): LowerThirdParts {
     return part;
   };
   return {
+    pillsBox: findPart('lower-third'),
     namePill: findPart('lower-third-name-pill'),
     name: findPart('lower-third-name'),
     rolePill: findPart('lower-third-role-pill'),
@@ -73,9 +78,11 @@ function showTextOrHide(element: HTMLElement, text: string | undefined): void {
 /**
  * Writes the whole lower third from its data, in place. The role pill holds the role
  * and the team line, with the dot between them only when both are there; with neither,
- * the role pill is hidden and the name pill stands alone.
+ * the role pill is hidden and the name pill stands alone. The pills' box is placed left,
+ * centre or right; a change of place on air moves the pills at once, unanimated.
  */
 export function writeLowerThirdData(parts: LowerThirdParts, data: LowerThirdData): void {
+  parts.pillsBox.dataset.position = choosePositionOfLowerThird(data);
   writeScrollingTextIfChanged(parts.name, data.name);
 
   const roleText = isTextGiven(data.role) ? data.role : undefined;

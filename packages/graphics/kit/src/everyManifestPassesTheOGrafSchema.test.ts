@@ -74,6 +74,7 @@ describe('the manifests under packages/graphics', () => {
       join('bracket-match-card', 'bracket-match-card.ograf.json'),
       join('bracket', 'bracket.ograf.json'),
       join('countdown', 'countdown.ograf.json'),
+      join('image', 'image.ograf.json'),
       join('intermission-board', 'intermission-board.ograf.json'),
       join('logo-bug', 'logo-bug.ograf.json'),
       join('lower-strip', 'lower-strip.ograf.json'),
@@ -84,6 +85,7 @@ describe('the manifests under packages/graphics', () => {
       join('positions-tower', 'positions-tower.ograf.json'),
       join('qr-card', 'qr-card.ograf.json'),
       join('race-clock', 'race-clock.ograf.json'),
+      join('results-table', 'results-table.ograf.json'),
       join('sessions-board', 'sessions-board.ograf.json'),
       join('sponsor-bug', 'sponsor-bug.ograf.json'),
       // Sorted as text: "-" comes before "/", so the plain roll comes first.

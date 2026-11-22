@@ -16,6 +16,7 @@ the amount, the author and the message, YouTube's emoji shortcodes taken out.
 `message-ticker/` is the same bar with an "AVISO" label and one typed announcement a page.
 `sponsor-bug/` is the card top-left all day: the mark, the event word and one sponsor's logo.
 `logo-bug/` is the channel logo: one image from media in the corner the item picks, on its own layer.
+`image/` is "Imagem" (BAJAOVRLAY-84): one image from media anywhere on the canvas, sized and placed by hand, on the top layer.
 `bracket-match-bug/` and `bracket-match-card/` (BAJAOVRLAY-65) are the Super Prime's match "agora" (small,
 in a corner, on its own layer) and "a seguir" (logos, names, school and city, on the lower third), each
 field bound to "Chaves › Partida agora" or "Partida a seguir" of the match focus.
@@ -23,6 +24,9 @@ field bound to "Chaves › Partida agora" or "Partida a seguir" of the match foc
 `countdown/`, `sessions-board/`, `sponsor-roll/` and `intermission-board/` (BAJAOVRLAY-46) are the
 narrow boards and cards that read whole lists from Cadastros ("Lista dos cadastros"); each README
 ends with a typical item, field by field.
+`results-table/` (BAJAOVRLAY-83) is "Tabela de resultado": any result page of the Baja app as the site
+shows it, its own columns and cells as text, the site's rank, in the standings board's look; the item
+picks the columns, a title and an order ("Ordenar por", "Sentido").
 `podium/` is the full-screen podium, three cards revealed one per step (3rd, 2nd, 1st), each
 crowned by its team's logo through the `withTeamLogos` binding transform.
 `bracket/` is the full-screen elimination bracket: round boards for the big rounds, the tree from
@@ -88,6 +92,10 @@ On each property of `schema.properties` (`type` picks the control: `string` text
 - `title` — the field's label (missing: the property key). `description` — the help text.
 - `enum` — makes a `string` a select; option labels come from `gddOptions.labels`
   (missing: the enum value itself).
+- `gddType: "color-rrggbb"` on a `string` — a colour, typed as text, saved in lower case
+  and checked by the form as `#rrggbb` (the pattern the OGraf GDD fixes, which the
+  manifest must carry as `pattern: "^#[0-9a-f]{6}$"`); cleared, it is not sent (no colour). The image's
+  "Fundo" (BAJAOVRLAY-84).
 - `default` — the value a new form starts with.
 - `minimum` / `maximum` — the limits of a number field.
 - `format: "date-time"` on a `string` — a date and time input, sent as ISO 8601 text.

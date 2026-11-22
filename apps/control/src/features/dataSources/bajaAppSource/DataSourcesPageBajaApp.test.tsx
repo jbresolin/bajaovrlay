@@ -16,6 +16,8 @@
  *     and is saved as the race preset with the simulation accepted, every 2 s.
  *   - A table chosen reads the table, proposes its points column ("Total") and the overall
  *     table's parts, and is saved with the parts the operator left ticked, every 5 s.
+ *   - A table read "como no site" (BAJAOVRLAY-83) is saved as the results page preset, the
+ *     spoilers refusal off, even a table that ranks nobody, which standings refuse.
  *   - A tournament chosen is saved as the tournament preset.
  *   - A typed address of a local copy of the API is used for every request.
  *   - The route's sentence is shown when the event cannot be read, and nothing opens.
@@ -31,6 +33,7 @@ import {
   bajaAppApiAddress,
   buildBajaAppBracketSourceConfig,
   buildBajaAppRaceSourceConfig,
+  buildBajaAppResultsPageSourceConfig,
   buildBajaAppResultsTableSourceConfig,
 } from '@bajaovrlay/shared';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
@@ -206,6 +209,52 @@ describe('"Adicionar fonte do app Baja"', () => {
             pointsHeader: 'Total',
             partHeaders: ['Penalidade', 'Segurança', 'Projeto', 'Dinâmicas'],
             standingsScope: 'overall',
+          }),
+          pollIntervalMs: 5_000,
+        },
+      ]);
+    });
+  });
+
+  it('saves a table read as the site shows it, even one that ranks nobody', async () => {
+    // Arrange: the event read, and the route answering 26BR's static safety table, which
+    // ranks nobody, so as standings it cannot become a source.
+    vi.stubGlobal(
+      'fetch',
+      createSampleRouteAnswering({
+        'evento.php': bajaAppAnswers.event26BRDuringTheEvent,
+        'resultado.php': bajaAppAnswers.staticSafetyTableRankingNobody26BR,
+      }),
+    );
+    const { fakeServer } = renderPageWithSources();
+    openTheBajaAppPicker();
+    await readTheEvent('26BR', eventNameOf26BR);
+    pickChoice('Tabelas de resultado', 'Segurança Estática');
+    const asTheSiteShowsIt = await screen.findByRole('radio', {
+      name: 'Tabela como no site (gráfico "Tabela de resultado")',
+    });
+
+    // Act: read it as the site shows it, leave the spoilers refusal off, continue and save.
+    fireEvent.click(asTheSiteShowsIt);
+    const isTheRefusalOffAtFirst = !(
+      screen.getByRole('checkbox', { name: 'Recusar durante spoilers' }) as HTMLInputElement
+    ).checked;
+    pressButton('Continuar');
+    pressButton('Salvar fonte');
+
+    // Assert: the refusal was off, and the results page preset is saved, every 5 s.
+    expect(isTheRefusalOffAtFirst, 'the spoilers refusal starts off').toBe(true);
+    await waitFor(() => {
+      expect(fakeServer.listCommandsReceived(), 'the results page preset').toEqual([
+        {
+          type: 'createDataSource',
+          label: 'App Baja — 26BR — Segurança Estática',
+          kind: 'httpJson',
+          config: buildBajaAppResultsPageSourceConfig({
+            apiAddress: bajaAppApiAddress,
+            eventId: '26BR',
+            resultadoId: '26BR_SGE',
+            refusesDuringSpoilers: false,
           }),
           pollIntervalMs: 5_000,
         },

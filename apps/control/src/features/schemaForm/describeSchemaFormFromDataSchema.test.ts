@@ -23,7 +23,8 @@
  *   - Drawing the controls (SchemaFormFields.test.tsx) and checking what is typed
  *     (checkSchemaFormValues.test.ts, zodSchemaFromDataSchema.test.ts).
  *   - JSON Schema keywords the form does not read (`pattern`, `const`, `multipleOf`);
- *     the server's own check of the data covers those.
+ *     the server's own check of the data covers those. The one pattern it does check, a
+ *     `gddType: "color-rrggbb"` colour's, is in hexColourField.test.ts.
  */
 import raceClockManifest from '@bajaovrlay/race-clock/race-clock.ograf.json';
 import { describe, expect, it } from 'vitest';

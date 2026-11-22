@@ -110,6 +110,7 @@ export const ptBR = {
     lowerThird: 'Tarja',
     notice: 'Aviso',
     fullscreen: 'Tela cheia',
+    image: 'Imagem',
   },
   // Name of the one rundown seeded on the first boot, as the operator sees it.
   seededRundownName: 'Sessão principal',

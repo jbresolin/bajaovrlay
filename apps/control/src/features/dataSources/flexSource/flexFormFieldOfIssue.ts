@@ -96,6 +96,12 @@ function findFormFieldPathOfOption(
   if (mappingKey === 'scorePartsFromColumns') {
     return firstKey === 'valuePath' ? 'scorePartValuePath' : 'scorePartHeadersText';
   }
+  if (mappingKey === 'cellsAsTextFromColumns') {
+    if (firstKey === 'leaveOutColumnsWhen') {
+      return secondKey === 'isOneOf' ? 'leaveOutColumnsValuesText' : 'leaveOutColumnsPath';
+    }
+    return 'cellValuePathsText';
+  }
   if (mappingKey === 'refuseWhen') {
     // A refusal comparing two ways or none is about the whole refusal: said under the
     // value, where the comparison starts.

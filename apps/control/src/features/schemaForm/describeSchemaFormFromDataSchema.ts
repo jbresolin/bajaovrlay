@@ -208,6 +208,8 @@ function describeProperty(
       ? readNumberOrUndefined(readOwnValueOfRecord(propertySchema, 'maxItems'))
       : undefined,
     listItemLabel: isTextList ? (listItemTitle ?? ptBR.textList.defaultItemLabel) : undefined,
+    isHexColour:
+      control === 'text' && readOwnValueOfRecord(propertySchema, 'gddType') === 'color-rrggbb',
     offersTakeTime: control === 'number' && isWallClockMoment,
     role,
     defaultDataValue: readOwnValueOfRecord(propertySchema, 'default'),

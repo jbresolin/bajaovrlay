@@ -18,7 +18,11 @@
  *   - Without role (a name only): the name pill alone.
  *   - Where the pills sit: at x 96, the lower one's bottom at y 940; without the role
  *     pill the name pill moves down to end at y 940 itself, so a missing part takes no
- *     room and leaves no empty frame.
+ *     room and leaves no empty frame. These rows name no position (Esquerda), so their
+ *     baselines are the ones from before "Posição" existed (BAJAOVRLAY-85).
+ *   - The captain on Direita and on Centro (BAJAOVRLAY-85): the pills mirrored to the
+ *     right, and centred; e2e/lowerThirdPositions.e2e.ts measures where. With Esquerda
+ *     chosen in the item she matches the baseline of an item that names no position.
  *
  * What these tests deliberately do not cover:
  *   - Motion; the screenshots show the end of the play-in only (lowerThirdLifecycle.e2e.ts
@@ -92,6 +96,46 @@ const layoutScenarios = [
   },
 ];
 
+// BAJAOVRLAY-85: the same captain with "Posição" chosen. The rows above name no position,
+// so their baselines (Esquerda) are the ones from before the setting; an explicit Esquerda
+// reuses the first of them.
+const otherPositionScenarios = [
+  {
+    // Esquerda chosen on purpose: it must look exactly like an item that names no
+    // position, so this row is compared with that row's baseline, not a new one.
+    layout: 'with role and team line, on Esquerda chosen in the item',
+    lowerThirdData: {
+      name: 'Mariana Costa',
+      role: 'Capitã da equipe',
+      teamLine: 'Baja UFMG · UFMG',
+      position: 'left',
+    },
+    screenshotName: 'lower-third-with-role-and-team-line',
+  },
+  {
+    // Direita: the pills' right edges at 1920 − 96, the name pill lined up on the right.
+    layout: 'with role and team line, on Direita',
+    lowerThirdData: {
+      name: 'Mariana Costa',
+      role: 'Capitã da equipe',
+      teamLine: 'Baja UFMG · UFMG',
+      position: 'right',
+    },
+    screenshotName: 'lower-third-direita',
+  },
+  {
+    // Centro: both pills centred on x 960.
+    layout: 'with role and team line, on Centro',
+    lowerThirdData: {
+      name: 'Mariana Costa',
+      role: 'Capitã da equipe',
+      teamLine: 'Baja UFMG · UFMG',
+      position: 'center',
+    },
+    screenshotName: 'lower-third-centro',
+  },
+];
+
 const stages = ['grey', 'black'];
 
 test.describe('the lower third looks like its baseline', () => {
@@ -118,6 +162,29 @@ test.describe('the lower third looks like its baseline', () => {
           await readPillPlace(page, 'lower-third-role-pill'),
           'the role pill must end at y 940, or take no room at all when absent',
         ).toEqual(scenario.expectedRolePill);
+        await expect(
+          page,
+          `the lower third ${scenario.layout} must look exactly like its baseline`,
+        ).toHaveScreenshot(`${scenario.screenshotName}-${stage}.png`, { maxDiffPixelRatio: 0.01 });
+      });
+    }
+  }
+});
+
+test.describe('the lower third with a position chosen looks like its baseline', () => {
+  for (const stage of stages) {
+    for (const scenario of otherPositionScenarios) {
+      test(`${scenario.layout}, on the ${stage} stage`, async ({ page }) => {
+        // Arrange: the data for this position comes from the scenario row above.
+
+        // Act: open the preview on air on this stage, the preview's own buttons hidden.
+        await openPreviewOnAir(page, scenario.lowerThirdData, stage);
+        await page.locator('#preview-controls').evaluate((controls) => {
+          controls.style.visibility = 'hidden';
+        });
+
+        // Assert: the stage matches its baseline, with the same 1% tolerance as above.
+        // Where each pill sits is measured in e2e/lowerThirdPositions.e2e.ts.
         await expect(
           page,
           `the lower third ${scenario.layout} must look exactly like its baseline`,

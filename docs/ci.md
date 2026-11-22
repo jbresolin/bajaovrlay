@@ -170,7 +170,7 @@ in use is kept, so nothing has to be added or removed when a task starts or ends
 tasks whose numbers end in the same digit would share an offset; the later one adds 50
 (-82 beside an open -72 uses 250).
 
-Every port of the browser tests is in 5176–5233, so steps of 100 never make two offsets'
+Every port of the browser tests is in 5176–5241, so steps of 100 never make two offsets'
 ports overlap. On 2026-11-14 `scripts/checkPortOffset.js` accepted all ten offsets, 100 to
 1000 (it checked 5357 there; Windows' excluded ranges are checked again on each run on WSL).
 

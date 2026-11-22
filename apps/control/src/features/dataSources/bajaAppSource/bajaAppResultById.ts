@@ -1,6 +1,7 @@
 import { fetchHttpJsonSample } from '../flexSource/fetchHttpJsonSample';
 import {
   type BajaAppTableChoice,
+  type BajaAppTableColumnsReading,
   type BajaAppTournamentChoice,
   isAResultOfTheOtherEndpoint,
   readBajaAppTableColumns,
@@ -10,14 +11,17 @@ import {
 import { buildBajaAppTableRequest, buildBajaAppTournamentRequest } from './bajaAppSampleRequests';
 import type { BajaAppEventAddress } from './bajaAppSourceOfChoice';
 
-/** A result read by its id: a table with its columns, a tournament, or the pt-BR reason. */
+/**
+ * A result read by its id: a table with the reading of its columns (which may fail, a
+ * table that ranks nobody having no points, yet it can still be read "como no site",
+ * BAJAOVRLAY-83), a tournament, or the pt-BR reason.
+ */
 export type BajaAppResultByIdReading =
   | {
       isRead: true;
       kind: 'table';
       table: BajaAppTableChoice;
-      pointsHeader: string;
-      partHeaderChoices: string[];
+      columnsReading: BajaAppTableColumnsReading;
     }
   | { isRead: true; kind: 'tournament'; tournament: BajaAppTournamentChoice }
   | { isRead: false; reason: string };
@@ -36,17 +40,12 @@ export async function readBajaAppResultById(
   const tableRequest = buildBajaAppTableRequest(where.apiAddress, where.eventId, resultadoId);
   const tableAnswer = await fetchHttpJsonSample(tableRequest);
   if (tableAnswer.ok) {
-    const columns = readBajaAppTableColumns(tableAnswer.body);
-    if (!columns.isRead) {
-      return { isRead: false, reason: columns.reason };
-    }
     const name = readBajaAppTableName(tableAnswer.body, resultadoId);
     return {
       isRead: true,
       kind: 'table',
       table: { resultadoId, name, isTheOverallTable: false },
-      pointsHeader: columns.pointsHeader,
-      partHeaderChoices: columns.partHeaderChoices,
+      columnsReading: readBajaAppTableColumns(tableAnswer.body),
     };
   }
   if (!isAResultOfTheOtherEndpoint(tableAnswer.answerOutside2xx)) {

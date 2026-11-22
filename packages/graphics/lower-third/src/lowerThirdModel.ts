@@ -14,13 +14,31 @@ import { ptBR } from './ptBR.js';
 // would put an empty pill on air, which is exactly what the lower third must never show.
 const somethingVisiblePattern = /\S/;
 
+/**
+ * Where the lower third sits along the bottom of the stage ("Posição", BAJAOVRLAY-85):
+ * the pills' left edges at x 96, both pills centred on x 960, or their right edges at
+ * x 1824. The same three values are the manifest's `enum` for "position".
+ */
+export const lowerThirdPositions = ['left', 'center', 'right'] as const;
+
+/** One of the three places along the bottom: `left`, `center` or `right`. */
+export type LowerThirdPosition = (typeof lowerThirdPositions)[number];
+
+/**
+ * The place of an item that does not say: the left, as every lower third was drawn
+ * before the setting existed, so an item saved before BAJAOVRLAY-85 looks the same.
+ */
+export const defaultLowerThirdPosition: LowerThirdPosition = 'left';
+
 // Strict: a field the graphic does not know (usually a typo) is refused, not ignored.
 // Only the name is required: the role and the team line are left out of the role pill
-// when missing, and with neither the role pill itself is left out.
+// when missing, and with neither the role pill itself is left out. A missing position
+// is the left (defaultLowerThirdPosition).
 const lowerThirdDataSchema = z.strictObject({
   name: z.string().regex(somethingVisiblePattern),
   role: z.string().optional(),
   teamLine: z.string().optional(),
+  position: z.enum(lowerThirdPositions).optional(),
 });
 
 const partialLowerThirdDataSchema = lowerThirdDataSchema.partial();
@@ -66,4 +84,9 @@ export function mergePartialUpdateIntoLowerThirdData(
   }
   const mergedData = { ...currentData, ...parsedUpdate.data };
   return parseCompleteLowerThirdData(mergedData);
+}
+
+/** The place the data asks for, or the left when it does not say (or the field was cleared). */
+export function choosePositionOfLowerThird(data: LowerThirdData): LowerThirdPosition {
+  return data.position ?? defaultLowerThirdPosition;
 }

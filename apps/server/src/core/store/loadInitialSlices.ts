@@ -107,8 +107,8 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   // Seeding the rules also seeds the event templates, once per database, and an older
   // database's templates leave the quick-fire panels once (BAJAOVRLAY-67), so the panels
   // and items go through it.
-  // The one-off seeds this database has had (seeds_done): the inbox's, the logo's and the
-  // Super Prime match graphics' and the plain sponsor roll's.
+  // The one-off seeds this database has had (seeds_done): the inbox's, the logo's, the
+  // Super Prime match graphics', the image layer's and the plain sponsor roll's.
   const seedNamesDone = readSeedNamesDone(options.database);
   const eventInboxSlices = loadOrSeedEventInboxSlices(
     storedRows,
@@ -117,10 +117,11 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     updatedAt,
     options.logger,
   );
-  // The channel logo's layer, panel and item (BAJAOVRLAY-63) and the Super Prime's match
-  // bug layer with its "Chave" panel (BAJAOVRLAY-65), each once per database (seeds_done).
-  // Before the graphics are discovered: the logo bug's and the match bug's manifests name
-  // their layers, and a graphic whose default layer is unknown falls back to fullscreen.
+  // The channel logo's layer, panel and item (BAJAOVRLAY-63), the Super Prime's match
+  // bug layer with its "Chave" panel (BAJAOVRLAY-65) and the image graphic's layer
+  // (BAJAOVRLAY-84), each once per database (seeds_done). Before the graphics are
+  // discovered: the logo bug's, the match bug's and the image's manifests name their
+  // layers, and a graphic whose default layer is unknown falls back to fullscreen.
   const oneOffSeeds = applyOneOffSeedsOfLayersAndItems({
     seedNamesDone,
     layers: outputAndLayerSlices.layers,

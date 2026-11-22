@@ -64,6 +64,13 @@ export type SchemaFormFieldDescription = {
    */
   listItemLabel: string | undefined;
   /**
+   * True for a text marked `gddType: "color-rrggbb"` (the image graphic's "Fundo",
+   * BAJAOVRLAY-84): the form refuses anything but a `#rrggbb` colour, in lower case as the
+   * OGraf GDD defines it, with a pt-BR message. It stays a text field; clearing it means
+   * no colour.
+   */
+  isHexColour: boolean;
+  /**
    * Whether the operator may choose "filled by the server at the take" instead of typing
    * a value: true for an integer property whose `v_baja.role` is `wallClock`.
    */

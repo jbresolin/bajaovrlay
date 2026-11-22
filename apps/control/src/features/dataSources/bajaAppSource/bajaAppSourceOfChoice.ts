@@ -1,6 +1,7 @@
 import {
   buildBajaAppBracketSourceConfig,
   buildBajaAppRaceSourceConfig,
+  buildBajaAppResultsPageSourceConfig,
   buildBajaAppResultsTableSourceConfig,
 } from '@bajaovrlay/shared';
 
@@ -22,6 +23,7 @@ export type BajaAppChoice =
       pointsHeader: string;
       partHeaders: readonly string[];
     }
+  | { kind: 'resultsPage'; table: BajaAppTableChoice; refusesDuringSpoilers: boolean }
   | { kind: 'tournament'; tournament: BajaAppTournamentChoice };
 
 /** Where the source reads: the API's address and the event read. */
@@ -65,6 +67,18 @@ export function buildBajaAppSourceOfChoice(
           // The overall table adds up everything; any other is one part of the event,
           // which no scope names more closely than "other".
           standingsScope: choice.table.isTheOverallTable ? 'overall' : 'other',
+        }),
+      };
+    case 'resultsPage':
+      // The same name as the standings of this table would get: the flex form shows the
+      // shape it maps, "Tabela de resultado", so the two are told apart there.
+      return {
+        label: sourceLabel(where.eventId, choice.table.name),
+        pollIntervalMs: tableOrTournamentReadEveryMs,
+        config: buildBajaAppResultsPageSourceConfig({
+          ...where,
+          resultadoId: choice.table.resultadoId,
+          refusesDuringSpoilers: choice.refusesDuringSpoilers,
         }),
       };
     case 'tournament':
